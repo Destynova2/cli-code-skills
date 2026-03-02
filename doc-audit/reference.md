@@ -162,6 +162,58 @@ fn process() {
 | `@since` | Public API additions |
 | `@deprecated` | With `@Deprecated` annotation and migration path |
 
+### C# / .NET
+
+**Doc comment syntax**: `///` with XML tags
+
+**Required tags**:
+| Tag | When |
+|-----|------|
+| `<summary>` | Every public member |
+| `<param name="x">` | Every parameter |
+| `<returns>` | Non-void methods |
+| `<exception cref="T">` | When method can throw |
+| `<example>` | Public API members |
+| `<see cref="T"/>` | Cross-references to types/members |
+| `<remarks>` | Extended description beyond summary |
+
+---
+
+## Documentation Completeness Index (DCI)
+
+Quick scoring formula for audit reports:
+
+```
+DCI = (Σ wᵢ × sᵢ) / Σ wᵢ × 10
+
+Where: wᵢ = weight (1-5), sᵢ = score (0.0 to 1.0)
+```
+
+**Scoring**: 0.0 = absent, 0.25 = stub, 0.5 = partial, 0.75 = good, 1.0 = excellent
+
+**Grades**: A (9-10), B (7-8.9), C (5-6.9), D (3-4.9), F (0-2.9)
+
+**Doc Debt** = (Undocumented Public Items / Total Public Items) × 100. Thresholds: 0-10% green, 10-25% yellow, 25-50% orange, 50%+ red.
+
+---
+
+## Coverage Tiers
+
+Not all items need equal documentation depth:
+
+| Tier | Items | Expected |
+|------|-------|----------|
+| **Critical** | Public API entry points, error types, config options | 100% with examples |
+| **Important** | Public helpers, builders, conversion traits | 100% summary + params |
+| **Nice-to-have** | Internal public items, test utilities | Summary line sufficient |
+| **Skip** | Private items, test code, generated code | No doc comments needed |
+
+---
+
+## Confidence Protocol
+
+When auditing Category 5 (Accuracy & Freshness), if you cannot verify with certainty (e.g., context limits, complex control flow), mark as `NEEDS-REVIEW` rather than `violation`. False positives erode trust in the audit.
+
 ---
 
 ## Anti-Patterns Checklist
@@ -180,3 +232,5 @@ These are the highest-value findings. Flag them as Critical:
 | TODO without context/owner/issue | Undiscoverable tech debt | Inline |
 | Inconsistent terminology across docs | Confuses readers about concepts | Accuracy |
 | Examples that crash on error | Users copy examples verbatim | Sections |
+| Tutorial mixed with reference | Reader doesn't know what mode they're in | Structure |
+| How-to that explains instead of doing | Wastes reader's time when they're working | Structure |
