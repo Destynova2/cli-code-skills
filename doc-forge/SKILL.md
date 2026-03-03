@@ -178,6 +178,8 @@ docs/
 │   ├── decisions/              # ADRs (Architecture Decision Records)
 │   │   └── 001-why-rust.md
 │   └── security.md             # Security model and threat assumptions
+├── design/                        # Design docs (thinking tools, pre-implementation)
+│   └── 000-template.md            # Design doc template
 ├── CHANGELOG.md
 └── CONTRIBUTING.md
 ```
@@ -209,6 +211,55 @@ docs/
 - ADRs (Architecture Decision Records) live here.
 - Free to compare, digress, tell history.
 - This is where you document the thinking, not the doing.
+
+**Design Docs** (thinking tool — pre-implementation):
+
+Design docs are NOT post-hoc documentation. They are a **thinking process** that happens before code is written. The document itself is the design work. (Inspired by Google's engineering design doc practice and Ousterhout's "A Philosophy of Software Design".)
+
+Structure:
+```markdown
+# Design Doc: [Title]
+
+**Author**: [name]
+**Status**: Draft | In Review | Approved | Superseded
+**Date**: [date]
+**Reviewers**: [names]
+
+## Context
+[What situation are we in? What problem exists? What triggered this work?]
+
+## Goals
+[What must this solution achieve? Be specific and measurable.]
+
+## Non-Goals
+[What is explicitly OUT OF SCOPE? This is the most valuable section —
+it prevents scope creep and clarifies thinking.]
+
+## Proposed Design
+[The solution. Describe it at the right level of abstraction —
+enough to evaluate tradeoffs, not so much it's pseudo-code.]
+
+## Alternatives Considered
+[For each alternative:
+- What is it?
+- Why is it a reasonable option?
+- Why did we NOT choose it?
+The rejected alternatives are as important as the chosen one.]
+
+## Risks & Mitigations
+[What could go wrong? How do we detect it? How do we recover?]
+
+## Open Questions
+[What don't we know yet? What needs more investigation?
+Honest uncertainty is better than false confidence.]
+```
+
+Rules for design docs:
+- Write BEFORE coding. If the design doc comes after the code, it's documentation, not design.
+- The **Non-Goals** section is where most of the thinking happens. If you can't articulate what you're NOT doing, you don't understand what you ARE doing.
+- **Alternatives Considered** must have at least 2 genuine alternatives (not strawmen). If there's only one option, you haven't explored the space.
+- Keep it short. A design doc that nobody reads is worse than none. Target 1-3 pages.
+- Design docs live in `docs/design/` and are never deleted — they're historical records of how decisions were made.
 
 ### Progressive Complexity
 
@@ -265,6 +316,8 @@ If the project warrants it (public API, library, complex system), also produce:
 - `llms.txt` / `llms-full.txt`
 - Full Diátaxis docs/ tree
 - Updated inline doc comments (as a diff or suggestions)
+- `docs/design/000-template.md` — Design doc template for the team to reuse
+- Design docs for major existing architectural decisions (if none exist yet)
 
 ### Presentation
 

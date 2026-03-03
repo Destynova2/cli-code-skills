@@ -369,9 +369,43 @@ Use this to decide what to generate based on project characteristics:
 
 | Project Type | Must Have | Should Have | Nice to Have |
 |-------------|-----------|-------------|--------------|
-| **CLI tool** | README, `--help` text, AGENTS.md | How-to guides, config reference | Tutorials, architecture |
-| **Library/SDK** | API reference, examples, AGENTS.md, llms.txt | Tutorials, error guide | Architecture, ADRs |
-| **Web service/API** | API docs, deployment guide, AGENTS.md | Tutorials, config ref, security | ADRs, troubleshooting |
-| **Platform/Framework** | Full Diátaxis suite, AGENTS.md, llms.txt | Everything | - |
-| **Internal tool** | README, AGENTS.md, how-to | Config ref, troubleshooting | Architecture |
+| **CLI tool** | README, `--help` text, AGENTS.md | How-to guides, config reference | Tutorials, architecture, design docs |
+| **Library/SDK** | API reference, examples, AGENTS.md, llms.txt | Tutorials, error guide, design docs | Architecture, ADRs |
+| **Web service/API** | API docs, deployment guide, AGENTS.md, design docs | Tutorials, config ref, security | ADRs, troubleshooting |
+| **Platform/Framework** | Full Diátaxis suite, AGENTS.md, llms.txt, design docs | Everything | - |
+| **Internal tool** | README, AGENTS.md, how-to | Config ref, troubleshooting, design docs | Architecture |
 | **Script (<500 LOC)** | Header comment + README | AGENTS.md | - |
+
+---
+
+## Design Doc Standards
+
+### When to write a design doc
+
+- Before any work that takes more than 1 week of effort
+- When the design involves tradeoffs that should be reviewed
+- When multiple teams or components are affected
+- When the decision is hard to reverse
+
+### Quality signals of a good design doc
+
+| Signal | Bad | Good |
+|--------|-----|------|
+| Non-Goals | Absent or vague | Specific, prevents scope creep |
+| Alternatives | None or strawmen | 2+ genuine options with honest pros/cons |
+| Risks | "No risks" | Honest uncertainty, mitigation strategies |
+| Length | 10+ pages | 1-3 pages, focused |
+| Status | Never updated | Reflects current state (Draft → Approved → Superseded) |
+
+### Design doc vs ADR
+
+| | Design Doc | ADR |
+|---|---|---|
+| **When** | Before implementation | After decision is made |
+| **Purpose** | Think through the design, get feedback | Record the decision for posterity |
+| **Content** | Full context, alternatives, risks, open questions | Decision, context, consequences |
+| **Length** | 1-3 pages | 0.5-1 page |
+| **Lives in** | `docs/design/` | `docs/explanation/decisions/` |
+| **Lifecycle** | Draft → Review → Approved → Superseded | Written once, rarely updated |
+
+A design doc can spawn multiple ADRs. The design doc captures the thinking process; the ADRs capture the resulting decisions.
