@@ -1,5 +1,5 @@
 ---
-name: infra-forge
+name: cli-forge-infra
 description: Ops integration assistant — reads service docs, finds the simplest config path (CLI/Helm/Operator/Terraform), builds dependency trees, proposes upgrade paths, and tracks decisions in ADRs. Use when debugging infra, integrating services, bootstrapping platforms, upgrading versions, simplifying config, or reviewing infrastructure code. Triggers on ops tool names (OpenBao, Vault, Consul, Traefik, Gitea, ArgoCD, Prometheus, Grafana, cert-manager, Istio, Linkerd, Terraform, OpenTofu, Podman, Docker, K8s, etc.) or keywords like "bootstrap", "integrate", "simplify config", "upgrade infra", "ops stack", "service mesh", "dependency tree".
 argument-hint: "[service-or-directory-or-issue]"
 context: fork

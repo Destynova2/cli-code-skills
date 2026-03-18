@@ -1,5 +1,5 @@
 ---
-name: cleancode
+name: cli-audit-code
 description: Audit code against Clean Code principles. Use when the user asks to review code quality, audit clean code compliance, or check for code smells. Invoke with an optional file or directory path.
 argument-hint: "[file-or-directory]"
 context: fork

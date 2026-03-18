@@ -1,47 +1,82 @@
-# Claude Code Skills: cleancode & doc-audit
+<p align="center">
+  <strong>cli-code-skills</strong><br>
+  <em>Production-ready Claude Code skills — audit, forge, ship.</em>
+</p>
 
-Reusable [Claude Code](https://docs.anthropic.com/en/docs/claude-code) skills for code quality auditing.
+<p align="center">
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="MIT License"></a>
+  <img src="https://img.shields.io/badge/skills-5-green.svg" alt="5 Skills">
+  <img src="https://img.shields.io/badge/claude--code-skills-8A2BE2" alt="Claude Code">
+</p>
+
+---
+
+> **`cli-`** stands for **C**ommand **L**ine **I**nterface — and **C**lement **L**iard's **I**nitials.
+
+## Quick Start
+
+```bash
+git clone https://github.com/Destynova2/cli-code-skills.git
+cp -r cli-code-skills/cli-* ~/.claude/skills/
+```
+
+Type `/cli-` in Claude Code and tab-complete.
 
 ## Skills
 
-### `/cleancode [file-or-directory]`
+### 🔍 `cli-audit-*` — Analysis
 
-Audit code against Clean Code principles (Robert C. Martin, John Ousterhout, Martin Fowler, SonarSource, Casey Muratori).
+| Skill | What it does |
+|-------|-------------|
+| `/cli-audit-code [path]` | Scores code against Clean Code principles (10 categories: naming, functions, DRY, error handling, cognitive load...) |
+| `/cli-audit-doc [path]` | Scores documentation quality against RFC 1574, Diataxis, Microsoft M-DOC (6 categories, any language) |
 
-Scores 10 categories: Naming, Functions, Comments, Structure, DRY, Error Handling, Rust Idioms, Tests, Immutability, Cognitive Load.
+### 🔨 `cli-forge-*` — Generation
 
-### `/doc-audit [file-or-directory]`
+| Skill | What it does |
+|-------|-------------|
+| `/cli-forge-arch [system]` | Generates HLD/LLD design docs with C4 diagrams, ADRs, and back-of-envelope capacity estimations |
+| `/cli-forge-doc [repo]` | Generates dual documentation — AI-optimized (AGENTS.md, llms.txt) + human-readable (Diataxis) |
+| `/cli-forge-infra [service]` | Ops integration — finds simplest config path, builds dependency trees, proposes upgrades with ADRs |
 
-Audit documentation quality against industry standards (RFC 505, RFC 1574, Microsoft M-DOC, Diataxis, Clean Code, Linux Kernel).
+## Naming Convention
 
-Scores 6 categories: Doc Coverage, Summary Lines, Standard Sections, Inline Comments, Accuracy & Freshness, Cross-references.
-
-Works with any language (Rust, TypeScript, Python, Go, Java, Kotlin).
+```
+cli-<action>-<target>
+ │    │        │
+ │    │        └─ what it operates on (code, doc, arch, infra)
+ │    └────────── what it does (audit = analyze, forge = generate)
+ └─────────────── namespace (CLI + Clement Liard Initials)
+```
 
 ## Installation
 
-Copy skill directories into your Claude Code skills folder:
+Copy individual skills or all at once:
 
 ```bash
-# Clone
-git clone https://github.com/Destynova2/claude-code-skills.git
+# All skills
+cp -r cli-code-skills/cli-* ~/.claude/skills/
 
-# Copy to your Claude Code skills directory
-cp -r claude-code-skills/cleancode ~/.claude/skills/
-cp -r claude-code-skills/doc-audit ~/.claude/skills/
+# Just what you need
+cp -r cli-code-skills/cli-audit-code ~/.claude/skills/
+cp -r cli-code-skills/cli-forge-arch ~/.claude/skills/
 ```
 
-Then use `/cleancode` or `/doc-audit` in any Claude Code session.
+## How It Works
 
-## Output
+Each skill is a directory with:
 
-Both skills produce structured markdown reports with:
-- Overall score out of 10
-- Per-category scores table
-- Critical violations with `file:line` references
-- Flagged issues grouped by category
-- Good practices found
-- Recommended next steps
+```
+cli-<skill>/
+├── SKILL.md          # Main prompt (workflow, checklist, principles)
+└── reference.md      # Domain knowledge (templates, standards, cheatsheets)
+```
+
+Skills run as forked agents with scoped tool access — they read your code, produce structured markdown reports with scores, diagrams, and actionable next steps.
+
+## Contributing
+
+PRs welcome. Follow the naming convention `cli-<action>-<target>`.
 
 ## License
 

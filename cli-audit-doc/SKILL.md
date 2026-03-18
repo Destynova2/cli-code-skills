@@ -1,5 +1,5 @@
 ---
-name: doc-audit
+name: cli-audit-doc
 description: Audit documentation quality against industry standards (Diátaxis, Clean Code, RFC 1574, Microsoft M-DOC). Checks doc comments, inline comments, module docs, and doc structure. Works with any language. Invoke with an optional file or directory path.
 argument-hint: "[file-or-directory]"
 context: fork

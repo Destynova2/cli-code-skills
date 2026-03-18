@@ -1,5 +1,5 @@
 ---
-name: doc-forge
+name: cli-forge-doc
 description: Generate and audit comprehensive project documentation from a Git repository. Produces dual output — an LLM-optimized context file (AGENTS.md, llms.txt) and a human-readable documentation site (Diátaxis structure). Use this skill whenever someone asks to document a project, generate docs, create a README, write API docs, create an AGENTS.md or CLAUDE.md, generate llms.txt, or improve existing documentation. Also trigger when someone mentions "doc", "documentation", "readme", "explain this codebase", "onboard developers", or "make this project understandable".
 argument-hint: "[git-repo-path]"
 context: fork
