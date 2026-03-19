@@ -14,6 +14,8 @@ allowed-tools:
   - WebFetch
 ---
 
+> **Language rule:** Detect the project's primary language (from README, comments, docs, commit messages). Output your document in that language. If the project is bilingual, ask the user which language to use before proceeding.
+
 # Arch Forge — System Design (HLD & LLD)
 
 Produce structured, professional High-Level Design (HLD) and Low-Level Design (LLD) documents following industry frameworks (C4 Model, ATAM, ADR) with quantitative capacity estimations.

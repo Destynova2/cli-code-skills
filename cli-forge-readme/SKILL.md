@@ -3,6 +3,8 @@ name: cli-forge-readme
 description: "Use this skill whenever the user wants to create, improve, audit, or rewrite a README.md file for any project. Triggers include: 'readme', 'README', 'documentation for my project', 'write a readme', 'improve my readme', 'project landing page', or any request to document a codebase, library, CLI tool, infrastructure project, or research repo. Also triggers when the user asks to 'make my project more accessible', 'add a getting started guide', or wants badges, installation instructions, or contributing guidelines. Use this skill even when the user just says 'document this' or 'make this repo presentable'. Do NOT use for API reference docs generation, full documentation sites (mdbook, docusaurus), or man pages."
 ---
 
+> **Language rule:** Detect the project's primary language (from README, comments, docs, commit messages). Output the README in that language. If the project is bilingual, ask the user which language to use before proceeding.
+
 # README Generator — Production First
 
 Generate professional README.md files where **results come first, plumbing comes second**.

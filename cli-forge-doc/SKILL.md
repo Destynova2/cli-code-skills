@@ -6,6 +6,8 @@ context: fork
 agent: general-purpose
 ---
 
+> **Language rule:** Detect the project's primary language (from README, comments, docs, commit messages). Output your documentation in that language. If the project is bilingual, ask the user which language to use before proceeding.
+
 # Doc Forge — Dual Documentation Generator & Auditor
 
 Generate production-grade documentation for any Git project, optimized for both AI agents and human readers.
