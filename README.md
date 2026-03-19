@@ -1,82 +1,116 @@
 <p align="center">
   <strong>cli-code-skills</strong><br>
-  <em>Production-ready Claude Code skills — audit, forge, ship.</em>
+  <em>Drop-in Claude Code skills that audit your code and generate your docs, designs, and infra.</em>
 </p>
 
 <p align="center">
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="MIT License"></a>
-  <img src="https://img.shields.io/badge/skills-5-green.svg" alt="5 Skills">
-  <img src="https://img.shields.io/badge/claude--code-skills-8A2BE2" alt="Claude Code">
+  <img src="https://img.shields.io/badge/skills-7-green.svg" alt="7 Skills">
+  <img src="https://img.shields.io/badge/claude--code-skills-8A2BE2" alt="Claude Code Skills">
+  <a href="https://github.com/Destynova2/cli-code-skills/stargazers"><img src="https://img.shields.io/github/stars/Destynova2/cli-code-skills" alt="Stars"></a>
 </p>
 
 ---
 
-> **`cli-`** stands for **C**ommand **L**ine **I**nterface — and **C**lement **L**iard's **I**nitials.
+> **`cli-`** = **C**ommand **L**ine **I**nterface + **C**lement **L**iard **I**nitials
 
-## Quick Start
+## Quickstart
 
 ```bash
 git clone https://github.com/Destynova2/cli-code-skills.git
 cp -r cli-code-skills/cli-* ~/.claude/skills/
 ```
 
-Type `/cli-` in Claude Code and tab-complete.
+Type `/cli-` in Claude Code, hit tab, pick a skill:
+
+```
+/cli-audit-code src/         → Clean Code score with per-category breakdown
+/cli-forge-arch "payment API" → Full HLD with C4 diagrams and capacity estimations
+/cli-forge-readme .           → Professional README from your codebase
+```
 
 ## Skills
 
-### 🔍 `cli-audit-*` — Analysis
+### `cli-audit-*` — Analyze & Score
 
 | Skill | What it does |
 |-------|-------------|
-| `/cli-audit-code [path]` | Scores code against Clean Code principles (10 categories: naming, functions, DRY, error handling, cognitive load...) |
-| `/cli-audit-doc [path]` | Scores documentation quality against RFC 1574, Diataxis, Microsoft M-DOC (6 categories, any language) |
+| `/cli-audit-code [path]` | Scores code against Clean Code principles — 10 categories: naming, functions, DRY, error handling, cognitive load. Works with any language |
+| `/cli-audit-doc [path]` | Scores documentation quality against RFC 1574, Diataxis, Microsoft M-DOC — 6 categories, any language |
 
-### 🔨 `cli-forge-*` — Generation
+### `cli-forge-*` — Generate
 
 | Skill | What it does |
 |-------|-------------|
-| `/cli-forge-arch [system]` | Generates HLD/LLD design docs with C4 diagrams, ADRs, and back-of-envelope capacity estimations |
-| `/cli-forge-doc [repo]` | Generates dual documentation — AI-optimized (AGENTS.md, llms.txt) + human-readable (Diataxis) |
-| `/cli-forge-infra [service]` | Ops integration — finds simplest config path, builds dependency trees, proposes upgrades with ADRs |
+| `/cli-forge-arch [system]` | Generates HLD/LLD design docs with C4 diagrams, ADRs, and back-of-envelope capacity estimations (ATAM framework) |
+| `/cli-forge-doc [repo]` | Generates dual documentation — AI-optimized (AGENTS.md, llms.txt) + human-readable (Diataxis structure) |
+| `/cli-forge-infra [service]` | Ops integration — reads service docs, finds simplest config path, builds dependency trees, proposes upgrades with ADRs |
+| `/cli-forge-readme [path]` | Generates a professional README using the 3-tier pyramid: hook, quickstart, contribute |
+| `/cli-forge-tree [path]` | Visualizes, audits, or scaffolds project directory structures with naming conventions |
 
 ## Naming Convention
 
 ```
 cli-<action>-<target>
  │    │        │
- │    │        └─ what it operates on (code, doc, arch, infra)
+ │    │        └─ what it operates on (code, doc, arch, infra, readme, tree)
  │    └────────── what it does (audit = analyze, forge = generate)
- └─────────────── namespace (CLI + Clement Liard Initials)
+ └─────────────── namespace
 ```
+
+All skills auto-complete from `/cli-`. Grouping is natural: `/cli-audit-` shows analysis skills, `/cli-forge-` shows generators.
 
 ## Installation
 
-Copy individual skills or all at once:
-
 ```bash
-# All skills
+# All skills at once
 cp -r cli-code-skills/cli-* ~/.claude/skills/
 
-# Just what you need
+# Cherry-pick what you need
 cp -r cli-code-skills/cli-audit-code ~/.claude/skills/
 cp -r cli-code-skills/cli-forge-arch ~/.claude/skills/
 ```
 
-## How It Works
+To update:
 
-Each skill is a directory with:
+```bash
+cd cli-code-skills && git pull
+cp -r cli-* ~/.claude/skills/
+```
+
+## Project Structure
+
+```
+cli-code-skills/
+├── cli-audit-code/        # /cli-audit-code — Clean Code scoring
+├── cli-audit-doc/         # /cli-audit-doc — documentation quality
+├── cli-forge-arch/        # /cli-forge-arch — HLD/LLD/ADR generation
+│   └── references/        #   templates: HLD, LLD, estimation cheatsheet
+├── cli-forge-doc/         # /cli-forge-doc — full project documentation
+├── cli-forge-infra/       # /cli-forge-infra — ops integration
+├── cli-forge-readme/      # /cli-forge-readme — README generation
+├── cli-forge-tree/        # /cli-forge-tree — directory structure
+└── README.md
+```
+
+Each skill is a self-contained directory:
 
 ```
 cli-<skill>/
-├── SKILL.md          # Main prompt (workflow, checklist, principles)
-└── reference.md      # Domain knowledge (templates, standards, cheatsheets)
+├── SKILL.md          # Prompt: workflow, checklist, principles
+└── reference.md      # Domain knowledge: templates, standards, cheatsheets
 ```
 
-Skills run as forked agents with scoped tool access — they read your code, produce structured markdown reports with scores, diagrams, and actionable next steps.
+Skills run as forked agents with scoped tool access. They read your code, produce structured markdown with scores, diagrams, and actionable next steps.
 
 ## Contributing
 
-PRs welcome. Follow the naming convention `cli-<action>-<target>`.
+PRs welcome. To add a skill:
+
+1. Create a directory following `cli-<action>-<target>`
+2. Add a `SKILL.md` with frontmatter (`name`, `description`, `context: fork`)
+3. Optionally add `reference.md` for domain knowledge
+4. Submit a PR
 
 ## License
 
