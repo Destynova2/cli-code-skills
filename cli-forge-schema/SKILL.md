@@ -1,6 +1,6 @@
 ---
 name: cli-forge-schema
-description: "Use this skill to generate, convert, or refine diagrams and visual representations in GitHub-compatible Mermaid. Triggers include: 'diagram', 'schema', 'flowchart', 'sequence diagram', 'architecture diagram', 'ER diagram', 'state machine', 'gantt', 'mindmap', 'timeline', 'mermaid', 'visualize', 'draw', 'convert table to diagram', 'kanban', 'PERT', or any request to create, fix, or improve a visual representation of data, processes, or architecture. Also triggers when the user pastes a broken Mermaid block, asks to simplify a complex diagram, or wants to convert markdown tables into visual formats. Do NOT use for actual image generation (PNG, SVG rendering) — output is always Mermaid markdown."
+description: "Use this skill to generate, convert, or refine diagrams and visual representations in GitHub-compatible Mermaid. Triggers include: 'diagram', 'schema', 'flowchart', 'sequence diagram', 'architecture diagram', 'ER diagram', 'state machine', 'gantt', 'mindmap', 'timeline', 'mermaid', 'visualize', 'draw', 'convert table to diagram', 'kanban', 'PERT', 'roadmap', 'changelog', 'sankey', 'quadrant', 'git graph', or any request to create, fix, or improve a visual representation of data, processes, or architecture. Also triggers when the user pastes broken Mermaid, asks to simplify a complex diagram, wants to convert markdown tables/bullet lists/SQL schemas/JSON structures/API lists/RACI matrices into visual formats, or says 'make this visual'. Do NOT use for actual image generation (PNG, SVG rendering) — output is always Mermaid markdown."
 argument-hint: "[description-or-file-to-visualize]"
 context: fork
 agent: general-purpose
@@ -188,6 +188,75 @@ gantt
     Task C           :c, after a, 7d
     Task D           :d, after b c, 4d
 ```
+
+#### Bullet lists / nested hierarchies → Mindmap
+
+```mermaid
+mindmap
+    root((Topic))
+        Category A
+            Item 1
+            Item 2
+        Category B
+            Item 3
+```
+
+#### Numbered steps → Flowchart
+
+Convert step-by-step instructions (1. do X, 2. do Y) into a linear flowchart with decision points where alternatives exist.
+
+#### Changelog / release notes → Timeline
+
+```mermaid
+timeline
+    title Releases
+    2025-01 : v1.0 Initial release
+    2025-03 : v1.1 Performance fixes
+    2025-06 : v2.0 Major rewrite
+```
+
+#### Roadmap → Gantt
+
+Convert roadmap items with dates/quarters into `gantt` sections. Use `crit` for critical milestones.
+
+#### Pros/cons or comparison lists → Quadrant Chart
+
+Map items on effort/impact, cost/value, or risk/reward axes using `quadrantChart`.
+
+#### SQL CREATE TABLE → ER Diagram
+
+Parse `CREATE TABLE` statements and convert columns, types, PKs, FKs into `erDiagram` entities with relationships inferred from foreign keys.
+
+#### JSON / YAML structures → Class Diagram or Mindmap
+
+- Flat config → `mindmap` (keys as branches, values as leaves)
+- Nested objects with types → `classDiagram` (objects as classes, fields as attributes)
+
+#### API endpoint lists → Sequence Diagram
+
+Convert a list of endpoints (method, path, description) into `sequenceDiagram` showing the actor, API, and downstream services interactions.
+
+#### Budget / resource allocation → Sankey
+
+```mermaid
+sankey-beta
+    Revenue,Engineering,50
+    Revenue,Marketing,25
+    Revenue,Operations,15
+    Revenue,R&D,10
+```
+
+#### Git branching strategy → Git Graph
+
+Convert branch descriptions into `gitGraph` with commits, branches, and merges.
+
+#### RACI / responsibility matrix → Flowchart with subgraphs
+
+Group tasks by responsible party using subgraphs, color-code by RACI role (R=primary, A=warning, C=neutral, I=grey).
+
+#### Cron / schedules → Gantt
+
+Convert recurring schedules into `gantt` with repeating task blocks to visualize time allocation.
 
 ### Step 6 — Review checklist
 
