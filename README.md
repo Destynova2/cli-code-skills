@@ -5,7 +5,7 @@
 
 <p align="center">
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="MIT License"></a>
-  <img src="https://img.shields.io/badge/skills-8-green.svg" alt="8 Skills">
+  <img src="https://img.shields.io/badge/skills-9-green.svg" alt="9 Skills">
   <img src="https://img.shields.io/badge/claude--code-skills-8A2BE2" alt="Claude Code Skills">
   <a href="https://github.com/Destynova2/cli-code-skills/stargazers"><img src="https://img.shields.io/github/stars/Destynova2/cli-code-skills" alt="Stars"></a>
 </p>
@@ -36,6 +36,7 @@ Type `/cli-` in Claude Code, hit tab, pick a skill:
 
 | Skill | What it does |
 |-------|-------------|
+| `/cli-audit-all [path]` | Orchestrates all cli-* skills, synthesizes a scorecard, and delivers a prioritized action plan. Use with `/loop 7d` for weekly reviews |
 | `/cli-audit-code [path]` | Scores code against Clean Code principles — 10 categories: naming, functions, DRY, error handling, cognitive load. Works with any language |
 | `/cli-audit-doc [path]` | Scores documentation quality against RFC 1574, Diataxis, Microsoft M-DOC — 6 categories, any language |
 
@@ -84,6 +85,7 @@ cp -r cli-* ~/.claude/skills/
 
 ```
 cli-code-skills/
+├── cli-audit-all/         # /cli-audit-all — orchestrator, runs all skills
 ├── cli-audit-code/        # /cli-audit-code — Clean Code scoring
 ├── cli-audit-doc/         # /cli-audit-doc — documentation quality
 ├── cli-forge-arch/        # /cli-forge-arch — HLD/LLD/ADR generation
