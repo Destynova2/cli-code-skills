@@ -1,6 +1,6 @@
 ---
-name: cli-audit-all
-description: "Orchestrates all cli-* skills on the current project, synthesizes results, and proposes prioritized improvements. Use when the user wants a full project review, a health check, a weekly audit, or says 'audit everything', 'review the project', 'health check', 'what should I improve', 'run all audits'. Also triggers on '/loop' combined with project review intent."
+name: cli-cycle
+description: "Continuous improvement cycle — orchestrates all cli-* skills on the current project, synthesizes results, and proposes prioritized improvements. Use when the user wants a full project review, a health check, a weekly cycle, or says 'audit everything', 'review the project', 'health check', 'what should I improve', 'run all audits', 'cycle', 'improvement cycle'. Designed for recurring use with '/loop 7d /cli-cycle'."
 argument-hint: "[project-path]"
 context: fork
 agent: general-purpose
@@ -15,7 +15,7 @@ allowed-tools:
 
 > **Language rule:** Detect the project's primary language (from README, comments, docs, commit messages). Output your report in that language. If the project is bilingual, ask the user which language to use before proceeding.
 
-# Audit All — Full Project Review Orchestrator
+# Cycle — Continuous Improvement Orchestrator
 
 Run every applicable `cli-*` skill on the current project, collect results, and deliver a single prioritized action plan.
 

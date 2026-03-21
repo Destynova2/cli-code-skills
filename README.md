@@ -32,11 +32,16 @@ Type `/cli-` in Claude Code, hit tab, pick a skill:
 
 ## Skills
 
+### `cli-cycle` — Orchestrator
+
+| Skill | What it does |
+|-------|-------------|
+| `/cli-cycle [path]` | Runs all applicable cli-* skills, synthesizes a scorecard, and delivers a prioritized action plan. Use with `/loop 7d` for continuous improvement |
+
 ### `cli-audit-*` — Analyze & Score
 
 | Skill | What it does |
 |-------|-------------|
-| `/cli-audit-all [path]` | Orchestrates all cli-* skills, synthesizes a scorecard, and delivers a prioritized action plan. Use with `/loop 7d` for weekly reviews |
 | `/cli-audit-code [path]` | Scores code against Clean Code principles — 10 categories: naming, functions, DRY, error handling, cognitive load. Works with any language |
 | `/cli-audit-doc [path]` | Scores documentation quality against RFC 1574, Diataxis, Microsoft M-DOC — 6 categories, any language |
 
@@ -57,7 +62,7 @@ Type `/cli-` in Claude Code, hit tab, pick a skill:
 cli-<action>-<target>
  │    │        │
  │    │        └─ what it operates on (code, doc, arch, infra, readme, schema, tree)
- │    └────────── what it does (audit = analyze, forge = generate)
+ │    └────────── what it does (audit = analyze, forge = generate, cycle = orchestrate)
  └─────────────── namespace
 ```
 
@@ -85,7 +90,7 @@ cp -r cli-* ~/.claude/skills/
 
 ```
 cli-code-skills/
-├── cli-audit-all/         # /cli-audit-all — orchestrator, runs all skills
+├── cli-cycle/             # /cli-cycle — orchestrator, runs all skills
 ├── cli-audit-code/        # /cli-audit-code — Clean Code scoring
 ├── cli-audit-doc/         # /cli-audit-doc — documentation quality
 ├── cli-forge-arch/        # /cli-forge-arch — HLD/LLD/ADR generation
