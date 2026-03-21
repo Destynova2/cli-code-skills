@@ -1,0 +1,7 @@
+---
+description: "Audit documentation quality against RFC 1574, Diataxis, Microsoft M-DOC — 6 categories"
+alwaysApply: false
+globs: ["**/*.md", "**/*.rs", "**/*.ts", "**/*.py", "**/*.go"]
+---
+
+When asked to review or audit documentation quality, follow the cli-audit-doc skill from `.claude/skills/cli-audit-doc/SKILL.md`. Score 6 categories and produce a structured report with doc coverage, summary lines, standard sections, inline comments, accuracy, and cross-references.

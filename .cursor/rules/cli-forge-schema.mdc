@@ -1,0 +1,7 @@
+---
+description: "Generate GitHub-compatible Mermaid diagrams — auto-picks diagram type, splits complex ones, converts tables/kanban/PERT"
+alwaysApply: false
+globs: ["**/*.md"]
+---
+
+When asked to create diagrams, schemas, or visualizations, follow the cli-forge-schema skill from `.claude/skills/cli-forge-schema/SKILL.md`. Output GitHub-compatible Mermaid with max 50 nodes, functional colors (max 5 classDef), and auto-split if complex. Support 15 conversion types including tables, bullet lists, SQL, JSON, API endpoints, and RACI matrices.

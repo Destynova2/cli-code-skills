@@ -1,0 +1,7 @@
+---
+description: "Audit code against Clean Code principles — 10 categories: naming, functions, DRY, error handling, cognitive load"
+alwaysApply: false
+globs: ["**/*.rs", "**/*.ts", "**/*.py", "**/*.go", "**/*.java", "**/*.kt", "**/*.js"]
+---
+
+When asked to review or audit code quality, follow the cli-audit-code skill from `.claude/skills/cli-audit-code/SKILL.md`. Score 10 categories and produce a structured report with per-category breakdown, critical violations with file:line references, and actionable next steps.

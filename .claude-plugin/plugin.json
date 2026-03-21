@@ -1,0 +1,24 @@
+{
+  "name": "cli-code-skills",
+  "version": "1.0.0",
+  "description": "Production-ready Claude Code skills — audit code quality, forge design docs, generate documentation, automate infrastructure.",
+  "author": {
+    "name": "Clement Liard",
+    "url": "https://github.com/Destynova2"
+  },
+  "homepage": "https://github.com/Destynova2/cli-code-skills",
+  "repository": "https://github.com/Destynova2/cli-code-skills",
+  "license": "MIT",
+  "keywords": [
+    "claude-code",
+    "skills",
+    "code-quality",
+    "documentation",
+    "architecture",
+    "mermaid",
+    "devops",
+    "audit",
+    "cli"
+  ],
+  "skills": "./"
+}

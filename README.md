@@ -7,7 +7,10 @@
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="MIT License"></a>
   <img src="https://img.shields.io/badge/skills-9-green.svg" alt="9 Skills">
   <img src="https://img.shields.io/badge/claude--code-skills-8A2BE2" alt="Claude Code Skills">
-  <a href="https://github.com/Destynova2/cli-code-skills/stargazers"><img src="https://img.shields.io/github/stars/Destynova2/cli-code-skills" alt="Stars"></a>
+  <img src="https://img.shields.io/badge/cursor-compatible-F7DF1E" alt="Cursor Compatible">
+  <a href="https://github.com/Destynova2/cli-code-skills/stargazers"><img src="https://img.shields.io/github/stars/Destynova2/cli-code-skills?style=flat" alt="Stars"></a>
+  <a href="https://github.com/Destynova2/cli-code-skills/network/members"><img src="https://img.shields.io/github/forks/Destynova2/cli-code-skills?style=flat" alt="Forks"></a>
+  <a href="https://github.com/Destynova2/cli-code-skills/graphs/contributors"><img src="https://img.shields.io/github/contributors/Destynova2/cli-code-skills" alt="Contributors"></a>
 </p>
 
 ---
@@ -24,10 +27,10 @@ cp -r cli-code-skills/cli-* ~/.claude/skills/
 Type `/cli-` in Claude Code, hit tab, pick a skill:
 
 ```
-/cli-audit-code src/         → Clean Code score with per-category breakdown
+/cli-audit-code src/          → Clean Code score with per-category breakdown
 /cli-forge-arch "payment API" → Full HLD with C4 diagrams and capacity estimations
-/cli-forge-schema "auth flow"  → GitHub-compatible Mermaid diagram, auto-split if complex
-/cli-forge-readme .           → Professional README from your codebase
+/cli-forge-schema "auth flow" → GitHub-compatible Mermaid diagram, auto-split if complex
+/cli-cycle .                  → Full project review with prioritized action plan
 ```
 
 ## Skills
@@ -53,7 +56,7 @@ Type `/cli-` in Claude Code, hit tab, pick a skill:
 | `/cli-forge-doc [repo]` | Generates dual documentation — AI-optimized (AGENTS.md, llms.txt) + human-readable (Diataxis structure) |
 | `/cli-forge-infra [service]` | Ops integration — reads service docs, finds simplest config path, builds dependency trees, proposes upgrades with ADRs |
 | `/cli-forge-readme [path]` | Generates a professional README using the 3-tier pyramid: hook, quickstart, contribute |
-| `/cli-forge-schema [desc]` | Generates GitHub-compatible Mermaid diagrams — picks the right type, splits complex ones, converts tables/kanban/PERT |
+| `/cli-forge-schema [desc]` | Generates GitHub-compatible Mermaid diagrams — picks the right type, splits complex ones, converts tables/kanban/PERT + 12 other formats |
 | `/cli-forge-tree [path]` | Visualizes, audits, or scaffolds project directory structures with naming conventions |
 
 ## Naming Convention
@@ -66,20 +69,23 @@ cli-<action>-<target>
  └─────────────── namespace
 ```
 
-All skills auto-complete from `/cli-`. Grouping is natural: `/cli-audit-` shows analysis skills, `/cli-forge-` shows generators.
-
 ## Installation
 
-```bash
-# All skills at once
-cp -r cli-code-skills/cli-* ~/.claude/skills/
+### Claude Code
 
-# Cherry-pick what you need
-cp -r cli-code-skills/cli-audit-code ~/.claude/skills/
-cp -r cli-code-skills/cli-forge-arch ~/.claude/skills/
+```bash
+git clone https://github.com/Destynova2/cli-code-skills.git
+cp -r cli-code-skills/cli-* ~/.claude/skills/
 ```
 
-To update:
+### Cursor IDE
+
+```bash
+git clone https://github.com/Destynova2/cli-code-skills.git
+cp -r cli-code-skills/.cursor/rules/* your-project/.cursor/rules/
+```
+
+### Update
 
 ```bash
 cd cli-code-skills && git pull
@@ -90,7 +96,10 @@ cp -r cli-* ~/.claude/skills/
 
 ```
 cli-code-skills/
-├── cli-cycle/             # /cli-cycle — orchestrator, runs all skills
+├── .claude-plugin/        # Plugin manifest for marketplace
+│   └── plugin.json
+├── .cursor/rules/         # Cursor IDE rules (4 core skills)
+├── cli-cycle/             # /cli-cycle — orchestrator
 ├── cli-audit-code/        # /cli-audit-code — Clean Code scoring
 ├── cli-audit-doc/         # /cli-audit-doc — documentation quality
 ├── cli-forge-arch/        # /cli-forge-arch — HLD/LLD/ADR generation

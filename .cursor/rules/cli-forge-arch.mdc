@@ -1,0 +1,7 @@
+---
+description: "Generate HLD/LLD design docs with C4 diagrams, ADRs, and capacity estimations"
+alwaysApply: false
+globs: ["docs/**/*.md", "**/*.md"]
+---
+
+When asked to design a system, create an architecture document, HLD, LLD, or ADR, follow the cli-forge-arch skill from `.claude/skills/cli-forge-arch/SKILL.md`. Use C4 Model diagrams, ATAM-style tradeoff reasoning, and back-of-envelope estimations. Numbers drive the design, not the other way around.
