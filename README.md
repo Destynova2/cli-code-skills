@@ -5,7 +5,7 @@
 
 <p align="center">
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="MIT License"></a>
-  <img src="https://img.shields.io/badge/skills-7-green.svg" alt="7 Skills">
+  <img src="https://img.shields.io/badge/skills-8-green.svg" alt="8 Skills">
   <img src="https://img.shields.io/badge/claude--code-skills-8A2BE2" alt="Claude Code Skills">
   <a href="https://github.com/Destynova2/cli-code-skills/stargazers"><img src="https://img.shields.io/github/stars/Destynova2/cli-code-skills" alt="Stars"></a>
 </p>
@@ -26,6 +26,7 @@ Type `/cli-` in Claude Code, hit tab, pick a skill:
 ```
 /cli-audit-code src/         → Clean Code score with per-category breakdown
 /cli-forge-arch "payment API" → Full HLD with C4 diagrams and capacity estimations
+/cli-forge-schema "auth flow"  → GitHub-compatible Mermaid diagram, auto-split if complex
 /cli-forge-readme .           → Professional README from your codebase
 ```
 
@@ -46,6 +47,7 @@ Type `/cli-` in Claude Code, hit tab, pick a skill:
 | `/cli-forge-doc [repo]` | Generates dual documentation — AI-optimized (AGENTS.md, llms.txt) + human-readable (Diataxis structure) |
 | `/cli-forge-infra [service]` | Ops integration — reads service docs, finds simplest config path, builds dependency trees, proposes upgrades with ADRs |
 | `/cli-forge-readme [path]` | Generates a professional README using the 3-tier pyramid: hook, quickstart, contribute |
+| `/cli-forge-schema [desc]` | Generates GitHub-compatible Mermaid diagrams — picks the right type, splits complex ones, converts tables/kanban/PERT |
 | `/cli-forge-tree [path]` | Visualizes, audits, or scaffolds project directory structures with naming conventions |
 
 ## Naming Convention
@@ -53,7 +55,7 @@ Type `/cli-` in Claude Code, hit tab, pick a skill:
 ```
 cli-<action>-<target>
  │    │        │
- │    │        └─ what it operates on (code, doc, arch, infra, readme, tree)
+ │    │        └─ what it operates on (code, doc, arch, infra, readme, schema, tree)
  │    └────────── what it does (audit = analyze, forge = generate)
  └─────────────── namespace
 ```
@@ -89,6 +91,8 @@ cli-code-skills/
 ├── cli-forge-doc/         # /cli-forge-doc — full project documentation
 ├── cli-forge-infra/       # /cli-forge-infra — ops integration
 ├── cli-forge-readme/      # /cli-forge-readme — README generation
+├── cli-forge-schema/      # /cli-forge-schema — Mermaid diagrams
+│   └── references/        #   diagram types, palettes, GitHub limits
 ├── cli-forge-tree/        # /cli-forge-tree — directory structure
 └── README.md
 ```
