@@ -5,7 +5,7 @@
 
 <p align="center">
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="MIT License"></a>
-  <img src="https://img.shields.io/badge/skills-9-green.svg" alt="9 Skills">
+  <img src="https://img.shields.io/badge/skills-10-green.svg" alt="10 Skills">
   <img src="https://img.shields.io/badge/claude--code-skills-8A2BE2" alt="Claude Code Skills">
   <img src="https://img.shields.io/badge/cursor-compatible-F7DF1E" alt="Cursor Compatible">
   <a href="https://github.com/Destynova2/cli-code-skills/stargazers"><img src="https://img.shields.io/github/stars/Destynova2/cli-code-skills?style=flat" alt="Stars"></a>
@@ -47,6 +47,7 @@ Type `/cli-` in Claude Code, hit tab, pick a skill:
 |-------|-------------|
 | `/cli-audit-code [path]` | Scores code against Clean Code principles — 10 categories: naming, functions, DRY, error handling, cognitive load. Works with any language |
 | `/cli-audit-doc [path]` | Scores documentation quality against RFC 1574, Diataxis, Microsoft M-DOC — 6 categories, any language |
+| `/cli-audit-sync [path]` | Verifies doc-code coherence: stale references, broken links, terminology drift, outdated diagrams, non-working examples. 3 layers: structural, semantic, executable |
 
 ### `cli-forge-*` — Generate
 
@@ -102,6 +103,7 @@ cli-code-skills/
 ├── cli-cycle/             # /cli-cycle — orchestrator
 ├── cli-audit-code/        # /cli-audit-code — Clean Code scoring
 ├── cli-audit-doc/         # /cli-audit-doc — documentation quality
+├── cli-audit-sync/        # /cli-audit-sync — doc-code coherence
 ├── cli-forge-arch/        # /cli-forge-arch — HLD/LLD/ADR generation
 │   └── references/        #   templates: HLD, LLD, estimation cheatsheet
 ├── cli-forge-doc/         # /cli-forge-doc — full project documentation
