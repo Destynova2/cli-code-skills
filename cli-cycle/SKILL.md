@@ -58,6 +58,7 @@ Not all skills apply to every project. Match skills to what exists:
 |-------|----------|
 | `cli-audit-code` | Source code files exist |
 | `cli-audit-doc` | Documentation files exist (`.md`, doc comments) |
+| `cli-audit-sync` | Both source code AND documentation exist (verifies coherence between them) |
 | `cli-forge-readme` | `README.md` exists (audit mode: compare current vs ideal) |
 | `cli-forge-tree` | Always (audit current structure) |
 | `cli-forge-schema` | Existing Mermaid diagrams found OR architecture worth diagramming |
@@ -101,6 +102,7 @@ Once all sub-agents return, produce a unified report:
 | Area | Score | Status | Skill |
 |------|-------|--------|-------|
 | Code Quality | 7/10 | Needs work | cli-audit-code |
+| Doc-Code Sync | 6/10 | Drift detected | cli-audit-sync |
 | Documentation | 8/10 | Good | cli-audit-doc |
 | README | 6/10 | Outdated | cli-forge-readme |
 | Project Structure | 9/10 | Excellent | cli-forge-tree |
