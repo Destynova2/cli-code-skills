@@ -1,0 +1,210 @@
+# Pipeline GitLab CI — Tous les patterns biomimétiques
+# Adapter à votre stack, ceci est un template complet commenté
+
+# ─────────────────────────────────────────────
+# PATTERN FOURMIS : stages spécialisés + DAG
+# ─────────────────────────────────────────────
+stages:
+  - prebuild      # Coupeuses (préparation parallèle)
+  - build         # Porteuses (assemblage)
+  - test          # Ramasseuses (vérification parallèle)
+  - security      # Hygiénistes (protection de la colonie)
+  - package       # Transformatrices (préparation déploiement)
+  - deploy        # Nid final
+
+# ─────────────────────────────────────────────
+# PATTERN BLOB : variables globales de cache
+# ─────────────────────────────────────────────
+variables:
+  DOCKER_BUILDKIT: "1"
+  # Le blob mémorise les chemins empruntés (répertoires de cache)
+  CARGO_HOME: $CI_PROJECT_DIR/.cargo
+  GOPATH: $CI_PROJECT_DIR/.gopath
+
+# Cache waterfall mycélium : branche → main → base
+.default-cache: &default-cache
+  cache:
+    - key:
+        files: [Cargo.lock]
+        prefix: rust-$CI_COMMIT_REF_SLUG
+      paths: [target/, .cargo/]
+      policy: pull-push
+    - key:
+        files: [Cargo.lock]
+        prefix: rust-main
+      paths: [target/, .cargo/]
+      policy: pull
+
+# ─────────────────────────────────────────────
+# PREBUILD : fourmis légionnaires — flancs parallèles
+# ─────────────────────────────────────────────
+fetch-deps:
+  stage: prebuild
+  <<: *default-cache
+  script: cargo fetch
+  needs: []                # Démarre immédiatement — flanc du raid
+
+build-assets:
+  stage: prebuild
+  cache:
+    key:
+      files: [frontend/package-lock.json]
+    paths: [frontend/node_modules/, frontend/dist/]
+    policy: pull-push
+  script:
+    - cd frontend && npm ci && npm run build
+  needs: []                # Parallèle à fetch-deps — autre flanc
+
+# ─────────────────────────────────────────────
+# BUILD : fourmis couperuses → artefact binaire
+# ─────────────────────────────────────────────
+compile:
+  stage: build
+  <<: *default-cache
+  needs: [fetch-deps]
+  tags: [fat-runner, 8cpu]    # Abeilles : allouer la bonne caste de runner
+  script:
+    - cargo build --release
+  artifacts:
+    paths: [target/release/myapp]
+    expire_in: 2h               # Stigmergie : le cache de feuilles est éphémère
+
+# ─────────────────────────────────────────────
+# TEST : fan-out maximal (légionnaires — flancs)
+# ─────────────────────────────────────────────
+
+# Sharding Physarum : explore toutes les branches en parallèle
+test-unit:
+  stage: test
+  needs: [compile]
+  parallel: 4                   # 4 fourmis remplaçables, identiques
+  tags: [ephemeral, linux]      # Runner jetable = fourmi remplaçable
+  script:
+    - cargo test --lib -- --test-threads 1
+        $(cargo test --lib -- --list 2>/dev/null |
+          grep '::' |
+          awk "NR % $CI_NODE_TOTAL == ($CI_NODE_INDEX - 1)")
+  retry:
+    max: 1
+    when: [runner_system_failure]   # Blob : ne retrace pas les mauvais chemins
+
+test-integration:
+  stage: test
+  needs: [compile]               # Parallèle à test-unit — autre flanc
+  tags: [ephemeral, linux]
+  script:
+    - cargo test --test '*'
+  retry:
+    max: 1
+    when: [runner_system_failure]
+  rules:
+    - changes:                   # Blob : ne relance que si changement pertinent
+        - src/**/*
+        - tests/integration/**/*
+
+test-e2e:
+  stage: test
+  needs: [compile, build-assets]  # Fan-in des deux flancs prebuild
+  tags: [ephemeral, linux]
+  script:
+    - ./target/release/myapp &
+    - sleep 2
+    - pytest tests/e2e/
+  retry:
+    max: 2
+    when: [runner_system_failure, stuck_or_timeout_failure]
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main"
+    - if: $CI_MERGE_REQUEST_ID
+
+# ─────────────────────────────────────────────
+# SECURITY : hygiénistes (fourmis couperuses)
+# Tournent en parallèle du test, pas après
+# ─────────────────────────────────────────────
+sast:
+  stage: test                    # Même stage que test → parallèle
+  needs: []                      # Pas besoin du binaire : analyse le code
+  tags: [shared, 2cpu]
+  script:
+    - semgrep --config=auto src/
+  rules:
+    - changes: [src/**/*]        # Blob : only if changed
+
+license-check:
+  stage: test
+  needs: [fetch-deps]
+  tags: [shared, 2cpu]
+  script:
+    - cargo deny check licenses
+
+# ─────────────────────────────────────────────
+# PACKAGE : porteuses → image Docker
+# Pattern mycélium : multi-registry fallback
+# ─────────────────────────────────────────────
+build-image:
+  stage: package
+  needs:
+    - job: compile
+      artifacts: true
+    - job: build-assets
+      artifacts: true
+    # Fan-in des tests (fourmis légionnaires — centre du raid)
+    - job: test-unit
+    - job: test-integration
+    - job: sast
+  tags: [fat-runner, docker-in-docker]
+  script:
+    # Mycélium : cache layers depuis registry primaire, fallback secondaire
+    - |
+      docker buildx build \
+        --cache-from type=registry,ref=${CI_REGISTRY_IMAGE}:buildcache \
+        --cache-from type=registry,ref=${FALLBACK_REGISTRY}/myapp:buildcache \
+        --cache-to   type=registry,ref=${CI_REGISTRY_IMAGE}:buildcache,mode=max \
+        --tag ${CI_REGISTRY_IMAGE}:${CI_COMMIT_SHA} \
+        --tag ${CI_REGISTRY_IMAGE}:${CI_COMMIT_REF_SLUG} \
+        --push \
+        .
+  retry:
+    max: 2
+    when: [runner_system_failure]
+
+scan-image:
+  stage: package
+  needs: [build-image]
+  tags: [shared, 4cpu]
+  script:
+    # Mycélium : fallback si Trivy DB non disponible localement
+    - trivy image --exit-code 1 --severity CRITICAL \
+        ${CI_REGISTRY_IMAGE}:${CI_COMMIT_SHA} || \
+      trivy image --skip-db-update --exit-code 1 --severity CRITICAL \
+        ${CI_REGISTRY_IMAGE}:${CI_COMMIT_SHA}
+
+# ─────────────────────────────────────────────
+# DEPLOY : nid final
+# ─────────────────────────────────────────────
+deploy-staging:
+  stage: deploy
+  needs: [scan-image]
+  tags: [k8s-deploy]
+  environment:
+    name: staging
+    url: https://staging.myapp.io
+  script:
+    - kubectl set image deployment/myapp app=${CI_REGISTRY_IMAGE}:${CI_COMMIT_SHA}
+    - kubectl rollout status deployment/myapp --timeout=5m
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main"
+
+deploy-production:
+  stage: deploy
+  needs: [deploy-staging]
+  tags: [k8s-deploy]
+  environment:
+    name: production
+    url: https://myapp.io
+  script:
+    - kubectl set image deployment/myapp app=${CI_REGISTRY_IMAGE}:${CI_COMMIT_SHA}
+    - kubectl rollout status deployment/myapp --timeout=10m
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main"
+      when: manual    # Déploiement prod = décision humaine

@@ -1,0 +1,465 @@
+# ══════════════════════════════════════════════════════════════════════
+# GitHub Actions — Pipeline biomimétique complète pour projet Rust
+# Tous les 5 patterns biologiques appliqués (fourmis, blob, légionnaires,
+# abeilles, mycélium). Template réaliste pour un projet type "grob".
+# ══════════════════════════════════════════════════════════════════════
+
+name: CI
+
+# ─────────────────────────────────────────────────────────────────────
+# PATTERN BLOB (Physarum) : ne déclencher que sur chemins pertinents
+# Le blob ne retrace pas les chemins déjà explorés.
+# ─────────────────────────────────────────────────────────────────────
+on:
+  push:
+    branches: [main, develop]
+    paths:
+      - 'src/**'
+      - 'tests/**'
+      - 'Cargo.toml'
+      - 'Cargo.lock'
+      - 'Dockerfile'
+      - '.github/workflows/ci.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'src/**'
+      - 'tests/**'
+      - 'Cargo.toml'
+      - 'Cargo.lock'
+      - 'Dockerfile'
+      - '.github/workflows/ci.yml'
+  workflow_dispatch:
+    inputs:
+      skip_e2e:
+        description: 'Skip E2E tests'
+        type: boolean
+        default: false
+
+# ─────────────────────────────────────────────────────────────────────
+# PATTERN ABEILLES : concurrency groups
+# Une seule danse à la fois par branche — annule les runs obsolètes.
+# Les butineuses sont rappelées de la source tarie.
+# ─────────────────────────────────────────────────────────────────────
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  CARGO_TERM_COLOR: always
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+  # PATTERN BLOB : répertoires de cache stables
+  CARGO_HOME: /home/runner/.cargo
+  RUSTUP_HOME: /home/runner/.rustup
+
+permissions:
+  contents: write       # For GitHub Release
+  packages: write       # For GHCR push
+  id-token: write       # For attestation
+
+jobs:
+  # ═══════════════════════════════════════════════════════════════════
+  # PHASE 1 — PREBUILD (fourmis légionnaires : flancs parallèles)
+  # Ces jobs démarrent immédiatement, sans dépendance.
+  # Comme les flancs du raid qui avancent en éventail.
+  # ═══════════════════════════════════════════════════════════════════
+
+  # ── Coupeuse : prépare les dépendances ──────────────────────────
+  fetch-deps:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # PATTERN BLOB : cache comme mémoire — clé = hash du contenu
+      - uses: actions/cache@v4
+        id: cargo-cache
+        with:
+          path: |
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+          key: deps-${{ runner.os }}-${{ hashFiles('Cargo.lock') }}
+          # PATTERN MYCÉLIUM : fallback waterfall si branche pas cachée
+          restore-keys: |
+            deps-${{ runner.os }}-
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - name: Cargo fetch (blob — renforce le chemin)
+        if: steps.cargo-cache.outputs.cache-hit != 'true'
+        run: cargo fetch
+
+  # ── Flanc parallèle : lint (démarre immédiatement) ──────────────
+  # PATTERN ABEILLES : petit runner, job léger
+  lint:
+    runs-on: ubuntu-latest    # Butineuse vers fleur ordinaire (2 CPU)
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy, rustfmt
+
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
+          key: lint-${{ runner.os }}-${{ hashFiles('Cargo.lock') }}
+          restore-keys: lint-${{ runner.os }}-
+
+      - name: Format check
+        run: cargo fmt --all -- --check
+
+      - name: Clippy (all features)
+        run: cargo clippy --all-targets --all-features -- -D warnings
+
+  # ── Flanc parallèle : audit sécurité (pas besoin du binaire) ────
+  # PATTERN FOURMIS : hygiénistes — protègent la colonie
+  security-audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Install cargo-deny
+        run: cargo install cargo-deny --locked
+      - name: License + advisory audit
+        run: cargo deny check
+
+  # ═══════════════════════════════════════════════════════════════════
+  # PHASE 2 — BUILD (fourmis coupeuses : produit l'artefact binaire)
+  # La coupeuse coupe et lâche les feuilles → artifacts.
+  # ═══════════════════════════════════════════════════════════════════
+
+  compile:
+    needs: [fetch-deps]
+    # PATTERN ABEILLES : gros runner pour la compilation (fleur productive)
+    runs-on: ubuntu-latest-16-cores
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+
+      # PATTERN BLOB : cache target/ basé sur le contenu
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
+          key: build-${{ runner.os }}-${{ hashFiles('Cargo.lock') }}-${{ hashFiles('src/**') }}
+          restore-keys: |
+            build-${{ runner.os }}-${{ hashFiles('Cargo.lock') }}-
+            build-${{ runner.os }}-
+
+      - name: Build release binary
+        run: cargo build --release
+
+      # PATTERN FOURMIS : artifacts = stigmergie (le cache de feuilles au sol)
+      - uses: actions/upload-artifact@v4
+        with:
+          name: binary
+          path: target/release/grob
+          retention-days: 1    # Éphémère — les feuilles ne restent pas au sol longtemps
+
+  # ═══════════════════════════════════════════════════════════════════
+  # PHASE 3 — TEST (fourmis légionnaires : fan-out maximal)
+  # Les flancs avancent en éventail. Remplaçabilité totale.
+  # ═══════════════════════════════════════════════════════════════════
+
+  # ── Test unitaire : sharding via nextest (Physarum — explore en parallèle) ──
+  test-unit:
+    needs: [compile]
+    runs-on: ubuntu-latest
+    # PATTERN LÉGIONNAIRES : 4 ouvrières identiques, remplaçables
+    strategy:
+      fail-fast: false         # Une fourmi morte est enjambée, le flux continue
+      matrix:
+        shard: [1, 2, 3, 4]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
+          key: build-${{ runner.os }}-${{ hashFiles('Cargo.lock') }}-${{ hashFiles('src/**') }}
+          restore-keys: build-${{ runner.os }}-${{ hashFiles('Cargo.lock') }}-
+
+      - name: Install nextest
+        run: cargo install cargo-nextest --locked
+
+      - name: Run unit tests (shard ${{ matrix.shard }}/4)
+        run: |
+          cargo nextest run \
+            --partition count:${{ matrix.shard }}/4 \
+            --profile ci \
+            --no-fail-fast
+        env:
+          NEXTEST_RETRIES: 1   # PATTERN BLOB : retry infra, 1 tentative
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: test-results-shard-${{ matrix.shard }}
+          path: target/nextest/ci/junit.xml
+
+  # ── Test intégration (flanc parallèle aux tests unitaires) ──────
+  test-integration:
+    needs: [compile]
+    runs-on: ubuntu-latest
+    # PATTERN BLOB : ne lance que si fichiers pertinents changés
+    if: |
+      contains(github.event.head_commit.modified, 'src/') ||
+      contains(github.event.head_commit.modified, 'tests/integration/')
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
+          key: build-${{ runner.os }}-${{ hashFiles('Cargo.lock') }}-${{ hashFiles('src/**') }}
+          restore-keys: build-${{ runner.os }}-${{ hashFiles('Cargo.lock') }}-
+
+      - name: Run integration tests
+        run: cargo test --test '*' -- --test-threads=2
+
+  # ── E2E tests dans un podman pod ────────────────────────────────
+  test-e2e:
+    needs: [compile]
+    if: ${{ !inputs.skip_e2e }}
+    # PATTERN ABEILLES : runner dédié pour E2E (fleur exigeante)
+    runs-on: ubuntu-latest-8-cores
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: binary
+
+      - name: Make binary executable
+        run: chmod +x grob
+
+      - name: Setup podman pod
+        run: |
+          podman pod create --name grob-e2e -p 8080:8080
+          podman run -d --pod grob-e2e --name mock-provider \
+            ghcr.io/${{ github.repository }}/mock-provider:latest
+
+      - name: Run E2E tests in pod
+        # PATTERN BLOB : retry sélectif — infra failure seulement
+        uses: nick-fields/retry@v3
+        with:
+          max_attempts: 2
+          retry_on: error
+          command: |
+            ./grob start --config tests/e2e/config/grob-test.toml &
+            sleep 2
+            cargo test --test e2e
+
+      - name: Cleanup pod
+        if: always()
+        run: podman pod rm -f grob-e2e
+
+  # ═══════════════════════════════════════════════════════════════════
+  # PHASE 4 — REPORT (légionnaires : fan-in / centre du raid)
+  # Consolidation du butin de tous les flancs.
+  # ═══════════════════════════════════════════════════════════════════
+
+  test-report:
+    needs: [test-unit, test-integration, test-e2e]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      # PATTERN LÉGIONNAIRES : fan-in des résultats de tous les flancs
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: test-results-*
+          merge-multiple: true
+          path: results/
+
+      - name: Merge test reports
+        run: |
+          echo "## Test Results" >> $GITHUB_STEP_SUMMARY
+          for f in results/*.xml; do
+            echo "- $(basename $f): $(grep -c 'testcase' $f 2>/dev/null || echo 0) tests" >> $GITHUB_STEP_SUMMARY
+          done
+
+  # ═══════════════════════════════════════════════════════════════════
+  # PHASE 5 — PACKAGE (porteuses : assemblent l'artifact final)
+  # PATTERN MYCÉLIUM : multi-registry fallback, pas de SPOF.
+  # ═══════════════════════════════════════════════════════════════════
+
+  container-build:
+    needs: [test-unit, lint, security-audit]
+    if: github.ref == 'refs/heads/main' || github.event_name == 'pull_request'
+    # PATTERN ABEILLES : gros runner pour le build d'image
+    runs-on: ubuntu-latest-8-cores
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: binary
+
+      - name: Make binary executable
+        run: chmod +x grob
+
+      # PATTERN MYCÉLIUM : login vers registries multiples (redondance)
+      - name: Login to GHCR (primary registry)
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Install crane
+        run: |
+          VERSION=0.20.2
+          curl -sL "https://github.com/google/go-containerregistry/releases/download/v${VERSION}/go-containerregistry_Linux_x86_64.tar.gz" | \
+            tar xz -C /usr/local/bin crane
+
+      - name: Build container image
+        run: |
+          # Build with buildah (no daemon needed)
+          buildah bud \
+            --layers \
+            --tag ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }} \
+            --tag ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest \
+            .
+
+      - name: Push to GHCR via crane
+        run: |
+          # PATTERN MYCÉLIUM : push vers primary, fallback si échec
+          buildah push ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }} \
+            docker://${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }} || \
+          (echo "::warning::Primary push failed, retrying..." && sleep 5 && \
+           buildah push ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }} \
+             docker://${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }})
+
+      # Tag latest on main only
+      - name: Push latest tag
+        if: github.ref == 'refs/heads/main'
+        run: |
+          crane tag ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }} latest
+
+      # PATTERN FOURMIS : artifact = stigmergie vers les jobs suivants
+      - name: Export image digest
+        id: digest
+        run: |
+          DIGEST=$(crane digest ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }})
+          echo "digest=$DIGEST" >> $GITHUB_OUTPUT
+
+    outputs:
+      digest: ${{ steps.digest.outputs.digest }}
+
+  # ── Scan image (mycélium : fallback sur DB locale si remote down) ──
+  scan-image:
+    needs: [container-build]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trivy scan with fallback
+        run: |
+          # PATTERN MYCÉLIUM : fallback si Trivy DB non disponible
+          trivy image --exit-code 1 --severity CRITICAL \
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }} || \
+          trivy image --skip-db-update --exit-code 1 --severity CRITICAL \
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
+
+  # ═══════════════════════════════════════════════════════════════════
+  # PHASE 6 — RELEASE (nid final)
+  # Seulement sur main, après tous les contrôles.
+  # ═══════════════════════════════════════════════════════════════════
+
+  release:
+    needs: [container-build, scan-image, test-report]
+    if: github.ref == 'refs/heads/main' && startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # Full history for changelog
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: binary
+
+      - name: Make binary executable
+        run: chmod +x grob
+
+      - name: Build release archive
+        run: |
+          VERSION=${GITHUB_REF_NAME#v}
+          mkdir -p dist
+          tar czf dist/grob-${VERSION}-x86_64-linux.tar.gz grob
+          sha256sum dist/*.tar.gz > dist/checksums.txt
+
+      - name: Generate changelog
+        id: changelog
+        run: |
+          PREV_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
+          if [ -n "$PREV_TAG" ]; then
+            echo "changelog<<EOF" >> $GITHUB_OUTPUT
+            git log ${PREV_TAG}..HEAD --pretty=format:"- %s (%h)" >> $GITHUB_OUTPUT
+            echo "EOF" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          body: ${{ steps.changelog.outputs.changelog }}
+          files: |
+            dist/grob-*.tar.gz
+            dist/checksums.txt
+          generate_release_notes: true
+
+  # ── Homebrew tap update (mycélium : nutrient sharing inter-repos) ──
+  homebrew:
+    needs: [release]
+    runs-on: macos-latest
+    steps:
+      - name: Update Homebrew formula
+        # PATTERN MYCÉLIUM : partage de nutriments entre repos
+        env:
+          HOMEBREW_TAP_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
+        run: |
+          VERSION=${GITHUB_REF_NAME#v}
+          TARBALL_URL="https://github.com/${{ github.repository }}/releases/download/${GITHUB_REF_NAME}/grob-${VERSION}-x86_64-linux.tar.gz"
+          SHA256=$(curl -sL "${TARBALL_URL}" | sha256sum | cut -d' ' -f1)
+
+          # Clone tap, update formula, push
+          git clone https://x-access-token:${HOMEBREW_TAP_TOKEN}@github.com/${{ github.repository_owner }}/homebrew-tap.git
+          cd homebrew-tap
+
+          cat > Formula/grob.rb << FORMULA
+          class Grob < Formula
+            desc "Multi-provider LLM routing proxy"
+            homepage "https://github.com/${{ github.repository }}"
+            url "${TARBALL_URL}"
+            sha256 "${SHA256}"
+            version "${VERSION}"
+
+            def install
+              bin.install "grob"
+            end
+
+            test do
+              assert_match "grob", shell_output("#{bin}/grob --version")
+            end
+          end
+          FORMULA
+
+          git add Formula/grob.rb
+          git commit -m "grob ${VERSION}"
+          git push

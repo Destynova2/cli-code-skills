@@ -1,0 +1,92 @@
+# GitLab Runner Autoscaler — Pattern Abeilles
+# La danse frétillante = la queue de jobs
+# Plus de jobs en attente = plus de runners alloués
+
+# ─────────────────────────────────────────────
+# Runner partagé léger (butineuses de fleurs ordinaires)
+# ─────────────────────────────────────────────
+[[runners]]
+  name = "shared-light"
+  url = "https://gitlab.your-domain.com"
+  token = "__RUNNER_TOKEN_LIGHT__"
+  executor = "docker-autoscaler"
+  
+  [runners.docker]
+    image = "alpine:latest"
+  
+  [runners.autoscaler]
+    plugin = "fleeting-plugin-aws"   # ou gcp, hetzner, etc.
+    
+    min_instances = 0                # Scale-to-zero hors activité (économie)
+    max_instances = 20               # Plafond colonie
+    max_use_count = 100              # Une fourmi ne vit pas éternellement
+    
+    capacity_per_instance = 4        # Concurrence par runner
+    
+    # La danse frétillante : temps de réaction
+    [runners.autoscaler.scale_throttle]
+      # Ajoute des instances rapidement si queue longue
+      increase_interval = "30s"
+      # Retire les instances idle progressivement
+      decrease_interval = "5m"
+
+  [[runners.autoscaler.policy]]
+    idle_count = 2                   # Garde 2 fourmis en attente (anticipation)
+    idle_time = "5m"                 # Après 5min idle, repli vers 0
+    scale_factor = 1.5               # Facteur d'amplification de la danse
+
+  [runners.fleeting]
+    [runners.fleeting.instance_group_settings]
+      # AWS AutoScaling Group / GCP MIG / Hetzner etc.
+      name = "gitlab-runners-light"
+
+# ─────────────────────────────────────────────
+# Runner fat (butineuses de sources riches)
+# ─────────────────────────────────────────────
+[[runners]]
+  name = "fat-runner"
+  url = "https://gitlab.your-domain.com"
+  token = "__RUNNER_TOKEN_FAT__"
+  executor = "docker-autoscaler"
+  
+  [runners.docker]
+    image = "alpine:latest"
+  
+  [runners.autoscaler]
+    plugin = "fleeting-plugin-aws"
+    
+    min_instances = 0
+    max_instances = 5                # Colonie plus petite, instances plus chères
+    capacity_per_instance = 1        # Un gros job à la fois par machine
+    
+    [[runners.autoscaler.policy]]
+      idle_count = 0                 # Zéro gaspillage sur les grosses machines
+      idle_time = "2m"
+      scale_factor = 1.0
+
+  [runners.fleeting]
+    [runners.fleeting.instance_group_settings]
+      name = "gitlab-runners-fat"
+
+# ─────────────────────────────────────────────
+# Runner Docker-in-Docker (construit les images)
+# ─────────────────────────────────────────────
+[[runners]]
+  name = "dind-builder"
+  url = "https://gitlab.your-domain.com"
+  token = "__RUNNER_TOKEN_DIND__"
+  executor = "docker-autoscaler"
+  
+  [runners.docker]
+    image = "docker:dind"
+    privileged = true                # Nécessaire pour DinD
+    volumes = ["/var/run/docker.sock:/var/run/docker.sock"]
+  
+  [runners.autoscaler]
+    min_instances = 0
+    max_instances = 3
+    capacity_per_instance = 1
+
+    [[runners.autoscaler.policy]]
+      idle_count = 0
+      idle_time = "3m"
