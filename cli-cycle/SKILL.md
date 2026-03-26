@@ -23,6 +23,8 @@ Run every applicable `cli-*` skill on the current project, collect results, and 
 
 **You don't duplicate logic — you delegate.** Each sub-agent reads the real SKILL.md from `~/.claude/skills/cli-*/SKILL.md` and follows its instructions. You orchestrate, collect, and judge.
 
+**Gotchas** — read `../../gotchas.md` before producing output to avoid known mistakes.
+
 ---
 
 ## Workflow

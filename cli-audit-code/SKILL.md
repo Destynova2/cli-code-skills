@@ -1,14 +1,27 @@
 ---
 name: cli-audit-code
-description: Audit code against Clean Code principles. Use when the user asks to review code quality, audit clean code compliance, or check for code smells. Invoke with an optional file or directory path.
+description: "Audit code quality with weighted scoring across 12 dimensions (naming, complexity, module design, DRY, errors, security, tests, architecture). Detects named anti-patterns (Fowler/Mantyla taxonomy). Use when reviewing code quality, auditing clean code compliance, checking for code smells, or saying 'audit code', 'code quality', 'code review', 'tech debt'. Invoke with an optional file or directory path."
 argument-hint: "[file-or-directory]"
 context: fork
 agent: general-purpose
 ---
 
+> **Optimization:** This skill uses on-demand loading. Heavy content lives in `references/` and is loaded only when needed.
+
 > **Language rule:** Detect the project's primary language (from README, comments, docs, commit messages). Output your report in that language. If the project is bilingual, ask the user which language to use before proceeding.
 
-You are a **Clean Code auditor**. Your job is to produce a structured, actionable audit report.
+# Audit Code — Code Quality Index (CQI)
+
+> "Complexity is the single greatest enemy of reliability." — John Ousterhout
+
+## Core Principles
+
+1. **Evidence-based** — every finding needs a `file:line` reference. No vague "the code could be better"
+2. **Proportional** — a 200-line function matters more than a missing doc comment. Scale to project type
+3. **Language-aware** — detect the project language and apply its idiomatic patterns, not Java/C# defaults
+4. **Named anti-patterns** — use Fowler/Mantyla taxonomy names (Feature Envy, Shotgun Surgery) in findings
+5. **Positive reinforcement** — always highlight good practices found, not just violations
+6. **Gotchas** — read `../../gotchas.md` before producing output to avoid known mistakes
 
 ## Input
 
@@ -18,163 +31,104 @@ You are a **Clean Code auditor**. Your job is to produce a structured, actionabl
 - If a directory: audit all source files in it
 - If empty: audit `src/` broadly (sample 15-20 key files)
 
-## Audit Framework
+## 12-Dimension Framework
 
-Score each category 1-10 and provide specific `file:line` references for every violation.
+Score each dimension **0.0-1.0**, then compute a weighted CQI. Read `references/categories.md` for detailed check lists per category.
 
-### Category 1: NAMING (Robert C. Martin)
+| # | Category | Weight | Key question |
+|---|----------|--------|-------------|
+| C1 | Naming & Readability | 8% | Do names reveal intent? No magic numbers? |
+| C2 | Functions & Cognitive Complexity | 12% | < 30 lines? Cognitive complexity < 15? |
+| C3 | Module Design (deep vs shallow) | 10% | Deep modules? No pass-through layers? |
+| C4 | DRY & Change Amplification | 8% | One change = one file? No copy-paste? |
+| C5 | Error Handling & Robustness | 10% | Errors propagated? No swallowed errors? |
+| C6 | Type Safety & Language Idioms | 8% | Type system leveraged? Idiomatic patterns? |
+| C7 | Comments & Public API Docs | 5% | Public API documented? No redundant comments? |
+| C8 | Test Quality | 12% | Error paths tested? No flaky tests? |
+| C9 | Security & Input Validation | 10% | Inputs validated at boundaries? No hardcoded secrets? |
+| C10 | Immutability & State Management | 7% | Minimal mutable state? No global mutables? |
+| C11 | Cognitive Load & Control Flow | 5% | < 3 nesting levels? No negative conditionals? |
+| C12 | Dependencies & Architecture | 5% | No circular deps? DIP respected? |
 
-Check for:
-- Single-letter variables (except `i/j/k` in tight loops, `_` ignores)
-- Cryptic abbreviations (`cfg`, `mgr`, `ctx` are OK if universal; `h`, `p`, `s` are not)
-- Names that don't reveal intent
-- Misleading names (name suggests different behavior than actual)
-- Hungarian notation or type-encoded names
-- Non-searchable names
-- Magic numbers without named constants (hardcoded `1024`, `0.01`, `3` in conditionals)
+## Workflow
 
-### Category 2: FUNCTIONS (Martin + Ousterhout)
+### Step 1 — Discover and sample
 
-Check for:
-- Functions longer than **30 lines** (flag), longer than **60 lines** (critical)
-- Functions doing more than one thing (test: can you extract a meaningful sub-function?)
-- More than **3 parameters** (flag), more than **5** (critical)
-- Boolean flag parameters that select behavior (should be split into separate functions)
-- Side effects hidden in getter/query functions
-- Functions at wrong abstraction level (mixing high-level orchestration with low-level details)
-- **Cognitive complexity > 15** (count: +1 per branch/loop, +1 extra per nesting level)
+Glob source files. For broad audit, prioritize: entry points, public API modules, most-changed files (git log), largest files.
 
-### Category 3: COMMENTS (Martin)
+### Step 2 — Detect language and context
 
-Check for:
-- Redundant comments restating the code ("// increment counter" above `counter += 1`)
-- Commented-out code (should be deleted, VCS has history)
-- TODO/FIXME/HACK without tracking (stale debt)
-- Closing brace comments (`} // end if`)
-- Journal comments (changelog in file headers)
-- Missing doc comments on **public API** items (structs, traits, public functions)
-- **Good comments**: intent explanations, consequence warnings, legal — don't flag these
+Identify project language, framework, and type (library, CLI, service, script). This determines which idiom checks apply and what scoring standards are proportional.
 
-### Category 4: STRUCTURE & MODULARITY (Martin + Ousterhout)
+### Step 3 — Score all 12 dimensions
 
-Check for:
-- Files longer than **500 lines** (flag), **1000 lines** (critical)
-- God modules doing too many things
-- **Shallow modules**: complex interface, trivial implementation (Ousterhout's deep vs shallow)
-- Related code not vertically close
-- Dependent functions far apart
-- Inconsistent ordering (public API scattered among private helpers)
-- Circular or tangled dependencies between modules
+Read `references/categories.md` for detailed checks. For each category: collect evidence, assign score 0.0-1.0, note specific `file:line` findings.
 
-### Category 5: DRY & ABSTRACTION
+### Step 4 — Compute CQI and detect anti-patterns
 
-Check for:
-- Copy-pasted code blocks (>5 similar lines appearing 2+ times)
-- Missing shared abstractions for repeated patterns
-- Over-abstraction (premature generalization for single-use patterns)
-- **Change amplification**: would a small requirement change touch many files?
+Read `references/scoring.md` for the CQI formula, severity classification, named anti-patterns table, tech debt estimation, and comparative benchmarks.
 
-### Category 6: ERROR HANDLING (Martin + Modern)
+```
+CQI = Σ(wᵢ × sᵢ) / Σ(wᵢ) × 10
+```
 
-Check for:
-- `unwrap()` / `expect()` in non-test code without justification
-- Swallowed errors (empty catch/match arms that silently continue)
-- Error messages that don't help debugging (no context about what failed or why)
-- Inconsistent error strategy (mixing `Result`, `panic!`, `Option` for similar operations)
-- Missing error propagation (manual matching where `?` would suffice)
-
-### Category 7: RUST-SPECIFIC IDIOMS
-
-Check for:
-- Unnecessary `.clone()` where a borrow would work
-- `&String` / `&Vec<T>` parameters instead of `&str` / `&[T]`
-- Manual loops where iterators would be clearer
-- `#[allow(dead_code)]` suppressing unused code instead of removing it
-- `#[allow(clippy::*)]` without justifying comment
-- Needless `mut` on variables
-- `.to_string()` / `.to_owned()` in hot paths where `Cow` or `&str` would work
-- Async functions that don't await anything
-
-### Category 8: TESTS (Martin)
-
-Check for:
-- Tests with multiple unrelated assertions (should be split)
-- Test names that don't describe what's being tested
-- Duplicated test setup (missing fixtures/helpers)
-- No tests for error paths
-- Tests coupled to implementation details (will break on refactor)
-- Missing tests for public API functions
-
-### Category 9: IMMUTABILITY & PURITY (Beyond Martin)
-
-Check for:
-- Mutable state where immutable would work
-- Functions with hidden side effects (logging in a "calculate" function is OK; mutating global state is not)
-- `static mut` or global mutable singletons
-- Large mutable structs passed around where a builder pattern or smaller types would be clearer
-
-### Category 10: COGNITIVE LOAD (Ousterhout + SonarSource)
-
-Check for:
-- Deep nesting (>3 levels of `if/match/for`)
-- Negative conditionals (`if !is_valid` instead of `if is_invalid`)
-- Long boolean expressions without explanatory variables
-- Complex control flow (early returns mixed with deep nesting)
-- **Unknown unknowns**: non-obvious behavior that isn't documented or named clearly
+### Step 5 — Generate report
 
 ## Output Format
 
 ```markdown
-# Clean Code Audit Report
+# Code Quality Audit — {project-name}
 
-**Target**: [file/directory audited]
-**Date**: [date]
-**Overall Score**: X/10
+**Target**: [file/directory] | **Language**: [detected] | **Date**: [date]
+**CQI Score**: X.X/10 — {verdict} | **Tech Debt**: ~Xh ({SQALE grade})
 
 ## Scores by Category
 
-| # | Category | Score | Critical | Flags |
-|---|----------|-------|----------|-------|
-| 1 | Naming | X/10 | N | N |
-| 2 | Functions | X/10 | N | N |
-| 3 | Comments | X/10 | N | N |
-| 4 | Structure | X/10 | N | N |
-| 5 | DRY | X/10 | N | N |
-| 6 | Error Handling | X/10 | N | N |
-| 7 | Rust Idioms | X/10 | N | N |
-| 8 | Tests | X/10 | N | N |
-| 9 | Immutability | X/10 | N | N |
-| 10 | Cognitive Load | X/10 | N | N |
+| # | Category | Weight | Score | Weighted | Findings |
+|---|----------|--------|-------|----------|----------|
+| C1-C12 rows with 0.0-1.0 scores... |
+| | **CQI** | **100%** | | **X.X/10** | |
+
+## Anti-Patterns Detected
+| Pattern | Severity | File:Line | Recommendation |
 
 ## Critical Violations (must fix)
-
 ### [Category]: [violation title]
-- **File**: `path/to/file.rs:123`
+- **File**: `path/to/file:123`
 - **What**: [description]
-- **Why**: [which principle it violates]
+- **Why**: [named principle/smell it violates]
 - **Fix**: [concrete suggestion]
 
 ## Flags (should fix)
-
-[same format, grouped by category]
+[same format]
 
 ## Good Practices Found
-
-[highlight things done well — positive reinforcement]
+[positive reinforcement]
 
 ## Recommended Next Steps
-
 1. [highest-impact fix first]
 2. [second]
 3. [third]
 ```
 
-## Rules for the Auditor
+## What this skill does NOT do
 
-1. **Be specific**: Every violation needs a `file:line` reference. No vague "the code could be better."
-2. **Be proportional**: Don't flag idiomatic Rust patterns as violations (e.g., `if let Some(x)` is fine, `unwrap()` in tests is fine, `ctx`/`cfg` abbreviations are fine if consistent).
-3. **Prioritize impact**: A 200-line function matters more than a missing doc comment.
-4. **Don't over-flag negatives**: In Rust, `if !slice.is_empty()` is idiomatic. Only flag genuinely confusing negatives.
-5. **Score honestly**: 10/10 means production-ready exemplary code. 7/10 is decent. 5/10 needs work. Below 5 is concerning.
-6. **Context matters**: CLI output code using `println!` is fine. Test code with `unwrap()` is fine. Don't apply library standards to scripts.
-7. **Language-aware**: Apply Rust idioms for Rust, not Java/C# patterns from Martin's examples.
+- **Does not fix code** — it reports. Use the findings to guide refactoring
+- **Does not replace linters** — it complements them with semantic analysis a linter can't do
+- **Does not check test coverage numbers** — it checks test quality. Use `cli-audit-test` for test strategy
+- **Does not audit documentation quality** — use `cli-audit-doc` for that
+
+## Integration with other cli-* skills
+
+| Skill | Relationship |
+|-------|-------------|
+| `cli-audit-doc` | Scores doc quality. cli-audit-code scores **code quality** |
+| `cli-audit-test` | Scores test strategy. cli-audit-code checks **test code quality** (C8) |
+| `cli-forge-lld` | Validates implementation matches the LLD design |
+| `cli-cycle` | Calls cli-audit-code as part of full project review |
+
+## Reference Sources
+
+- Ousterhout — *A Philosophy of Software Design* | Martin — *Clean Code* | Fowler — *Refactoring* | Tornhill — *Software Design X-Rays* | Feathers — *Working Effectively with Legacy Code*
+- SonarQube Quality Model | SonarSource Cognitive Complexity | SQALE Method | CodeScene Code Health | Clippy lint categories
+- CodeAesthetic | ThePrimeagen | ArjanCodes | Software Engineering Radio | Tech Lead Journal

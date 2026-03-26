@@ -20,6 +20,8 @@ A README is a **landing page**, not a technical manual.
 - Tier 1–2: plain language, no jargon, a junior dev or a PM can understand
 - Tier 3: full technical depth, assume the reader codes
 
+**Read `../../gotchas.md`** before producing output to avoid known pitfalls.
+
 ---
 
 ## Workflow
@@ -221,6 +223,39 @@ Before writing anything:
 [![MSRV](https://img.shields.io/badge/MSRV-1.XX-blue)](Cargo.toml)
 [![Docs](https://docs.rs/NAME/badge.svg)](https://docs.rs/NAME)
 ```
+
+---
+
+## Quality Scoring — README Completeness Index (RCI)
+
+Score the README after generation using the same DCI pattern as cli-forge-doc.
+
+### RCI Formula
+
+```
+RCI = Σ(wᵢ × sᵢ) / Σ(wᵢ) × 10
+```
+
+### Checklist Items
+
+| # | Item | Weight | What to check |
+|---|------|--------|---------------|
+| 1 | Hook / one-liner | 5 | Clear value proposition in first 10 words |
+| 2 | Quickstart | 5 | Clone to running in < 5 commands |
+| 3 | Install instructions | 4 | Copy-pasteable, OS-aware if needed |
+| 4 | Usage examples | 4 | Shows output, not just commands |
+| 5 | Badges | 2 | CI, version, license — not decoration |
+| 6 | Project structure | 3 | Annotated tree or link to one |
+| 7 | Configuration | 3 | All config options documented |
+| 8 | Contributing | 2 | How to contribute, not just "PRs welcome" |
+| 9 | License | 1 | Exists and clear |
+| 10 | Visual result | 3 | Screenshot, gif, or demo link |
+
+**Scoring:** 0.0 = absent, 0.25 = stub, 0.5 = exists but weak, 0.75 = good, 1.0 = excellent
+
+**Thresholds:** 8+ excellent, 6-8 good, 4-6 needs work, <4 incomplete
+
+Output the RCI table at the end of the generated README review.
 
 ---
 

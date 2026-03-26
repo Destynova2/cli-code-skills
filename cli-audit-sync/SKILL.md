@@ -26,6 +26,8 @@ Detect every place where documentation says one thing and the code says another.
 
 **Documentation is a contract with the reader.** Every statement in docs is an implicit promise: "this is true right now." This skill finds broken promises.
 
+**Read `../../gotchas.md`** before producing output to avoid known pitfalls.
+
 ---
 
 ## Three-Layer Verification
@@ -130,6 +132,22 @@ For each Mermaid block in docs:
 ---
 
 ## Workflow
+
+### Mitosis — Scale verification to doc volume
+
+| Signal | Tier |
+|--------|------|
+| 1-2 doc files (README + maybe CONTRIBUTING) | **S** |
+| docs/ directory with 5-15 files | **M** |
+| Full docs site (20+ files, API ref, tutorials) | **L** |
+
+| Tier | Verification depth |
+|------|-------------------|
+| S | Layer 1 (structural links) only + quick Layer 2 scan |
+| M | Layer 1 + Layer 2 (semantic) + sample Layer 3 (executable) |
+| L | All 3 layers, full terminology map, diagram verification |
+
+**Rule:** Don't run terminology mapping on a project with 1 README.
 
 ### Step 1 — Discover documentation
 

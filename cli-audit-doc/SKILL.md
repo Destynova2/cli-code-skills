@@ -1,14 +1,27 @@
 ---
 name: cli-audit-doc
-description: Audit documentation quality against industry standards (Diátaxis, Clean Code, RFC 1574, Microsoft M-DOC). Checks doc comments, inline comments, module docs, and doc structure. Works with any language. Invoke with an optional file or directory path.
+description: "Audit documentation quality with weighted scoring across 12 dimensions (Diataxis coverage, completeness, freshness, readability, examples, accessibility, CI testing). Detects doc anti-patterns (Wall of Text, The Lie, Jargon Soup). Use when reviewing doc quality, auditing documentation, checking for stale docs, or saying 'audit docs', 'doc quality', 'documentation review'. Invoke with an optional file or directory path."
 argument-hint: "[file-or-directory]"
 context: fork
 agent: general-purpose
 ---
 
+> **Optimization:** This skill uses on-demand loading. Heavy content lives in `references/` and is loaded only when needed.
+
 > **Language rule:** Detect the project's primary language (from README, comments, docs, commit messages). Output your report in that language. If the project is bilingual, ask the user which language to use before proceeding.
 
-You are a **documentation auditor**. Your job is to produce a structured, actionable audit report evaluating documentation quality.
+# Audit Doc — Documentation Quality Index (DQI)
+
+> "Stale docs are worse than no docs." — Docs-as-Tests methodology
+
+## Core Principles
+
+1. **Evidence-based** — every finding needs a `file:line` reference
+2. **Read the code** — verify docs match implementation. Stale docs are the #1 problem
+3. **Diataxis-aware** — classify each doc by type (tutorial, how-to, reference, explanation) and check mode purity
+4. **Language-specific** — apply each language's idiomatic doc conventions (see `reference.md` for language-specific rules)
+5. **Public API first** — public items are priority. Private items are nice-to-have
+6. **Gotchas** — read `../../gotchas.md` before producing output to avoid known mistakes
 
 ## Input
 
@@ -18,124 +31,113 @@ You are a **documentation auditor**. Your job is to produce a structured, action
 - If a directory: audit all source files in it
 - If empty: audit `src/` (or project root) broadly (sample 15-20 key files)
 
-First, detect the primary language(s) from file extensions and adapt rules accordingly. Consult `reference.md` in this skill directory for language-specific conventions.
+First, detect the primary language(s) from file extensions. Consult `reference.md` for language-specific conventions.
 
-## Audit Framework
+## 12-Dimension Framework
 
-Score each category 1-10 and provide specific `file:line` references for every violation.
+Score each dimension **0.0-1.0**, then compute a weighted DQI. Read `references/categories.md` for detailed check lists per category.
 
-### Category 1: DOC COVERAGE
+| # | Category | Weight | Key question |
+|---|----------|--------|-------------|
+| C1 | Diataxis Coverage | 10% | All 4 doc types present? Mode purity? |
+| C2 | Completeness | 12% | Public API items documented? Coverage > 80%? |
+| C3 | Freshness & Accuracy | 10% | Docs match current code? No stale references? |
+| C4 | Readability & Prose Quality | 10% | No weasel words, condescension, passive voice? |
+| C5 | Structure & Findability | 8% | Heading hierarchy? Scannable? No orphan pages? |
+| C6 | Standard Sections | 8% | Errors, params, returns, examples documented? |
+| C7 | Code Examples | 10% | Working, copy-pasteable, no `unwrap()`? |
+| C8 | Accessibility & Inclusivity | 6% | Alt text? Bias-free language? Global-ready? |
+| C9 | Inline Comments Quality | 8% | WHY not WHAT? No stale TODOs? |
+| C10 | Cross-references & Linking | 5% | Types linked? Related items connected? |
+| C11 | Testing & CI | 8% | Doc-tests? Link checking? Prose linting? |
+| C12 | Maintenance Process | 5% | Docs reviewed in PRs? Ownership clear? |
 
-Check for:
-- Public API items (functions, classes, structs, types, interfaces, exports) missing doc comments
-- Entry point / crate root / package root missing top-level documentation
-- Public modules / packages missing module-level documentation
-- Re-exports or public aliases missing doc comments explaining the re-export
-- Exported constants/config values without documentation
+## Workflow
 
-### Category 2: SUMMARY LINE (RFC 505 + Microsoft M-DOC)
+### Step 1 — Discover and sample
 
-Check for:
-- Missing summary line (first line of doc comment)
-- Summary line exceeding 15 words
-- Function/method summaries not starting with third-person singular verb ("Returns", "Creates", "Sends" — not "Return", "This function returns")
-- Class/struct/type summaries not starting with a noun phrase ("A thread-safe...", "An iterator over...")
-- Tautological summaries that merely restate the item name ("Gets the name" on `get_name()`)
-- Summaries that describe implementation details instead of purpose
+Glob source and doc files. For broad audit: sample public API modules, README, docs/ directory, and most-changed files.
 
-### Category 3: STANDARD SECTIONS
+### Step 2 — Detect language and conventions
 
-Check for the presence of required documentation sections based on the function's behavior:
+Identify project language, then load `reference.md` for language-specific doc conventions (Rust: RFC 1574 + rustdoc, Python: PEP 257, JS/TS: JSDoc/TSDoc, Go: godoc).
 
-- **Errors/Exceptions**: Functions that can fail without documenting error conditions
-- **Panics/Throws**: Functions that can crash/throw without documenting when
-- **Safety/Preconditions**: Unsafe or unchecked operations without documenting the contract
-- **Parameters**: Public functions with non-obvious parameters left undocumented
-- **Return values**: Return value semantics not documented (what does null/None/empty mean?)
-- **Examples**: Public API items without usage examples
-- Examples using crash-prone patterns (`unwrap()`, unchecked casts) instead of proper error handling
+### Step 3 — Score all 12 dimensions
 
-### Category 4: INLINE COMMENTS (Clean Code + Linux Kernel)
+Read `references/categories.md` for detailed checks. For each category: collect evidence, assign score 0.0-1.0, note specific `file:line` findings.
 
-Check for:
-- **Redundant comments** restating the code ("// increment counter" above `counter += 1`)
-- **Commented-out code** (should be deleted; VCS has history)
-- **Stale TODOs**: `TODO`/`FIXME`/`HACK`/`XXX` without issue reference, date, or owner
-- **What vs Why**: Comments explaining WHAT the code does instead of WHY it does it that way
-- **Missing constraint docs**: Non-obvious business logic, magic numbers, or external constraints without inline explanation
-- **Missing safety justifications**: Unsafe/unchecked blocks without preceding comment explaining why it is correct
-- **Tag format**: Tags should be `// TAG: Sentence ending with period.` (capitalized, colon, period)
+### Step 4 — Compute DQI and detect anti-patterns
 
-### Category 5: ACCURACY & FRESHNESS
+Read `references/scoring.md` for the DQI formula, Doc Debt Score, maturity level mapping, named anti-patterns, and comparative benchmarks.
 
-This is the highest-value AI-only check. Actually read the implementation and verify:
+```
+DQI = Σ(wᵢ × sᵢ) / Σ(wᵢ) × 10
+```
 
-- Doc comment describes behavior that **no longer matches** the implementation
-- Parameters documented that **no longer exist**, or new parameters **not documented**
-- Return value docs that are **wrong** (says "returns X" but actually returns Y)
-- **Copy-pasted documentation** between distinct functions that do different things
-- **Inconsistent terminology** (same concept called different names across the codebase)
-- **Outdated examples** using old API patterns or removed functions
-
-### Category 6: CROSS-REFERENCES & LINKING
-
-Check for:
-- Type/class names mentioned in prose without linking (use intra-doc links, JSDoc `@link`, etc.)
-- Related items not cross-referenced (e.g., a builder without linking to what it builds)
-- Broken or dangling references
-- Bare URLs not wrapped in markdown/doc links
+### Step 5 — Generate report
 
 ## Output Format
 
 ```markdown
-# Documentation Audit Report
+# Documentation Quality Audit — {project-name}
 
-**Target**: [file/directory audited]
-**Language(s)**: [detected languages]
-**Date**: [date]
-**Overall Score**: X/10
+**Target**: [file/directory] | **Language**: [detected] | **Date**: [date]
+**DQI Score**: X.X/10 — {verdict} | **Doc Debt**: X% ({color})
+**Maturity Level**: {1-5} — {name}
 
 ## Scores by Category
 
-| # | Category | Score | Critical | Flags |
-|---|----------|-------|----------|-------|
-| 1 | Doc Coverage | X/10 | N | N |
-| 2 | Summary Lines | X/10 | N | N |
-| 3 | Standard Sections | X/10 | N | N |
-| 4 | Inline Comments | X/10 | N | N |
-| 5 | Accuracy & Freshness | X/10 | N | N |
-| 6 | Cross-references | X/10 | N | N |
+| # | Category | Weight | Score | Weighted | Findings |
+|---|----------|--------|-------|----------|----------|
+| C1-C12 rows with 0.0-1.0 scores... |
+| | **DQI** | **100%** | | **X.X/10** | |
+
+## Anti-Patterns Detected
+| Pattern | Severity | File:Line | Recommendation |
 
 ## Critical Violations (must fix)
-
 ### [Category]: [violation title]
-- **File**: `path/to/file.rs:123`
+- **File**: `path/to/file:123`
 - **What**: [description]
 - **Rule**: [which standard it violates]
-- **Fix**: [concrete suggestion with code example]
-
-## Flags (should fix)
-
-[same format, grouped by category]
+- **Fix**: [concrete suggestion]
 
 ## Good Practices Found
-
-[highlight documentation done well]
+[positive reinforcement]
 
 ## Recommended Next Steps
-
 1. [highest-impact fix first]
-2. [second]
-3. [third]
 ```
 
-## Rules for the Auditor
+## Boundary with cli-audit-sync
 
-1. **Be specific**: Every violation needs a `file:line` reference. No vague "the docs could be better."
-2. **Be proportional**: A missing error section on a fallible public function matters more than a verbose summary line.
-3. **Context matters**: Internal helpers need less documentation than public API. Test code doesn't need doc comments. CLI scripts have different standards than libraries.
-4. **Read the code**: For Category 5, actually read the implementation to verify the doc matches. Stale docs are worse than no docs.
-5. **Score honestly**: 10/10 means exemplary documentation. 7/10 is decent. 5/10 needs work.
-6. **Don't flag good comments**: Intent explanations, consequence warnings, and constraint docs are valuable.
-7. **Prioritize public API**: Public items are the priority. Private items are nice-to-have.
-8. **Language-aware**: Apply each language's idiomatic doc conventions (see reference.md). Don't apply Javadoc patterns to Python or Rust patterns to TypeScript.
+| cli-audit-doc | cli-audit-sync |
+|--------------|---------------|
+| Is the doc **well-written**? | Is the doc **accurate**? |
+| Quality of prose, structure, coverage | Coherence between doc and code |
+| "This doc comment is vague" | "This doc comment references a deleted function" |
+
+Both complement each other. Run cli-audit-doc for quality, cli-audit-sync for accuracy.
+
+## What this skill does NOT do
+
+- **Does not fix docs** — it reports. Use `cli-forge-doc` to generate documentation
+- **Does not check doc-code coherence** — use `cli-audit-sync` for that
+- **Does not replace Vale/markdownlint** — it complements them with semantic analysis
+- **Does not audit code quality** — use `cli-audit-code` for that
+
+## Integration with other cli-* skills
+
+| Skill | Relationship |
+|-------|-------------|
+| `cli-audit-sync` | Checks doc **accuracy**. cli-audit-doc checks doc **quality** |
+| `cli-audit-code` | Scores code quality. cli-audit-doc scores **doc quality** |
+| `cli-forge-doc` | Generates docs. cli-audit-doc **audits** existing docs |
+| `cli-cycle` | Calls cli-audit-doc as part of full project review |
+
+## Reference Sources
+
+- Procida — Diataxis framework | Bhatti et al. — *Docs for Developers* | Martraire — *Living Documentation*
+- Google Dev Docs Style Guide | Microsoft Writing Style Guide | RFC 1574 (Rust)
+- Vale linter (prose quality) | lychee (link checking) | markdownlint | Spectral (OpenAPI)
+- Write the Docs Podcast | I'd Rather Be Writing (Tom Johnson) | Knowledgebase Ninja
