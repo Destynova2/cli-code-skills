@@ -1,6 +1,9 @@
 ---
 name: cli-forge-tree
 description: "Use this skill whenever the user wants to visualize, generate, audit, or scaffold a project directory structure. Triggers include: 'project structure', 'folder structure', 'directory layout', 'tree', 'arborescence', 'scaffold', 'init project', 'organize my files', 'naming conventions', or any request to understand or create how files and folders should be organized in a codebase. Also triggers when someone says 'create a new project', 'bootstrap', 'init', or asks 'where should I put this file'. Use for any language or framework. Do NOT use for file system operations unrelated to project organization (like disk cleanup or backup scripts)."
+argument-hint: "[project-path]"
+context: fork
+agent: general-purpose
 ---
 
 > **Optimization:** This skill uses on-demand loading. Heavy content lives in `references/` and is loaded only when needed.

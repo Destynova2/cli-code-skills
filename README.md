@@ -106,23 +106,29 @@ cli-code-skills/
 │   └── plugin.json
 ├── .cursor/rules/         # Cursor IDE rules (4 core skills)
 ├── cli-cycle/             # /cli-cycle — orchestrator
-├── cli-audit-code/        # /cli-audit-code — Clean Code scoring
-├── cli-audit-doc/         # /cli-audit-doc — documentation quality
+├── cli-audit-code/        # /cli-audit-code — Clean Code scoring (CQI)
+│   └── references/        #   12 categories, scoring framework, anti-patterns
+├── cli-audit-doc/         # /cli-audit-doc — documentation quality (DQI)
+│   └── references/        #   12 categories, scoring framework, anti-patterns
 ├── cli-audit-sync/        # /cli-audit-sync — doc-code coherence
 ├── cli-audit-test/        # /cli-audit-test — test plan quality & maturity
-│   └── references/        #   scoring framework, TMMi mapping, benchmarks
-├── cli-forge-arch/        # /cli-forge-arch — HLD/LLD router (legacy)
-│   └── references/        #   templates (kept for backward compat)
+│   └── references/        #   dimensions, techniques, anti-patterns, scoring
+├── cli-forge-arch/        # /cli-forge-arch — HLD/LLD router
+│   └── references/        #   templates (backward compat)
 ├── cli-forge-hld/         # /cli-forge-hld — High-Level Design
-│   └── references/        #   HLD template, estimation cheatsheet
+│   └── references/        #   sections, scoring, anti-patterns, estimation
 ├── cli-forge-lld/         # /cli-forge-lld — Low-Level Design
-│   └── references/        #   LLD template
+│   └── references/        #   sections, scoring, anti-patterns, LLD template
 ├── cli-forge-doc/         # /cli-forge-doc — full project documentation
+│   └── references/        #   Diataxis framework templates
 ├── cli-forge-infra/       # /cli-forge-infra — ops integration
-├── cli-forge-readme/      # /cli-forge-readme — README generation
+│   └── references/        #   scoring, patterns, checklists
+├── cli-forge-readme/      # /cli-forge-readme — README generation (RCI)
 ├── cli-forge-schema/      # /cli-forge-schema — Mermaid diagrams
-│   └── references/        #   diagram types, palettes, GitHub limits
-├── cli-forge-tree/        # /cli-forge-tree — directory structure
+│   └── references/        #   diagram types, conversions, modes
+├── cli-forge-tree/        # /cli-forge-tree — directory structure (SHS)
+│   └── references/        #   archetypes, conventions
+├── gotchas.md             # Persistent lessons-learned, read by all skills
 └── README.md
 ```
 
