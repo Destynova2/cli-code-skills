@@ -17,6 +17,10 @@
 
 - [2026-03-26] cli-forge-hld/lld — Review checklists listed everything as mandatory, contradicting the mitosis principle. Checklists must be tiered too.
 
+## CI/CD
+
+- [2026-03-27] cli-forge-pipeline — Bumped `cosign-installer@v3` → `@v4` assuming the major floating tag existed. It didn't (only `v4.0.0`, `v4.1.1` existed). Always verify tag existence via `gh api repos/{owner}/{repo}/git/refs/tags/{tag}` before recommending a bump. If no floating major tag, pin to latest patch (e.g., `@v4.1.1`).
+
 ## General
 
 - [2026-03-26] all skills — SKILL.md files grew to 700-800 lines. Everything loaded into context = token waste. Split: lean SKILL.md (~150 lines workflow) + references/ (loaded on-demand).
