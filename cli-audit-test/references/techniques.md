@@ -166,6 +166,98 @@ docs/test-charters/
 
 ---
 
+### Mutation Testing (MMR — Mismatch Repair)
+
+**What it is:** Injecting small code mutations (flip a condition, change a return value, swap an operator) and checking if tests catch the difference. If a mutation survives (tests still pass), you have a blind spot.
+
+**Biological analogy:** DNA Mismatch Repair scans the copied strand against the template. A single wrong base (G instead of A) doesn't break the strand — it just silently changes what the gene does. MMR catches it before replication amplifies the error.
+
+**Detection signals:**
+- `cargo-mutants`, `mutmut`, `Stryker`, `pitest` in dependencies or CI
+- `*mutation*`, `*mutant*` in CI job names
+- Mutation score reports in artifacts
+- Comments referencing mutation survival analysis
+
+**Example evidence:**
+```
+# CI job
+mutation-test:
+  script: cargo mutants --package core
+  artifacts:
+    paths: [mutants.out/]
+
+# Report
+Mutation score: 87% (234/269 caught)
+Surviving mutants:
+  - src/mask.rs:42 — changed `>` to `>=` — NO TEST CAUGHT THIS
+```
+
+---
+
+### Contract Testing (CRISPR — Recorded Immunity)
+
+**What it is:** Recording the exact contract (input/output schema, behavior) of an API or function at a point in time, then failing if the implementation drifts from that contract — even partially, even for a single parameter.
+
+**Biological analogy:** CRISPR-Cas records a fragment of a viral genome into the bacterium's own DNA (the CRISPR array). Next time the virus appears — even partially mutated — the bacterium recognizes and cuts it before it can express. It's memory + active correction.
+
+**Detection signals:**
+- `Pact`, `pact-*`, `consumer-driven contracts` in dependencies
+- `insta` (Rust snapshot testing), `jest --updateSnapshot`, `approval-tests`
+- Contract/snapshot files checked into version control (`*.snap`, `pacts/`)
+- CI jobs that verify contracts before merge
+
+**Example evidence:**
+```
+# Pact contract files
+pacts/
+  frontend-backend.json    # Recorded contract
+  mobile-api.json
+
+# Snapshot testing
+src/api/snapshots/
+  mask_response.snap       # Recorded behavior of mask()
+
+# CI
+contract-verify:
+  script: cargo test --features contract-tests
+  # Fails if mask(a, b) returns different shape than recorded
+```
+
+---
+
+### Property-Based Invariant Testing (Epigenetics — Contextual Rules)
+
+**What it is:** Defining invariant properties that must hold for ALL inputs, not just handpicked examples. The framework generates hundreds/thousands of random inputs and checks the properties. Detects when a function changes behavior in a context you didn't anticipate.
+
+**Biological analogy:** Epigenetics marks genome regions as "active" or "silent" depending on cell context (methylation, histone modifications) — without changing the gene itself. If a gene starts expressing in the wrong context, the epigenetic machinery detects the anomaly. The gene isn't broken — it's just active where it shouldn't be.
+
+**Detection signals:**
+- `proptest`, `quickcheck` (Rust), `Hypothesis` (Python), `fast-check` (JS), `FsCheck` (.NET)
+- `proptest!` macro blocks, `#[quickcheck]` attributes
+- Property names describing invariants: `*idempotent*`, `*roundtrip*`, `*commutative*`, `*subset*`
+- `*property*`, `*invariant*` in test names or directories
+
+**Example evidence:**
+```rust
+proptest! {
+    #[test]
+    fn mask_is_idempotent(x: String) {
+        assert_eq!(mask(&x), mask(&mask(&x)));
+    }
+    #[test]
+    fn mask_roundtrips(a: String, b: String) {
+        assert_eq!(unmask(mask(&a, &b), &b), a);
+    }
+    #[test]
+    fn mask_never_reveals_more_than_input(a: String, b: String) {
+        assert!(is_subset(&mask(&a, &b), &a));
+        assert!(is_subset(&mask(&a, &b), &b)); // ← catches drift on b
+    }
+}
+```
+
+---
+
 ## Quick Reference Table
 
 | Technique | Key file patterns | Key test name patterns |
@@ -178,3 +270,6 @@ docs/test-charters/
 | Scenario | `*scenario*`, `*flow*` | `*happy*`, `*journey*`, `*e2e*` |
 | Fuzz | `fuzz/`, `*fuzz*` | `*edge*`, `*chaos*`, `*random*` |
 | Exploratory | `*charter*`, `*session*` | `*exploratory*` |
+| Mutation (MMR) | `mutants.out/` | `*mutation*`, `*mutant*` |
+| Contract (CRISPR) | `pacts/`, `*.snap`, `snapshots/` | `*contract*`, `*snapshot*` |
+| Property (Epigenetics) | - | `*property*`, `*invariant*`, `*idempotent*`, `*roundtrip*` |

@@ -44,24 +44,25 @@ Evaluate a test plan or test suite against ISTQB standards, TMMi maturity model,
 4. Glob for test config: `**/pict/**`, `**/fixtures/**`, `**/mocks/**`, `**/toxiproxy*`
 5. Read project manifest (Cargo.toml, package.json, etc.) for test dependencies
 
-## 12-Dimension Framework
+## 13-Dimension Framework
 
 Score each dimension **0-4**, then compute a weighted final score. Read `references/dimensions.md` for detailed scoring criteria, evidence patterns, and per-dimension guidance.
 
 | # | Dimension | Weight | Key question |
 |---|-----------|--------|-------------|
-| D1 | Scope & Objectives | 8% | Is what's tested (and what's not) explicit? |
+| D1 | Scope & Objectives | 7% | Is what's tested (and what's not) explicit? |
 | D2 | Test Design Techniques | 12% | Are recognized techniques (EP, BVA, pairwise...) used? |
-| D3 | Pyramid Balance | 8% | Is the unit > integration > E2E ratio healthy? |
-| D4 | Coverage & Traceability | 12% | Can you trace each requirement to a test? |
+| D3 | Pyramid Balance | 7% | Is the unit > integration > E2E ratio healthy? |
+| D4 | Coverage & Traceability | 11% | Can you trace each requirement to a test? |
 | D5 | Negative Testing & Security | 8% | Are error paths and security invariants tested? |
-| D6 | Non-Functional Testing | 10% | Performance, security, accessibility, reliability? |
-| D7 | Risk Analysis & Prioritization | 8% | Do critical features get more test effort? |
-| D8 | Automation Strategy | 10% | What's automated vs manual, and why? |
-| D9 | CI/CD Integration | 8% | Do tests run on commit with quality gates? |
-| D10 | Entry/Exit Criteria | 6% | When is testing "done"? Measurable thresholds? |
+| D6 | Non-Functional Testing | 9% | Performance, security, accessibility, reliability? |
+| D7 | Risk Analysis & Prioritization | 7% | Do critical features get more test effort? |
+| D8 | Automation Strategy | 9% | What's automated vs manual, and why? |
+| D9 | CI/CD Integration | 7% | Do tests run on commit with quality gates? |
+| D10 | Entry/Exit Criteria | 5% | When is testing "done"? Measurable thresholds? |
 | D11 | Exploratory Testing | 5% | Structured charters and time-boxed sessions? |
 | D12 | Environment & Data | 5% | Automated setup, deterministic data, mocks? |
+| D13 | Semantic Drift Detection | 8% | Are silent behavioral changes caught before merge? |
 
 ## Workflow
 
@@ -73,13 +74,13 @@ Glob for test files, CI configs, test frameworks. Build a test inventory: total 
 
 For each test file/directory, classify by level (unit/integration/E2E/acceptance), technique, type (functional/security/performance), and polarity (positive/negative). Read `references/techniques.md` for technique detection heuristics.
 
-### Step 3 — Score all 12 dimensions
+### Step 3 — Score all 13 dimensions
 
 For each dimension: collect evidence (file references, counts, patterns), assign score 0-4 with justification, note strengths and gaps. Read `references/dimensions.md` for detailed scoring criteria.
 
 ### Step 4 — Detect anti-patterns
 
-Read `references/anti-patterns.md` for the 9 anti-patterns with detection rules and recommendations. Flag with severity and evidence.
+Read `references/anti-patterns.md` for the 10 anti-patterns with detection rules and recommendations. Flag with severity and evidence.
 
 ### Step 5 — Compute final score
 
@@ -119,7 +120,7 @@ Use the output format below.
 
 | # | Dimension | Weight | Score | /4 | Weighted | Verdict |
 |---|-----------|--------|-------|----|----------|---------|
-| D1-D12 rows... |
+| D1-D13 rows... |
 | | **Total** | **100%** | | | **X.X** | |
 
 ### Techniques Detected

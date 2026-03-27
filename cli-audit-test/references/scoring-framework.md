@@ -5,15 +5,16 @@
 | Dimension | Weight | Why this weight |
 |-----------|--------|----------------|
 | D2 — Test Design Techniques | 12% | Core differentiator between amateur and professional testing. A plan without techniques is just a wish list |
-| D4 — Coverage & Traceability | 12% | Without traceability, you can't answer "what's tested?" or "what's the blast radius of this change?" |
-| D6 — Non-Functional Testing | 10% | NFR bugs are the most expensive to fix late. Early NFR testing has highest ROI |
-| D8 — Automation Strategy | 10% | Automation without strategy creates maintenance debt. Strategy without automation wastes time |
-| D1 — Scope & Objectives | 8% | Foundation — everything else builds on clear scope |
-| D3 — Pyramid Balance | 8% | Shape determines feedback speed and maintenance cost |
+| D4 — Coverage & Traceability | 11% | Without traceability, you can't answer "what's tested?" or "what's the blast radius of this change?" |
+| D6 — Non-Functional Testing | 9% | NFR bugs are the most expensive to fix late. Early NFR testing has highest ROI |
+| D8 — Automation Strategy | 9% | Automation without strategy creates maintenance debt. Strategy without automation wastes time |
+| D13 — Semantic Drift Detection | 8% | Silent behavioral changes are the most dangerous bugs — they pass all tests, compile fine, and ship to prod unnoticed |
+| D1 — Scope & Objectives | 7% | Foundation — everything else builds on clear scope |
+| D3 — Pyramid Balance | 7% | Shape determines feedback speed and maintenance cost |
 | D5 — Negative Testing | 8% | "Ce qui ne doit PAS arriver" is often more critical than "ce qui doit arriver" |
-| D7 — Risk Analysis | 8% | Testing everything equally is waste. Risk-based prioritization is essential |
-| D9 — CI/CD Integration | 8% | Tests not in CI are tests that will be forgotten |
-| D10 — Entry/Exit Criteria | 6% | Quality gates prevent premature releases |
+| D7 — Risk Analysis | 7% | Testing everything equally is waste. Risk-based prioritization is essential |
+| D9 — CI/CD Integration | 7% | Tests not in CI are tests that will be forgotten |
+| D10 — Entry/Exit Criteria | 5% | Quality gates prevent premature releases |
 | D11 — Exploratory Testing | 5% | Complements scripted tests. Less weight because it's inherently less auditable |
 | D12 — Environment & Data | 5% | Enabler dimension — bad env/data undermines all other testing |
 
@@ -46,9 +47,10 @@ Level 3 + :
 Level 4 + :
 - All dimensions ≥ 3
 - D2 ≥ 4, D4 ≥ 4, D8 ≥ 4
+- D13 ≥ 3 (At least 2 drift detection layers with CI integration)
 - Continuous improvement process (retrospectives on test strategy)
 - Defect prevention (root cause analysis feeding test design)
-- Innovation (mutation testing, property-based testing, AI-assisted)
+- Innovation (mutation testing, property-based testing, contract testing, AI-assisted)
 
 ## Technique Detection Heuristics
 
@@ -117,6 +119,11 @@ Level 4 + :
 **Severity**: Critical for secrets, Warning for shared state
 **Recommendation**: Use generated test materials, cleanup scripts, and `.gitignore` for sensitive files
 
+### Silent Drift Blindness
+**Detection**: No mutation testing, no contract/snapshot testing, no property-based invariants. All tests are pure example-based (fixed input → fixed expected output).
+**Severity**: Critical — the most dangerous bugs (silent behavioral drift) go completely undetected
+**Recommendation**: Start with the layer matching your biggest risk: `cargo-mutants` for logic drift, `insta`/`Pact` for API contract drift, `proptest` for domain invariant drift
+
 ## Comparative Benchmarks
 
 Based on industry surveys and testing maturity assessments:
@@ -169,3 +176,7 @@ Based on industry surveys and testing maturity assessments:
 - Toxiproxy — chaos/fault injection
 - k6/Gatling/Locust — load testing
 - SonarQube — static analysis (the "Cassandre" tool per La Taverne)
+- cargo-mutants / mutmut / Stryker / pitest — mutation testing (D13 MMR)
+- Pact / consumer-driven contracts — contract testing (D13 CRISPR)
+- insta / jest snapshots / approval-tests — snapshot testing (D13 CRISPR)
+- proptest / quickcheck / Hypothesis / fast-check — property-based testing (D13 Epigenetics)

@@ -1,4 +1,4 @@
-# 12 Audit Dimensions — Detailed Scoring Criteria
+# 13 Audit Dimensions — Detailed Scoring Criteria
 
 > **When to read:** During Step 3 when scoring each dimension. Use the detailed criteria and evidence patterns below to assign scores 0-4.
 
@@ -277,3 +277,46 @@ Check for:
 - 2: Environment described, some setup scripts
 - 3: Automated environment setup, mock strategy, data generation
 - 4: Full environment-as-code, deterministic test data, mocks for all external deps, cleanup on teardown, prod parity documented
+
+---
+
+## D13 — Semantic Drift Detection (8%)
+
+**Source:** Inspired by 3 biological self-correction mechanisms: DNA Mismatch Repair (MMR), CRISPR-Cas, and Epigenetic regulation.
+
+The most dangerous bugs are not crashes — they are **silent behavioral changes** where a function still runs, still returns a value, but no longer does what it was supposed to do. Classic tests miss this because they only check known examples. D13 measures whether the test suite can catch **semantic drift**: code that compiles, doesn't crash, but has subtly changed its contract.
+
+### Three layers of defense (biological analogy)
+
+| Layer | Biology | Mechanism | Testing pattern | Tools |
+|-------|---------|-----------|----------------|-------|
+| **MMR** | DNA Mismatch Repair | Scans copied strand vs template, detects single-base mutations that don't break the strand | **Mutation testing** — injects small code mutations, checks if tests catch them. If `mask(b)` changes and tests still pass → no MMR | `cargo-mutants`, `mutmut`, `Stryker` |
+| **CRISPR** | CRISPR-Cas bacterial immunity | Records viral signature, cuts any future match — even partial | **Contract testing** — records the exact contract of an API at time T. If implementation drifts, even partially, the contract fails before merge | `Pact`, `consumer-driven contracts`, `insta` (snapshot) |
+| **Epigenetics** | Methylation / histone marks | Marks genome regions as "active" or "silent" per context, without modifying the gene itself | **Property-based invariants** — defines rules that must hold for ALL inputs, not just examples. Detects contextual drift | `proptest`, `quickcheck`, `Hypothesis` |
+
+### Check for:
+
+**Mutation testing (MMR):**
+- `cargo-mutants` / `mutmut` / `Stryker` in dependencies or CI
+- Mutation score tracked (% of mutations caught by tests)
+- Surviving mutants analyzed and addressed
+- CI job that runs mutation testing (at least on critical paths)
+
+**Contract testing (CRISPR):**
+- `Pact` / consumer-driven contract framework in dependencies
+- `insta` / snapshot testing for API responses, serialization formats
+- Contract files versioned alongside code
+- CI fails when contract is violated (not just when tests fail)
+
+**Property-based testing as invariants (Epigenetics):**
+- `proptest` / `quickcheck` / `Hypothesis` / `fast-check` in dependencies
+- Properties defined for core domain functions (idempotency, commutativity, subset, round-trip)
+- Properties cover behavioral invariants, not just type constraints
+- Property tests integrated in CI (not just ad-hoc)
+
+### Scoring:
+- 0: No drift detection at all — only example-based tests. A function can change behavior silently and no test catches it
+- 1: Snapshot tests exist but no mutation testing, no contracts, no properties
+- 2: One layer present (typically property-based OR snapshot/contract). Partial coverage
+- 3: Two layers present with CI integration. Mutation score tracked. Contracts on critical APIs
+- 4: All three layers active: mutation testing on critical paths with score > 80%, contract testing on all inter-service APIs, property-based invariants on core domain logic. Surviving mutants triaged. Full CI integration

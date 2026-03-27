@@ -4,7 +4,7 @@
 
 ---
 
-## 9 Anti-Patterns
+## 10 Anti-Patterns
 
 Flag these known anti-patterns with severity and evidence:
 
@@ -19,6 +19,7 @@ Flag these known anti-patterns with severity and evidence:
 | Smoke-less Builds | La Taverne | No smoke test suite, CI runs full suite on every commit | Warning |
 | Combinatorial Explosion | La Taverne (Pairwise) | N parameters x M values tested exhaustively instead of pairwise | Info |
 | Test Data Leakage | TMMi | Hardcoded secrets, shared mutable state between tests | Warning |
+| Silent Drift Blindness | D13 (Biological) | No mutation/contract/property testing — only example-based tests, silent behavioral changes go undetected | Critical |
 
 ## Detection Heuristics
 
@@ -67,6 +68,14 @@ Flag these known anti-patterns with severity and evidence:
 - Tests sharing global state (database, files) without cleanup
 - Test order dependencies (test B fails if test A doesn't run first)
 
+### Silent Drift Blindness
+- No `cargo-mutants` / `mutmut` / `Stryker` / `pitest` in dependencies or CI
+- No `Pact` / `insta` / snapshot testing / consumer-driven contracts
+- No `proptest` / `quickcheck` / `Hypothesis` / `fast-check` in dependencies
+- All tests are example-based (specific inputs → specific expected outputs)
+- No `.snap` files, no `pacts/` directory, no mutation score reports
+- A function's return value can change and no test catches it unless the exact example was covered
+
 ## Recommendation Templates
 
 | Anti-Pattern | Recommendation |
@@ -80,3 +89,4 @@ Flag these known anti-patterns with severity and evidence:
 | Smoke-less Builds | Define a smoke suite (critical paths only). Run smoke on every commit, full suite on PR |
 | Combinatorial Explosion | Adopt pairwise testing (PICT tool). Reduces test count by 80%+ with same defect detection |
 | Test Data Leakage | Use test fixtures with cleanup. Generate data per test. Never hardcode secrets |
+| Silent Drift Blindness | Add at least one drift detection layer: mutation testing (`cargo-mutants`) on critical paths, snapshot/contract testing (`insta`, `Pact`) on APIs, or property-based invariants (`proptest`) on core domain logic. Start with the layer that matches your biggest risk |
