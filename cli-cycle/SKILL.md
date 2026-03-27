@@ -52,9 +52,14 @@ Parse each SKILL.md frontmatter to extract: `name`, `description`, `argument-hin
 
 Read `references/orchestration.md` for the full applicability matrix. Key rule: **don't run skills that don't apply** — no infra files = no infra audit.
 
-### Step 4 — Launch sub-agents in parallel
+### Step 4 — Execute in 2 waves
 
-Read `references/orchestration.md` for the sub-agent prompt pattern. Launch all applicable agents **in parallel** for speed.
+Read `references/orchestration.md` for execution order, prompt patterns, and wave rules.
+
+**Wave 1 (foundation, parallel):** code, doc, test, tree, readme — independent scans
+**Wave 2 (cross-cutting, parallel):** sync, drift, pipeline, schema, infra — use Wave 1 context
+
+Wave 2 skills get Wave 1 summaries injected into their prompts for richer analysis.
 
 ### Step 5 — Collect and synthesize
 
