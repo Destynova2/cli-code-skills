@@ -1,5 +1,5 @@
 ---
-name: ci-pipeline-optimizer
+name: cli-forge-pipeline
 description: >
   Expert CI/CD pipeline optimizer using biomimetic patterns from nature: leafcutter ants
   (task partitioning), slime mold (adaptive path optimization), army ants (self-organizing
@@ -22,7 +22,7 @@ description: >
 > l'implémentation **GitLab CI** et **GitHub Actions** côte à côte. Les principes s'appliquent
 > à tout système CI (Jenkins, CircleCI, Buildkite, Dagger, etc.) — seule la syntaxe change.
 
-## Les 5 modèles biologiques → patterns CI
+## Les 9 modèles biologiques → patterns CI
 
 ### 1. FOURMIS COUPERUSES (Atta / Acromyrmex) — Task Partitioning
 
@@ -532,6 +532,28 @@ Le cache a-t-il un fallback waterfall ?
 Les pipelines multi-projets partagent-ils les artifacts couteux ?
 ```
 
+### Etape 7 : Audit système immunitaire
+```
+Y a-t-il du fuzzing sur les parsers, la sérialisation, l'auth ?
+Les tests utilisent-ils du property-based testing (proptest, Hypothesis) ?
+Le corpus de crashs est-il persisté entre runs ?
+```
+
+### Etape 8 : Audit spores
+```
+La matrice couvre-t-elle OS × arch × version × features ?
+Les combinaisons nightly/beta sont-elles en allow_failure ?
+Y a-t-il des combinaisons impossibles à exclure ?
+```
+
+### Etape 9 : Audit tardigrade
+```
+Y a-t-il des tests en conditions réseau dégradé (latence, coupure) ?
+Y a-t-il des tests sous pression ressources (disque, mémoire) ?
+Y a-t-il des tests avec clock skew (faketime) ?
+La dégradation gracieuse est-elle vérifiée (pas juste "pas de crash") ?
+```
+
 ---
 
 ## Anti-patterns a identifier
@@ -546,6 +568,9 @@ Les pipelines multi-projets partagent-ils les artifacts couteux ?
 | Registry sans fallback | Mycelium sans redondance | `cmd1 \|\| cmd2 \|\| cmd3` | `cmd1 \|\| cmd2 \|\| cmd3` |
 | Artifacts enormes transmis partout | Porteuse qui transporte tout a tous | Artifacts scoped, `needs:` selectif | Artifacts nommes + `download-artifact` selectif |
 | Tests non-shardes | Fourmis legionnaires sans flancs | `parallel: N` + sharding | `strategy.matrix` + sharding |
+| Tests uniquement sur cas écrits à la main | Immunitaire sans VDJ | `cargo fuzz` + `proptest` | `cargo fuzz` + `proptest` |
+| Une seule combinaison OS/version | Spore unique sans dispersion | `parallel: matrix:` | `strategy.matrix` combinatoire |
+| Pas de test en conditions dégradées | Tardigrade qui n'a jamais quitté la flaque | Toxiproxy + stress-ng + faketime | Toxiproxy + stress-ng + faketime |
 
 ---
 
@@ -616,7 +641,278 @@ APRÈS (mitose) :
 
 ---
 
-## 📊 Pipeline Scoring (12 dimensions)
+## 🧫 7. SYSTÈME IMMUNITAIRE (Recombinaison VDJ) — Combinatorial Fuzzing
+
+**Biologie** : Le système immunitaire ne réagit pas aux menaces — il génère à l'avance
+~10¹⁸ combinaisons d'anticorps différents par recombinaison aléatoire de segments géniques
+(V, D, J), **avant** d'avoir jamais rencontré l'antigène. Il explore l'espace de toutes les
+menaces possibles de manière combinatoire, puis maintient en vie les cellules B capables de
+reconnaître quelque chose d'utile (sélection clonale).
+
+Le système ne devine pas quelles menaces vont survenir. Il couvre tout l'espace possible.
+
+**Pattern CI : Fuzzing / Property-Based Testing**
+
+**GitLab CI :**
+```yaml
+# ❌ Anti-pattern : tests uniquement sur des cas écrits à la main
+test-unit:
+  script: cargo test   # Teste ce que le dev a imaginé
+
+# ✅ Pattern immunitaire : génération combinatoire de l'espace d'inputs
+fuzz-parser:
+  stage: test
+  needs: [compile]
+  script:
+    - cargo fuzz run parser -- -max_total_time=300
+    # Génère 10^N inputs aléatoires, cherche les crashs
+    # Comme le VDJ : explore l'espace AVANT de rencontrer la menace
+  artifacts:
+    paths: [fuzz/artifacts/]   # Corpus de crashs = mémoire immunitaire
+    when: on_failure
+  rules:
+    - changes:
+        - src/parser/**/*      # Ne fuzz que ce qui a changé (économie)
+
+property-test:
+  stage: test
+  needs: [compile]
+  script:
+    - cargo test --features proptest
+    # proptest/quickcheck = version structurée du VDJ
+    # Génère des inputs selon des propriétés, pas des exemples
+```
+
+**GitHub Actions :**
+```yaml
+jobs:
+  fuzz-parser:
+    needs: [compile]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: cargo install cargo-fuzz
+      - run: cargo fuzz run parser -- -max_total_time=300
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: fuzz-crashes
+          path: fuzz/artifacts/   # Corpus = mémoire immunitaire
+
+  property-test:
+    needs: [compile]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: cargo test --features proptest
+```
+
+**Règles dérivées :**
+- Le fuzzing explore l'espace des inputs, pas les cas connus → complète les tests unitaires
+- Le corpus de crashs persiste entre runs (mémoire immunitaire acquise)
+- Property-based testing = version structurée : tu définis les invariants, le framework génère les cas
+- Fuzzer sur le chemin critique (parsers, sérialisation, auth) → là où les inputs viennent de l'extérieur
+- Outils : `cargo-fuzz`, `proptest`, `quickcheck` (Rust) / `Hypothesis` (Python) / `go-fuzz` (Go)
+
+---
+
+## 🍄 8. SPORES FONGIQUES (Diversité + Dispersion) — Combinatorial Matrix Testing
+
+**Biologie** : Un champignon sous stress produit des millions de spores génétiquement
+diversifiées et les disperse dans **toutes les directions** — tous les substrats, tous les
+microclimats. Aucune sélection préalable. Dispersion maximale.
+Ce qui germera, c'est ce qui est compatible avec ce contexte précis.
+Les autres meurent — sans regret, sans overhead.
+
+Différence avec les fourmis légionnaires : les légionnaires parallélisent la **même tâche**
+(fan-out). Les spores testent des **combinaisons différentes** d'environnements.
+
+**Pattern CI : Full Combinatorial Matrix**
+
+**GitLab CI :**
+```yaml
+# ❌ Anti-pattern : tester une seule combinaison
+test:
+  image: ubuntu:22.04
+  script: cargo test   # Marche chez moi™
+
+# ✅ Pattern spores : dispersion sur toutes les combinaisons
+test-matrix:
+  stage: test
+  needs: [compile]
+  parallel:
+    matrix:
+      - OS: [ubuntu-22.04, debian-12, alpine-3.19]
+        ARCH: [amd64, arm64]
+        RUST_VERSION: ["1.75", "1.76", stable, nightly]
+  image: $OS
+  script:
+    - rustup default $RUST_VERSION
+    - cargo test
+  # 3 × 2 × 4 = 24 spores lancées simultanément
+  # Celles qui tombent sur un sol fertile (compat) germent
+  allow_failure:
+    - RUST_VERSION: nightly   # Spores sur terrain hostile → échec accepté
+```
+
+**GitHub Actions :**
+```yaml
+jobs:
+  test-matrix:
+    needs: [compile]
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false   # Pas de rappel des spores : laisser tout germer
+      matrix:
+        os: [ubuntu-22.04, ubuntu-24.04, macos-latest, windows-latest]
+        rust: ["1.75", "1.76", stable, nightly]
+        exclude:
+          - os: windows-latest
+            rust: nightly   # Combinaison connue pour être stérile
+        include:
+          - os: ubuntu-22.04
+            rust: stable
+            coverage: true   # Spore marquée pour récolte spéciale
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@master
+        with: { toolchain: "${{ matrix.rust }}" }
+      - run: cargo test
+      - if: matrix.coverage
+        run: cargo llvm-cov --lcov --output-path lcov.info
+    continue-on-error: ${{ matrix.rust == 'nightly' }}
+```
+
+**Règles dérivées :**
+- Tester TOUTES les combinaisons supportées, pas juste "chez moi"
+- `fail-fast: false` (GitHub) / pas de `dependencies:` bloquant (GitLab) → laisser toutes les spores germer
+- `allow_failure` / `continue-on-error` pour les combinaisons expérimentales (nightly, beta)
+- `exclude:` pour les combinaisons connues impossibles (économie de spores)
+- La matrice couvre : OS × architecture × version runtime × feature flags
+
+---
+
+## 🐻 9. TARDIGRADE (Ramazzottius varieornatus) — Chaos Engineering
+
+**Biologie** : Le tardigrade ("ourson d'eau") survit à :
+- **-272°C** et **+150°C** (cryptobiose)
+- **Radiation** 1000× la dose létale humaine
+- **Vide spatial** (mission Foton-M3, 2007)
+- **Pression** 6000 atm (6× le fond océanique)
+- **Dessiccation** complète pendant 30 ans (anhydrobiose)
+
+Il ne choisit pas ses conditions. Il est **constitutionnellement prêt** pour toutes,
+y compris celles qui n'existent pas naturellement sur Terre.
+
+Différence avec le mycelium : le mycelium **route autour** des pannes (résilience passive).
+Le tardigrade **injecte les pannes** pour prouver qu'on y survit (résilience proactive).
+
+**Pattern CI : Chaos Engineering / Fault Injection**
+
+**GitLab CI :**
+```yaml
+# ❌ Anti-pattern : tester uniquement en conditions idéales
+test-integration:
+  script: cargo test --test integration   # Tout va bien quand tout va bien
+
+# ✅ Pattern tardigrade : injecter les conditions extrêmes
+chaos-network:
+  stage: chaos
+  needs: [test-integration]   # Après les tests normaux
+  script:
+    # Réseau dégradé (latence 5s)
+    - toxiproxy-cli toxic add -t latency -a latency=5000 postgres
+    - cargo test --test integration
+    - toxiproxy-cli toxic reset postgres
+    # Réseau coupé (timeout)
+    - toxiproxy-cli toxic add -t timeout -a timeout=1 postgres
+    - cargo test --test integration_timeout_handling
+    - toxiproxy-cli toxic reset postgres
+  services:
+    - toxiproxy
+
+chaos-resources:
+  stage: chaos
+  needs: [test-integration]
+  script:
+    # Disque plein
+    - fallocate -l 95% /tmp/fill
+    - cargo test --test storage_full_handling || true
+    - rm /tmp/fill
+    # Mémoire sous pression
+    - stress-ng --vm 1 --vm-bytes 90% --timeout 60s &
+    - cargo test --test memory_pressure
+    - kill %1
+
+chaos-time:
+  stage: chaos
+  needs: [test-integration]
+  script:
+    # Clock skew (NTP mort → certificats expirés, tokens invalides)
+    - faketime '2099-01-01' cargo test --test auth_token_handling
+    # Heure dans le passé (Y2K-like)
+    - faketime '1970-01-01' cargo test --test timestamp_handling
+```
+
+**GitHub Actions :**
+```yaml
+jobs:
+  chaos-network:
+    needs: [test-integration]
+    runs-on: ubuntu-latest
+    services:
+      toxiproxy:
+        image: ghcr.io/shopify/toxiproxy:latest
+        ports: [8474:8474]
+    steps:
+      - uses: actions/checkout@v4
+      # Latence réseau 5s
+      - run: |
+          toxiproxy-cli toxic add -t latency -a latency=5000 postgres
+          cargo test --test integration
+          toxiproxy-cli toxic reset postgres
+      # Coupure réseau
+      - run: |
+          toxiproxy-cli toxic add -t timeout -a timeout=1 postgres
+          cargo test --test integration_timeout_handling
+
+  chaos-resources:
+    needs: [test-integration]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      # Disque plein
+      - run: |
+          fallocate -l 10G /tmp/fill
+          cargo test --test storage_full_handling || true
+          rm /tmp/fill
+      # OOM pressure
+      - run: |
+          stress-ng --vm 1 --vm-bytes 90% --timeout 60s &
+          cargo test --test memory_pressure
+          kill %1 || true
+
+  chaos-time:
+    needs: [test-integration]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: sudo apt-get install -y faketime
+      - run: faketime '2099-01-01' cargo test --test auth_token_handling
+      - run: faketime '1970-01-01' cargo test --test timestamp_handling
+```
+
+**Règles dérivées :**
+- Le chaos testing vient APRÈS les tests fonctionnels (on ne teste pas le chaos sur du code cassé)
+- Chaque injection = une condition extrême isolée (réseau, disque, mémoire, temps)
+- Les tests doivent vérifier la **dégradation gracieuse**, pas juste "ça ne crash pas"
+- Outils : Toxiproxy (réseau), stress-ng (CPU/RAM), fallocate (disque), faketime (horloge)
+- En production : Chaos Monkey (Netflix), Litmus (K8s), Gremlin (SaaS)
+- Ne jamais injecter du chaos sans **observabilité** en place (sinon on ne sait pas ce qui s'est passé)
+
+---
+
+## 📊 Pipeline Scoring (15 dimensions)
 
 Scorer un pipeline comme on score un test plan. Chaque dimension vaut 0-4.
 
@@ -634,8 +930,11 @@ Scorer un pipeline comme on score un test plan. Chaque dimension vaut 0-4.
 | D10 | **Mitose** | 1 mega-pipeline | 2 workflows | N workflows scopés | Templates partagés | Event-driven mesh |
 | D11 | **Coût** | Pas de mesure | Estimation | Budget alerts | Per-team billing | FinOps optimized |
 | D12 | **DX** | Config manuelle | Docs | CLI helpers | Self-service portal | GitOps + preview envs |
+| D13 | **Fuzzing** | Aucun | Fuzz ponctuel | Fuzz CI sur parsers | + property-based | Corpus persistant + regression |
+| D14 | **Matrix** | 1 env | 2-3 combos | OS × version | + arch × features | Full combinatorial + nightly |
+| D15 | **Chaos** | Aucun | Retry = seul filet | Toxiproxy en CI | + disk/mem/time | Chaos Monkey prod + observabilité |
 
-**Score cible :** > 36/48 (75%) pour un projet production.
+**Score cible :** > 45/60 (75%) pour un projet production.
 
 ### Scoring rapide (copier-coller)
 
@@ -655,8 +954,11 @@ D9  Observabilité: [ ] 0  [ ] 1  [ ] 2  [ ] 3  [ ] 4
 D10 Mitose:        [ ] 0  [ ] 1  [ ] 2  [ ] 3  [ ] 4
 D11 Coût:          [ ] 0  [ ] 1  [ ] 2  [ ] 3  [ ] 4
 D12 DX:            [ ] 0  [ ] 1  [ ] 2  [ ] 3  [ ] 4
+D13 Fuzzing:       [ ] 0  [ ] 1  [ ] 2  [ ] 3  [ ] 4
+D14 Matrix:        [ ] 0  [ ] 1  [ ] 2  [ ] 3  [ ] 4
+D15 Chaos:         [ ] 0  [ ] 1  [ ] 2  [ ] 3  [ ] 4
 
-TOTAL: ___/48  (___%)
+TOTAL: ___/60  (___%)
 ```
 
 ---

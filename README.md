@@ -5,7 +5,7 @@
 
 <p align="center">
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="MIT License"></a>
-  <img src="https://img.shields.io/badge/skills-13-green.svg" alt="13 Skills">
+  <img src="https://img.shields.io/badge/skills-14-green.svg" alt="14 Skills">
   <img src="https://img.shields.io/badge/claude--code-skills-8A2BE2" alt="Claude Code Skills">
   <img src="https://img.shields.io/badge/cursor-compatible-F7DF1E" alt="Cursor Compatible">
   <a href="https://github.com/Destynova2/cli-code-skills/stargazers"><img src="https://img.shields.io/github/stars/Destynova2/cli-code-skills?style=flat" alt="Stars"></a>
@@ -63,6 +63,7 @@ Type `/cli-` in Claude Code, hit tab, pick a skill:
 | `/cli-forge-infra [service]` | Ops integration — reads service docs, finds simplest config path, builds dependency trees, proposes upgrades with ADRs |
 | `/cli-forge-readme [path]` | Generates a professional README using the 3-tier pyramid: hook, quickstart, contribute |
 | `/cli-forge-schema [desc]` | Generates GitHub-compatible Mermaid diagrams — picks the right type, splits complex ones, converts tables/kanban/PERT + 12 other formats |
+| `/cli-forge-pipeline [yaml]` | CI/CD pipeline optimizer using biomimetic patterns (ants, slime mold, bees, mycelium). Works with GitLab CI, GitHub Actions, and any CI system |
 | `/cli-forge-tree [path]` | Visualizes, audits, or scaffolds project directory structures with naming conventions |
 
 ## Naming Convention
@@ -123,6 +124,7 @@ cli-code-skills/
 │   └── references/        #   Diataxis framework templates
 ├── cli-forge-infra/       # /cli-forge-infra — ops integration
 │   └── references/        #   scoring, patterns, checklists
+├── cli-forge-pipeline/    # /cli-forge-pipeline — CI/CD pipeline optimizer (biomimetic)
 ├── cli-forge-readme/      # /cli-forge-readme — README generation (RCI)
 ├── cli-forge-schema/      # /cli-forge-schema — Mermaid diagrams
 │   └── references/        #   diagram types, conversions, modes
