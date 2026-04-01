@@ -128,31 +128,113 @@ Context from prior audits (use to enrich your analysis, do not re-scan):
 | **Overall** | **6.8/10** | | |
 ```
 
-### Priority matrix example
+### Phoenix Triage 3-2-1 — Complete correction list
+
+**Rule: NEVER truncate. Show ALL corrections found, classified by tier.**
+
+The triage is inspired by emergency medicine triage (treat the most critical first) and the immune system (prioritize threats by severity).
+
+#### Tier classification criteria
+
+| Tier | Criteria | Examples |
+|------|----------|---------|
+| 🔴 **Tier 3 — Critique** | Security flaws, broken functionality, data loss risk, hardcoded secrets, missing error handling causing silent failure, permissions that prevent runtime | Hardcoded passwords, `runAsUser` mismatch, missing `exit 1` on fatal error, secrets in plaintext |
+| 🟡 **Tier 2 — Majeur** | Architecture debt, missing tests, obsolete/misleading docs, non-pinned versions, god functions, duplication with real impact, missing CI/CD | Unpinned `:latest` tags, monolithic scripts without functions, duplicated build logic, no negative tests, stale USER_STORY.md |
+| 🟢 **Tier 1 — Mineur** | Style, missing diagrams, nice-to-have docs, structural organization, cosmetic improvements, missing but non-critical metadata | Missing CHANGELOG/LICENSE, files in wrong directory, no Mermaid diagrams, missing Makefile |
+
+#### Triage output template
 
 ```markdown
-## Top 5 Actions
+## 🔴 Tier 3 — Critique (N items)
 
-| # | Action | Impact | Effort | Source |
-|---|--------|--------|--------|--------|
-| 1 | Add error handling in auth module | High | Low | cli-audit-code |
-| 2 | Update README quickstart section | High | Low | cli-forge-readme |
-| 3 | Add sequence diagram for payment flow | Medium | Low | cli-forge-schema |
-| 4 | Split utils.rs into focused modules | Medium | Medium | cli-audit-code |
-| 5 | Add doc comments to public API | Medium | Medium | cli-audit-doc |
+| # | Correction | Effort | Source |
+|---|-----------|--------|--------|
+| 1 | Fix DbGate mount — /root/.dbgate mais runAsUser: 1000 | Faible | cli-forge-infra |
+| 2 | Externaliser le mdp healthcheck — Hc!CIS2022check hardcodé en 2 endroits | Faible | cli-audit-code |
+| 3 | Substitution sed de mdp dans /tmp — visible sur le filesystem | Faible | cli-audit-code |
+| 4 | Timeout entrypoint sans exit — [ $i -eq 90 ] && echo "ERREUR" mais pas de exit 1 | Faible | cli-audit-code |
+
+## 🟡 Tier 2 — Majeur (N items)
+
+| # | Correction | Effort | Source |
+|---|-----------|--------|--------|
+| 5 | USER_STORY.md obsolète — décrit un projet Ansible/Windows qui n'existe plus | Moyen | cli-audit-sync |
+| 6 | Pinner DbGate — dbgate:latest → version fixe | Faible | cli-forge-infra |
+| 7 | entrypoint.sh monolithique — 6 responsabilités sans fonctions | Moyen | cli-audit-tangle |
+| 8 | build.sh dupliqué — pattern identique entre 2 images | Moyen | cli-audit-code |
+| 9 | Pas de tests négatifs | Moyen | cli-audit-test |
+| 10 | Pas de CI/CD pipeline | Fort | cli-forge-pipeline |
+| 11 | Pas de readiness/liveness probes K8s | Faible | cli-forge-infra |
+
+## 🟢 Tier 1 — Mineur (N items)
+
+| # | Correction | Effort | Source |
+|---|-----------|--------|--------|
+| 12 | Fichiers XML CIS à la racine → security/ | Faible | cli-forge-tree |
+| 13 | Pas de README.md | Moyen | cli-forge-readme |
+| 14 | deploy/mssql.kube (quadlet) sans documentation | Faible | cli-audit-doc |
+| 15 | Pas de CHANGELOG, CONTRIBUTING, LICENSE | Faible | cli-audit-doc |
+| 16 | Pas de Makefile/Taskfile | Moyen | cli-forge-tree |
+| 17 | Pas de diagramme d'architecture | Faible | cli-forge-schema |
 ```
 
-### Ranking rules
+**Display rules:**
+- Count per tier in the header: `🔴 Tier 3 — Critique (4 items)`
+- Within each tier, sort by effort ascending (quick wins first)
+- Each item has: `#` (global numbering), description, effort, source skill
+- **NEVER** add a "and N more..." or "see full report" — this IS the full report
 
-- High impact + Low effort = **Do first** (quick wins)
-- High impact + High effort = **Plan next**
-- Low impact + Low effort = **Nice to have**
-- Low impact + High effort = **Skip**
+### Phoenix Choice prompt
+
+After the triage, always present:
+
+```markdown
+---
+
+**Phoenix — Quel tier attaquer ?**
+
+| Choix | Action | Items |
+|-------|--------|-------|
+| `1` | Tout corriger (🔴 → 🟡 → 🟢) | N total |
+| `2` | Corriger les 🔴 critiques | N |
+| `3` | Corriger les 🟡 majeurs | N |
+| `4` | Corriger les 🟢 mineurs | N |
+| `5` | Pas maintenant | — |
+```
+
+### Phoenix re-audit (after fixes)
+
+When the user chooses a tier and fixes are applied:
+
+1. **Re-run ONLY the skills that sourced the fixed items** — not the full cycle
+2. **Present a delta report:**
+
+```markdown
+## 🔥 Phoenix — Passe N
+
+Issues résolues cette passe : X
+Issues restantes : Y (🔴 A / 🟡 B / 🟢 C)
+Nouvelles issues détectées : Z (regressions from fixes)
+Score : avant → après
+```
+
+3. **If new issues were introduced by fixes**, add them to the triage
+4. **Present the remaining triage** (updated) + the choice prompt again
+
+### Phoenix convergence
+
+The cycle stops when ANY of these is true:
+
+| Condition | Output |
+|-----------|--------|
+| 0 items in 🔴 + 🟡 | `🔥 Phoenix — Convergé. Aucun défaut critique ou majeur. N mineurs restants (optionnels).` |
+| Re-audit finds 0 new issues | `🔥 Phoenix — Stable. Les corrections n'ont pas introduit de régressions.` |
+| User chooses `5` | `🔥 Phoenix — Pausé. Reprendre avec /cli-cycle.` |
 
 ### Strengths template
 
 ```markdown
-## Strengths
+## Points forts
 
 - Clean module boundaries (cli-audit-code: 9/10 on Structure)
 - Excellent naming conventions (cli-audit-code: 9/10 on Naming)
