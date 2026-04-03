@@ -22,6 +22,7 @@
 | `cli-forge-arch` | Skip (generation, not audit — unless user explicitly asks) |
 | `cli-forge-hld` | Skip (generation — use only when user asks to design/architect) |
 | `cli-forge-lld` | Skip (generation — use only when user asks for detailed design) |
+| `cli-audit-shell` | Shell scripts exist (`.sh` files or shebanged bash scripts) |
 | `cli-forge-infra` | Infra files exist (`Dockerfile`, `*.tf`, `helmfile.yaml`, `k8s/`) |
 
 ---
@@ -42,6 +43,7 @@ These skills scan the codebase independently. Launch all in parallel.
 | `cli-audit-tangle` | Call graph topology, god functions, cycles, module coupling |
 | `cli-forge-tree` | Project structure audit |
 | `cli-forge-readme` | README completeness audit (RCI) |
+| `cli-audit-shell` | Shell quality score (SQI), bash anti-patterns, tooling fitness |
 
 ### Wave 2 — Cross-cutting (parallel, after Wave 1)
 
@@ -115,6 +117,7 @@ Context from prior audits (use to enrich your analysis, do not re-scan):
 | Area | Score | Status | Skill |
 |------|-------|--------|-------|
 | Code Quality | 7/10 | Needs work | cli-audit-code |
+| Shell Quality | 6/10 | Dead fallbacks, missing getopts | cli-audit-shell |
 | Doc-Code Sync | 6/10 | Drift detected | cli-audit-sync |
 | Documentation | 8/10 | Good | cli-audit-doc |
 | Test Quality | 5/10 | Gaps | cli-audit-test |

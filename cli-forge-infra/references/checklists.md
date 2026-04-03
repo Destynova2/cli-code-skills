@@ -127,6 +127,121 @@ resource "vault_pki_secret_backend_root_cert" "root" {
 
 ---
 
+## Container Deployment Checklist (Step 5)
+
+For Podman play kube / Kubernetes Pod manifests, verify:
+
+### Volume Strategy
+
+- [ ] **Consolidate related mounts**: Everything normally under `/var/lib/mysql` should be one volume, not separate mounts for data, binlog, tmp, run. Only split volumes that need different backup/lifecycle policies
+- [ ] **Use PVC over hostPath**: hostPath ties you to a specific node and bypasses storage class features (snapshots, resize, migration). Use PVC even for single-node deployments
+  ```yaml
+  # BAD: hostPath with hardcoded paths
+  volumes:
+    - name: data
+      hostPath:
+        path: /base/MARIADB/data
+
+  # GOOD: PVC with standard naming
+  volumes:
+    - name: data
+      persistentVolumeClaim:
+        claimName: mariadb-data
+  ```
+- [ ] **Standard mount paths**: Use the service's default data directory (e.g., `/var/lib/mysql` for MariaDB, `/var/lib/postgresql/data` for PostgreSQL), not custom paths that require extra config
+- [ ] **Consistent casing**: Don't mix `/base/MARIADB/` with lowercase service names. Prefer lowercase throughout (`/var/lib/mysql`, not `/base/MARIADB`)
+
+### Resource Variabilization
+
+- [ ] **Resources are configurable**: `requests` and `limits` for CPU and memory must not be hardcoded in the manifest
+  ```yaml
+  # BAD: hardcoded in manifest
+  resources:
+    requests:
+      cpu: "100m"
+      memory: "256Mi"
+
+  # GOOD with kustomize: patch per environment
+  # GOOD with yq: yq '.spec.containers[0].resources.limits.cpu = env(CPU_LIMIT)'
+  ```
+- [ ] **Ports are configurable**: hostPort mapping should be parameterizable (different operators may need different host ports)
+- [ ] **Image tag is configurable**: Never hardcode the full image reference. At minimum the tag should be variable
+
+### Image Policy
+
+- [ ] **imagePullPolicy**: `IfNotPresent` is risky when the image tag is configurable — an operator might expect to get a newer image with the same tag. Use `Always` for mutable tags (`:latest`, `:stable`), `IfNotPresent` only for immutable tags (`:11.4.10-ubi9-cis`)
+  ```yaml
+  # RISKY: tag can change, but image won't be re-pulled
+  image: ${IMAGE}
+  imagePullPolicy: IfNotPresent
+
+  # SAFER: always pull when tag is configurable
+  imagePullPolicy: Always
+
+  # BEST: use digest pinning for production
+  image: registry.example.com/mariadb@sha256:abc123...
+  imagePullPolicy: IfNotPresent  # OK because digest is immutable
+  ```
+
+### Config File Ownership
+
+- [ ] **Don't overwrite shared configs**: Files like `containers.conf`, `storage.conf`, `registries.conf` may be managed by other tools (Ansible, Puppet, another operator). Don't `cp` over them
+  ```bash
+  # BAD: overwrites anything another process set
+  cp containers.conf ~/.config/containers/containers.conf
+
+  # BETTER: use drop-in directories if the tool supports them
+  # OR: merge/append only your specific settings
+  # OR: document that this file is managed by this project and will be overwritten
+  ```
+- [ ] **Audit rules ownership**: Same concern for `/etc/audit/rules.d/` — other security tools may also write there. Use a project-prefixed filename (`mariadb-podman.rules`, not `podman.rules`)
+
+### Separation of Concerns (SoC)
+
+- [ ] **Storage management decoupled**: LVM/XFS/partition setup is infrastructure, not application. It should be a separate tool/playbook that different teams can customize
+- [ ] **Network management decoupled**: Firewall rules, DNS, TLS certificates are infrastructure concerns. The application project defines what it needs (ports, protocols), not how to configure the host
+- [ ] **Runtime vs application**: The project delivers the container image + manifest. Host bootstrap (user creation, Podman install, storage) should be optional/pluggable, not mandatory
+  ```
+  Good SoC boundary:
+    Infrastructure team: provisions VM, creates user, installs Podman, manages storage
+    Application team:    delivers image + manifest + Quadlet unit
+    Overlap:             documented interface (expected user, expected paths, expected ports)
+  ```
+
+### Fail-Fast Defaults
+
+- [ ] **No silent defaults for critical values**: Disk paths, registry URLs, credentials must be explicitly set. Use `${VAR:?message}` not `${VAR:-default}`
+  ```bash
+  # BAD: silently uses /dev/sdc which might be the wrong disk
+  DISK="${DISK:-/dev/sdc}"
+
+  # GOOD: operator must be explicit
+  : "${MARIADB_DISK:?Set MARIADB_DISK to the dedicated data disk (e.g., /dev/sdc)}"
+  ```
+- [ ] **Standard paths as defaults are OK**: `/var/lib/mysql` is universally understood. Custom paths like `/base/MARIADB/data` are not — make them configurable or document why
+
+---
+
+## Templating Strategy Checklist (Step 5)
+
+Choose the right templating tool for the complexity level. See `cli-audit-shell/references/tooling-ladder.md` for the full decision tree.
+
+Quick reference:
+
+| Complexity | Tool | When |
+|-----------|------|------|
+| 1-3 text substitutions in plain files | `sed` | Simple `.conf`, `.env` |
+| Modify structured data (YAML/JSON keys) | `yq` / `jq` | Single-environment manifests |
+| Same manifest, 2-4 environment variations | `kustomize` | Multi-env deployments |
+| 5+ envs, conditionals, loops | Helm / Jsonnet | Complex deployments |
+
+- [ ] **Don't use sed on YAML**: sed doesn't understand YAML structure. It breaks on indentation, comments, and multi-line values
+- [ ] **Don't use kustomize for 2 variables**: Over-engineering adds maintenance burden. sed or yq suffices
+- [ ] **Don't build YAML with heredoc/echo**: No escaping for special characters (`:`, `#`, `-`, `[`). Use `yq -n` to build YAML programmatically
+- [ ] **Validate after templating**: After any templating, validate the result (`yq . output.yaml`, `kubeval`, `kubeconform`)
+
+---
+
 ## ops-decisions.md Template
 
 Maintain `ops-decisions.md` at project root — a quick-reference log of ops choices:
