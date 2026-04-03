@@ -27,6 +27,11 @@
 - [2026-04-03] cli-forge-infra — Don't recommend kustomize for manifests with 1-3 variable substitutions. The tooling ladder (sed < yq < kustomize < Helm) must match the complexity. Over-engineering is a finding, not a solution.
 - [2026-04-03] cli-audit-shell — `local var="$(cmd)"` masks `cmd`'s exit code because `local` returns 0. But this is ONLY a problem if you check `$?` immediately after. If you use `set -e`, the exit code of `cmd` IS propagated (bash 4.4+). Check the bash version context before flagging.
 
+## Convergence
+
+- [2026-04-03] cli-cycle — En mode convergence autonome, ne JAMAIS auto-corriger les items marqués "décision métier" ou "décision architecture" (CHANGELOG, LICENSE, overlay prod, etc.). Ces items sont DEFERRED et listés pour le user, pas corrigés silencieusement.
+- [2026-04-03] cli-cycle — Si une passe introduit PLUS de Tier 3 qu'elle n'en résout, STOP immédiat. C'est un signe de divergence (la correction crée plus de problèmes qu'elle n'en résout). Présenter l'état actuel et laisser le user décider.
+
 ## General
 
 - [2026-03-26] all skills — SKILL.md files grew to 700-800 lines. Everything loaded into context = token waste. Split: lean SKILL.md (~150 lines workflow) + references/ (loaded on-demand).

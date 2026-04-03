@@ -29,6 +29,7 @@ Run every applicable `cli-*` skill on the current project, collect results, deli
 1. **You don't duplicate logic — you delegate.** Each sub-agent reads the real SKILL.md and follows its instructions. You orchestrate, collect, and judge.
 2. **Show everything.** Never truncate the correction list. The user sees ALL issues, organized by severity.
 3. **Phoenix loop.** Audit → user fixes → re-audit → repeat until convergence.
+4. **Convergence autonome.** When invoked with `--converge`, run the entire loop in an isolated worktree, then present a single unified plan. Read `references/convergence.md` for the full algorithm.
 
 **Gotchas** — read `../../gotchas.md` before producing output to avoid known mistakes.
 
@@ -106,13 +107,21 @@ Phoenix — Quel tier attaquer ?
   [3] Corriger les 🟡 majeurs (N items)
   [4] Corriger les 🟢 mineurs (N items)
   [5] Pas maintenant
+  [6] Convergence autonome (dry-run → plan unifié)
 ```
 
-If the user chooses a tier (or All):
+If the user chooses a tier (1-4):
 1. Apply the corrections for that tier
 2. After completing the tier, **re-run only the affected skills** (not the full cycle)
 3. Present the updated triage with the new state
 4. Repeat the choice for remaining tiers
+
+If the user chooses `[6]` Convergence autonome:
+1. Read `references/convergence.md` for the full algorithm
+2. Create an isolated worktree, run fix-audit loop autonomously (max 5 passes)
+3. Track cascades (issues that only appear after earlier fixes)
+4. Present a single unified plan with the complete diff
+5. User approves (apply all), selects (cherry-pick), or rejects (discard)
 
 ### Step 7 — Phoenix Convergence (self-stopping)
 

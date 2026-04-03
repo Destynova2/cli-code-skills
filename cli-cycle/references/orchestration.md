@@ -203,6 +203,7 @@ After the triage, always present:
 | `3` | Corriger les 🟡 majeurs | N |
 | `4` | Corriger les 🟢 mineurs | N |
 | `5` | Pas maintenant | — |
+| `6` | Convergence autonome (dry-run → plan unifié) | N total |
 ```
 
 ### Phoenix re-audit (after fixes)
