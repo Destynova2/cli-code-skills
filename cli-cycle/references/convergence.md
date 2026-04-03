@@ -53,7 +53,7 @@ Record:
 ```
 pass = 1
 target_score = user_specified OR default 8.5
-max_passes = 5
+max_passes = user_specified OR default 10
 accumulated_findings = pass_0_findings
 
 WHILE (has_tier3 OR has_tier2) AND pass <= max_passes:
@@ -65,7 +65,11 @@ WHILE (has_tier3 OR has_tier2) AND pass <= max_passes:
   6. Add new findings to accumulated_findings (deduplicate by file:line + description similarity)
   7. Mark resolved findings as RESOLVED
   8. Compute new score
-  9. IF score >= target_score AND no Tier 3: BREAK (converged)
+  9. EARLY-STOP checks (any true = BREAK):
+     a. score >= target_score AND no Tier 3         → CONVERGED
+     b. new_findings_count == 0                      → STABLE (no regressions)
+     c. new_tier3_count > resolved_tier3_count       → DIVERGING (stop, report)
+     d. score_delta < 0.1 for 2 consecutive passes   → PLATEAU (diminishing returns)
   10. pass++
 ```
 
@@ -176,13 +180,16 @@ Fichiers modifies: {list}
 
 The loop stops when ANY of these is true:
 
-| Condition | Meaning |
-|-----------|---------|
-| 0 Tier 3 AND 0 Tier 2 | Healthy — only cosmetic items remain |
-| Score >= target_score | User's target reached |
-| Pass > max_passes (5) | Safety limit — prevent infinite loops |
-| Re-audit finds 0 new issues | Stable — no regressions from fixes |
-| A fix introduces MORE Tier 3 than it resolves | Diverging — stop and report |
+The primary stop mechanism is **early-stop** (Step C3.9), not the max pass count. The max is a safety net, not the expected exit.
+
+| Condition | Name | Meaning |
+|-----------|------|---------|
+| 0 Tier 3 AND 0 Tier 2 | **CONVERGED** | Healthy — only cosmetic items remain |
+| Score >= target_score | **CONVERGED** | User's target reached |
+| Re-audit finds 0 new issues | **STABLE** | No regressions — fixes are clean |
+| Score delta < 0.1 for 2 consecutive passes | **PLATEAU** | Diminishing returns — remaining items are hard/deferred |
+| A fix introduces MORE Tier 3 than it resolves | **DIVERGING** | Stop immediately — corrections are making things worse |
+| Pass > max_passes (default 10) | **SAFETY** | Unlikely to reach — early-stop should trigger first |
 
 ---
 
@@ -191,7 +198,7 @@ The loop stops when ANY of these is true:
 1. **Never modify the user's working directory** until they explicitly approve
 2. **Commit after each pass** in the worktree with message `phoenix: pass N — X items resolved`
 3. **Stop if diverging**: if a pass introduces more Tier 3 items than it resolves, stop and present what you have
-4. **Max 5 passes**: prevent runaway loops. If not converged after 5, present current state
+4. **Max passes is a safety net, not the exit condition**: early-stop (converged/stable/plateau/diverging) is the primary mechanism. Default max is 10 but configurable via `--max-passes`. In practice, convergence happens in 2-4 passes
 5. **No architecture decisions**: items marked as "decision metier" or "decision architecture" are DEFERRED, never auto-fixed
 6. **Track cascades explicitly**: when a fix in pass N causes a new finding in pass N+1, record the causal link
 
