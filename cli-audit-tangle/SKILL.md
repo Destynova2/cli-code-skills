@@ -1,15 +1,17 @@
 ---
 name: cli-audit-tangle
 description: >
-  Detect spaghetti code using graph theory, spectral analysis, and biomimetic patterns.
+  Detect spaghetti code and dependency cycles using graph theory, spectral analysis, and biomimetic patterns.
   Finds god functions, circular dependencies, dead code, suboptimal module boundaries,
-  and inefficient call patterns. Uses call graph topology (not just line-level metrics)
-  to identify structural problems invisible to linters.
+  CI/CD pipeline deadlocks, and inefficient call patterns. Uses call graph topology (not just line-level metrics)
+  to identify structural problems invisible to linters. Provides concrete fix patterns per domain.
   Use when the user says 'spaghetti', 'tangle', 'untangle', 'god function', 'god object',
   'circular dependency', 'cycle detection', 'call graph', 'module coupling', 'dead code',
   'code topology', 'complexity analysis', 'who calls who', 'démêler', 'couplage',
-  'dépendances circulaires', 'fonction dieu', 'code mort'.
-  Also triggers on 'refactor structure', 'split module', 'too coupled', 'architecture debt'.
+  'dépendances circulaires', 'fonction dieu', 'code mort', 'import cycle', 'ImportError',
+  'pipeline deadlock', 'CI stuck', 'needs deadlock', 'everything depends on everything'.
+  Also triggers on 'refactor structure', 'split module', 'too coupled', 'architecture debt',
+  'dependency diagnostic', 'workflow cycle'.
 argument-hint: "[file-or-directory-or-module]"
 context: fork
 agent: general-purpose
@@ -33,12 +35,17 @@ Detect structural spaghetti using call graph analysis, spectral graph theory, an
 > "La Topoisomérase ne voit pas le contenu de l'ADN — elle voit sa **forme**.
 > Un nœud est un nœud, quel que soit le gène qu'il porte."
 
-## Two biological mechanisms
+## Biological & physical mechanisms
 
-| Organism | Mechanism | What it does in code analysis |
-|----------|-----------|------------------------------|
+| Source | Mechanism | What it does in code analysis |
+|--------|-----------|------------------------------|
 | **Topoisomérase** (enzyme) | Cuts DNA strands at knot points, passes strands through, re-ligates | Finds the **optimal cut points** in tangled call graphs. Type I = minor refactor (extract function). Type II = major restructuring (split module) |
 | **Fourmis de feu** (Solenopsis) | Form living rafts by linking bodies — each ant grips exactly 2 neighbors. If one ant grips 12, the raft collapses | Detects **god functions** — nodes that grip too many neighbors. The raft (codebase) is fragile at those points |
+| **Impasse ferroviaire** | Two trains on a single track facing each other — neither can advance | Detects **CI/CD deadlocks** — job A needs B, job B needs A |
+| **Polymère emmêlé** | Longer polymer chains = higher viscosity = slower system | Measures **codebase viscosity** — deep dependency chains = every change touches 10 files |
+| **Méduse** | Tentacles don't tangle thanks to mucus (reduced friction) | **Interfaces** are the mucus — reduce coupling friction between modules |
+
+> Read `references/analogies.md` for extended analogies and mental models.
 
 ## Three mathematical lenses
 
@@ -68,19 +75,20 @@ Read `references/analysis-methods.md` for threshold calibration per tier.
 - **File** (`src/core/mod.rs`): analyze that file's functions and their call relationships
 - **Directory** (`src/`): analyze all functions in scope
 - **Module name** (`auth`, `parser`): focus on that module's internal + external calls
-- **Empty**: analyze the entire project
+- **CI/CD** (`.github/workflows/`, `.gitlab-ci.yml`): analyze pipeline dependency graph
+- **Empty**: analyze the entire project (code + CI if present)
 
 ## Workflow
 
 ### Step 0 — Detect language and tools
 
-| Language | Call graph tool | AST tool | Mutation tool |
-|----------|----------------|----------|---------------|
-| Rust | `cargo-call-stack` or LSP references | `ast-grep` | `cargo-mutants` |
-| Python | `pyan3`, `py-call-graph` | `ast-grep` | `mutmut` |
-| JS/TS | `madge` | `ast-grep` | `Stryker` |
-| Go | `go-callvis` | `ast-grep` | `go-mutesting` |
-| Other | LSP call hierarchy | `ast-grep` | — |
+| Language | Call graph tool | AST tool | Quick dependency graph command |
+|----------|----------------|----------|-------------------------------|
+| Rust | `cargo-call-stack` or LSP references | `ast-grep` | `cargo tree --duplicates` |
+| Python | `pyan3`, `py-call-graph` | `ast-grep` | `pydeps src/ --max-bacon 3 --no-show --dot \| dot -Tsvg > deps.svg` |
+| JS/TS | `madge` | `ast-grep` | `npx depcruise src --include-only "^src" --output-type dot \| dot -Tsvg > deps.svg` |
+| Go | `go-callvis` | `ast-grep` | `go-callvis -group pkg ./...` |
+| Other | LSP call hierarchy | `ast-grep` | `grep -r "^import\|^from\|^use\|^require" src/ \| grep -v test \| sort \| uniq` |
 
 Check if tools are installed. If not, fall back to **LSP-based analysis** (grep for function definitions + call sites).
 
@@ -129,6 +137,20 @@ Flag functions with `god_score > 0.7`.
 Find all strongly connected components (Tarjan's algorithm).
 Each SCC with > 1 node = a circular dependency.
 
+**Quick symptom hints:**
+- `ImportError: cannot import name X from partially initialized module Y` → Python cycle (quasi-certain)
+- CI job stuck "waiting" with free runners → `needs` deadlock
+- Stack overflow at init → circular instantiation
+- Build looping → hidden transitive dependency
+
+**Qualify each cycle found:**
+
+| Type | Definition | Urgency |
+|------|-----------|---------|
+| **Hard cycle** | A imports B which imports A at module level | Mandatory fix — runtime breaks |
+| **Strong coupling** | A and B know each other mutually but not at import level | Recommended — works but fragile |
+| **God module** | One module imported by 50+ others, single point of failure | Strategic — split progressively |
+
 **3c — Module boundary analysis (Fiedler vector)**
 
 If the project has module structure:
@@ -147,6 +169,30 @@ Read `references/analysis-methods.md` for detailed algorithms.
 
 Read `references/anti-patterns.md` for the 8 named anti-patterns with detection heuristics. Flag each with severity and evidence.
 
+### Step 3f — CI/CD pipeline analysis (if applicable)
+
+If `.github/workflows/` or `.gitlab-ci.yml` exists:
+
+1. Extract the `needs`/`dependencies` graph from all workflow files
+2. Build adjacency list: `job_A → [job_B, job_C]`
+3. Run cycle detection (Tarjan) on the job graph
+4. Detect:
+   - **Deadlocks**: circular `needs` chains
+   - **Bottleneck jobs**: single job that blocks > 50% of downstream jobs
+   - **Redundant dependencies**: `needs` that are already transitively satisfied
+   - **Workflow trigger cycles**: `workflow_run` chains that loop
+
+**GitHub Actions detection:**
+```bash
+grep -r "needs:" .github/workflows/ | grep -v "^#"
+grep -r "workflow_run\|workflow_call" .github/workflows/
+```
+
+**GitLab detection:**
+```bash
+grep -A5 "needs:\|dependencies:" .gitlab-ci.yml | grep -v "^--$"
+```
+
 ### Step 4 — Classify refactoring recommendations
 
 | Type | Biology | Trigger | Recommendation |
@@ -155,6 +201,19 @@ Read `references/anti-patterns.md` for the 8 named anti-patterns with detection 
 | **Type II** (major) | Topoisomérase II — cut both strands | Module coupling > cohesion, cycles between modules | Split module, reorganize architecture |
 | **Cleanup** | Apoptose — programmed cell death | Dead functions (in-degree = 0) | Remove after confirmation |
 | **Decouple** | Break ant raft overload | Circular dependencies | Introduce trait/interface, dependency inversion |
+| **Unblock** | Railway switch | CI/CD deadlock, bottleneck job | Extract common upstream job, flatten `needs` graph |
+
+Read `references/fix-patterns.md` for concrete remediation patterns by language and domain.
+
+### Diagnostic checklist (quick self-check before reporting)
+
+```
+[ ] Graph built? (no eyeball diagnosis)
+[ ] Cycles identified? (SCC located, not just "seems coupled")
+[ ] Each cycle qualified? (hard / strong / god module)
+[ ] Cut point identified? (interface / event / extraction)
+[ ] Fix verifiable? (test, build, pipeline green)
+```
 
 ### Step 5 — Score and report
 
@@ -214,6 +273,22 @@ Read `references/anti-patterns.md` for the 8 named anti-patterns with detection 
 | 1 | God Function | Critical | `process_request()`: god_score 0.91 | Type I: extract 3 sub-functions |
 | 2 | Circular Dep | Critical | `parse ↔ validate` across modules | Introduce `Validator` trait |
 
+## CI/CD Pipeline Topology (if applicable)
+
+| Metric | Value | Status |
+|--------|-------|--------|
+| Workflow files | N | — |
+| Total jobs | N | — |
+| `needs` edges | N | — |
+| Deadlocks (cycles) | N | {OK / Critical} |
+| Bottleneck jobs (> 50% downstream) | N | {OK / Warning} |
+| Max pipeline depth | N | {OK / Warning} |
+
+| Issue | Jobs | Type | Recommendation |
+|-------|------|------|---------------|
+| Deadlock | `build-a ↔ test-b` | Cycle | Extract common `prepare` job |
+| Bottleneck | `build` blocks 8/10 jobs | Hub | Parallelize with matrix strategy |
+
 ## Refactoring Roadmap
 
 | # | Action | Type | Impact | Effort | Target |
@@ -232,6 +307,8 @@ tangle_score = 100
   - (modules_with_coupling_gt_cohesion × 10)
   - (max_chain_depth > 10 ? 10 : 0)
   - (dead_function_ratio > 0.1 ? 5 : 0)
+  - (ci_deadlock_count × 15)
+  - (ci_bottleneck_count × 5)
   clamped to [0, 100]
 ```
 
@@ -260,7 +337,7 @@ tangle_score = 100
 | `cli-audit-drift` | Checks behavioral conformity. tangle checks **structural** conformity |
 | `cli-forge-schema` | Can visualize the call graph as a Mermaid diagram |
 | `cargo-machete` | Finds unused **dependencies**. tangle finds unused **functions** |
-| `runtime-perf-audit` | Finds **runtime** inefficiency. tangle finds **structural** inefficiency |
+| `cli-forge-pipeline` | Generates CI/CD pipelines. tangle audits their **dependency topology** |
 | `cli-cycle` | Should call cli-audit-tangle as part of the full project review |
 
 ## What this skill does NOT do
