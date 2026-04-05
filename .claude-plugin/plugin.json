@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "description": "Production-ready Claude Code skills — audit code quality, forge design docs, generate documentation, automate infrastructure.",
   "author": {
-    "name": "Clement Liard",
+    "name": "clement",
     "url": "https://github.com/Destynova2"
   },
   "homepage": "https://github.com/Destynova2/cli-code-skills",
