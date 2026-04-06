@@ -1,5 +1,5 @@
 ---
-name: conventional-commits
+name: cli-git-conventional
 description: >
   Enforce Conventional Commits v1.0.0, SemVer 2.0.0, branch naming, and human ghostwriter
   style on all git/jj operations. Zero AI markers. Use on 'commit', 'branch', 'tag',
@@ -191,10 +191,10 @@ EOF
 
 | Skill | Relationship |
 |-------|-------------|
-| `cli-cycle` | After fixes, cli-cycle should invoke conventional-commits for commit messages |
+| `cli-cycle` | After fixes, cli-cycle should invoke cli-git-conventional for commit messages |
 | `cli-forge-pipeline` | Pipeline may enforce commit format via CI hooks |
-| `cli-audit-code` | Code audit may suggest refactors -- conventional-commits writes the commit |
-| `cli-audit-credential` | If credentials are rotated, conventional-commits writes `chore(auth):` |
+| `cli-audit-code` | Code audit may suggest refactors -- cli-git-conventional writes the commit |
+| `cli-audit-credential` | If credentials are rotated, cli-git-conventional writes `chore(auth):` |
 
 ## Checklist (internal, before delivering a message)
 

@@ -23,7 +23,7 @@ Do NOT use symlinks — use real copies.
 
 **Forge (10):** cli-forge-arch, cli-forge-boss, cli-forge-doc, cli-forge-hld, cli-forge-infra, cli-forge-lld, cli-forge-pipeline, cli-forge-readme, cli-forge-schema, cli-forge-tree
 
-**Git (1):** conventional-commits
+**Git (1):** cli-git-conventional
 
 ## Git identity
 
@@ -31,5 +31,5 @@ Use `clement <cliard@a00.fr>` for this repo. Never use naval-group email.
 
 ## Commit style
 
-This repo uses the `conventional-commits` skill. Never add `Co-Authored-By` trailers.
+This repo uses the `cli-git-conventional` skill. Never add `Co-Authored-By` trailers.
 Follow Conventional Commits v1.0.0 spec. Ghostwriter style — human voice, no AI markers.
