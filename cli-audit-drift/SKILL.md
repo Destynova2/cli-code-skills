@@ -37,6 +37,16 @@ Detect silent behavioral drift between what code **was supposed to do** (intenti
 | **Corbeau de Nouvelle-Calédonie** | Gap detection between intention and result | Compares CONTRACTS.md (intention) against code (result). Names the gap precisely. Asks if intentional or accidental |
 | **Autophagie cellulaire** | Continuous conformity surveillance | Scans all contracted functions, isolates non-conforming code, proposes minimal correction or contract update |
 
+## Mitosis — Scale to scope
+
+| Scope | Tier | Behavior |
+|-------|------|----------|
+| Single function | **S** | Scan that function against its contract only |
+| File or small directory (<10 contracted functions) | **M** | Full scan, all contracts in scope |
+| Entire project (>10 contracted functions) | **L** | Sample top 15-20 highest-risk contracts (most recent changes, most dependencies) |
+
+For tier **L**: prioritize contracts whose implementation files appear in `git log --since="2 weeks ago"`.
+
 ## Input
 
 `$ARGUMENTS` is the target to scan:

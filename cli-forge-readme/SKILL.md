@@ -104,3 +104,14 @@ RCI = Σ(wᵢ × sᵢ) / Σ(wᵢ) × 10
 - Write to project root as `README.md`
 - Show a brief summary: which tier sections were generated, what's missing/skipped
 - Output the RCI table at the end of the review
+
+## Integration with other cli-* skills
+
+| Skill | Relation |
+|-------|----------|
+| `/cli-forge-tree` | Generer la section "Project Structure" automatiquement |
+| `/cli-forge-schema` | Generer les diagrammes embarques dans le README |
+| `/cli-forge-doc` | Le README est le point d'entree de la doc complete |
+| `/cli-audit-doc` | Auditer la qualite du README genere |
+| `/cli-audit-sync` | Verifier que le README reste coherent avec le code |
+| `/cli-cycle` | Inclus dans l'audit documentaire du cycle |

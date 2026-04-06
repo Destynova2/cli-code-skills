@@ -124,3 +124,14 @@ Output the SHS table at the end of the tree analysis.
 - **Scaffold**: create directories and placeholder files on the filesystem
 - **Audit**: list issues + suggested fixes, then show the "ideal" tree side-by-side
 - If the `readme` skill is also being used, feed the annotated tree into Tier 3 "Project Structure"
+
+## Integration with other cli-* skills
+
+| Skill | Relation |
+|-------|----------|
+| `/cli-forge-readme` | Alimenter la section "Project Structure" du README |
+| `/cli-forge-doc` | Structure de reference pour generer la doc |
+| `/cli-audit-tangle` | Comparer la structure physique aux couplages logiques |
+| `/cli-audit-code` | Verifier les conventions de nommage alignees avec la structure |
+| `/cli-forge-boss` | Assigner les worktrees en fonction de la structure |
+| `/cli-cycle` | Inclus dans l'audit structurel du cycle |

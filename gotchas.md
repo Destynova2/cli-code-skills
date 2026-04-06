@@ -20,6 +20,7 @@
 ## CI/CD
 
 - [2026-03-27] cli-forge-pipeline — Bumped `cosign-installer@v3` → `@v4` assuming the major floating tag existed. It didn't (only `v4.0.0`, `v4.1.1` existed). Always verify tag existence via `gh api repos/{owner}/{repo}/git/refs/tags/{tag}` before recommending a bump. If no floating major tag, pin to latest patch (e.g., `@v4.1.1`).
+- [2026-04-06] cli-forge-pipeline — Missed `cargo mutants` as a fan-out candidate. Any job running the same tool on N files sequentially (`--file A --file B --file C`) is a fan-out/shard opportunity. The fourmis légionnaires pattern (#3) applies to ALL slow sequential jobs, not just tests. Checklist: grep for `--file`, `--shard`, `--partition` in CI YAML — if a job lists multiple targets inline, propose sharding into a matrix.
 
 ## Shell & Infra
 
@@ -31,6 +32,17 @@
 
 - [2026-04-03] cli-cycle — En mode convergence autonome, ne JAMAIS auto-corriger les items marqués "décision métier" ou "décision architecture" (CHANGELOG, LICENSE, overlay prod, etc.). Ces items sont DEFERRED et listés pour le user, pas corrigés silencieusement.
 - [2026-04-03] cli-cycle — Si une passe introduit PLUS de Tier 3 qu'elle n'en résout, STOP immédiat. C'est un signe de divergence (la correction crée plus de problèmes qu'elle n'en résout). Présenter l'état actuel et laisser le user décider.
+
+## Multi-Agent / Boss
+
+- [2026-04-06] cli-forge-boss — `--dangerously-skip-permissions` does NOT bypass teammate permission prompts in Agent Teams. The team leader still gets interactive UI prompts for worker edits. Must add `--permission-mode bypassPermissions` as well.
+- [2026-04-06] cli-forge-boss — `--system-prompt-file` does not exist in Claude Code CLI. Use `--append-system-prompt "$(cat path/to/file.md)"` instead.
+- [2026-04-06] cli-forge-boss — `--teammate-mode tmux` is required to see workers in separate tmux panes. Without it, workers are invisible subprocesses.
+- [2026-04-06] cli-forge-boss — `on_project_first_start` is not a valid tmuxinator hook. Use `on_project_start` with idempotent commands (`2>/dev/null || true`).
+- [2026-04-06] cli-forge-boss — Workers editing shared-state.md (outside their worktree) triggers permission requests to the boss. Add explicit `Edit(//path/.claude/shared-state.md)` in settings.local.json.
+- [2026-04-06] cli-forge-boss — Sending Enter via tmux send-keys too fast (< 1s interval) gets ignored by Claude UI. Use 3s minimum spacing if auto-approving.
+- [2026-04-06] cli-forge-boss — Claude Code in interactive mode always waits for a first user message. The boss won't start autonomously from system prompt alone — needs a kick message.
+- [2026-04-06] cli-forge-boss — Do NOT use `-p` (print mode) for the boss. Print mode disables interactive mode and teammate tmux panes won't appear.
 
 ## General
 

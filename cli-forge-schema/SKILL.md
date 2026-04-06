@@ -214,3 +214,14 @@ Read `references/diagram-types.md` for detailed syntax and GitHub-tested example
 | Diagram as decoration | Diagram as communication |
 | Same diagram type for everything | Match type to data shape |
 | Wall of text in nodes | Short labels, details in docs |
+
+## Integration with other cli-* skills
+
+| Skill | Relation |
+|-------|----------|
+| `/cli-forge-hld` | Generer les diagrammes C4 L1-L2 d'un HLD |
+| `/cli-forge-lld` | Generer les diagrammes C4 L3-L4, sequence, classe d'un LLD |
+| `/cli-forge-readme` | Generer les diagrammes embarques dans un README |
+| `/cli-audit-tangle` | Visualiser le graphe d'appels et les cycles detectes |
+| `/cli-forge-pipeline` | Visualiser le DAG du pipeline CI/CD |
+| `/cli-forge-tree` | Representer la structure de projet en diagramme |

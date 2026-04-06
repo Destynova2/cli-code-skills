@@ -115,3 +115,14 @@ These strategies are detailed in `references/patterns.md`. Read it when applying
 12. **Simplify before complexify.** When a fix fails, remove a layer before adding one. Read `references/patterns.md` for SBC strategy.
 13. **2-failure stop-loss.** After 2 consecutive failures, MANDATORY STOP. Read `references/patterns.md` for Patch Bankruptcy Rule.
 14. **Comment every config block.** 1 line, max 80 chars. Read `references/checklists.md` for comment audit checklist.
+
+## Integration with other cli-* skills
+
+| Skill | Relation |
+|-------|----------|
+| `/cli-audit-shell` | Auditer les scripts shell d'infra (deploy, entrypoints, init) |
+| `/cli-audit-sync` | Verifier que la doc infra correspond a la realite |
+| `/cli-forge-pipeline` | Optimiser le pipeline CI/CD qui deploie l'infra |
+| `/cli-forge-schema` | Generer des diagrammes d'architecture (C4, reseau, flux) |
+| `/cli-forge-hld` | Produire le HLD de l'architecture infra |
+| `/cli-cycle` | Audit complet du projet infra |

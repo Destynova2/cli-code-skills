@@ -21,7 +21,7 @@ Do NOT use symlinks — use real copies.
 
 **Audit (10):** cli-audit-code, cli-audit-credential, cli-audit-doc, cli-audit-drift, cli-audit-shell, cli-audit-sync, cli-audit-tangle, cli-audit-test, cli-audit-wizard, cli-cycle
 
-**Forge (9):** cli-forge-arch, cli-forge-doc, cli-forge-hld, cli-forge-infra, cli-forge-lld, cli-forge-pipeline, cli-forge-readme, cli-forge-schema, cli-forge-tree
+**Forge (10):** cli-forge-arch, cli-forge-boss, cli-forge-doc, cli-forge-hld, cli-forge-infra, cli-forge-lld, cli-forge-pipeline, cli-forge-readme, cli-forge-schema, cli-forge-tree
 
 **Git (1):** conventional-commits
 

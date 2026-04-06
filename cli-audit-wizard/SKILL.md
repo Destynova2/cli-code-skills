@@ -276,6 +276,16 @@ Pattern: Caddy Admin API model -- live config via REST, no restart.
 
 Both modes use the same wizard engine. The mode is determined by one seed question or auto-detected.
 
+## Mitosis — Scale to scope
+
+| Scope | Tier | Behavior |
+|-------|------|----------|
+| Single wizard file | **S** | Audit that one wizard flow, skip multi-surface analysis |
+| Directory or small project (1-3 wizards) | **M** | Full audit, all dimensions |
+| Large project (4+ wizard surfaces) | **L** | Audit each surface individually, then cross-surface consistency |
+
+For tier **S**: skip the Multi-Surface Architecture section entirely.
+
 ## Input
 
 `$ARGUMENTS` is the target to audit:
