@@ -66,6 +66,29 @@ Remplacer les `{variables}` par les valeurs du projet.
 | Module/Fonction | Couplage | Assigne a |
 |-----------------|----------|-----------|
 
+## Zones sensibles (quorum 3/3 unanimite)
+
+> Revue a chaque fin de sprint. Si un fichier cause des problemes, le passer ici.
+> Si un fichier est ici depuis 3 sprints sans incident, le repasser en zone normale.
+
+| Pattern | Raison | Depuis | Incidents |
+|---------|--------|--------|-----------|
+| .github/workflows/** | CI = impact global | initial | - |
+| Cargo.toml (section [dependencies]) | Supply chain risk | initial | - |
+| .env, *.secret, credentials* | Secrets | initial | - |
+| src/auth/** | Module authentification critique | initial | - |
+| src/security/** | Module securite critique | initial | - |
+| CONTRACTS.md | Regles du projet | initial | - |
+| CLAUDE.md | Instructions du projet | initial | - |
+
+### Historique des hallucinations
+
+> Si un Sous-Chef a APPROVE un diff qui a cause un probleme, le noter ici.
+> Sert a ameliorer les regles des Sous-Chefs au prochain sprint.
+
+| Sprint | Sous-Chef | Fichier | Ce qui s'est passe | Fix applique |
+|--------|-----------|---------|---------------------|--------------|
+
 ## Contexte partage
 
 > Infos que tous les workers doivent connaitre.

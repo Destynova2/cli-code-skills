@@ -291,16 +291,49 @@ Read `references/parallel-exploration.md`. For each task, the Chef asks:
 
 EXPLORATION tasks use 2-3 commis on the same problem with different approaches. The Sous-Chef runs the comparison grid and the Chef picks the winner. **Confirm with user before launching** (2-3x token cost).
 
-## Phase 1 — Le menu
+## Phase 1 — Le menu (auto-detection, NE PAS DEMANDER)
 
-Ask these questions (skip if clear from context):
+**REGLE : Ne pose AUCUNE question si la reponse est dans le projet.**
+Lis TOUT avant de demander quoi que ce soit :
 
-1. **Quels plats ?** (the tasks / features)
-2. **Combien de commis ?** (default: 3, max: 5)
-3. **Ordre d'envoi ?** (dependencies between tasks)
-4. **Plats hors carte ?** (side projects / standalone repos)
-5. **Quel niveau de degustation ?** (which `/cli-audit-*` quality gates)
-6. **Branche de service ?** (develop, main, etc.)
+1. **Quels plats ?** → Lire dans cet ordre jusqu'a trouver :
+   - `{project}/.claude/shared-state.md` section "Backlog" (travail du sprint precedent)
+   - Roadmap Obsidian (si vault specifie dans CLAUDE.md ou shared-state)
+   - `gh issue list` (issues ouvertes)
+   - `git log --oneline -20` (travail recent, ce qui manque)
+   - CLAUDE.md section roadmap/next steps
+   - README.md section TODO/roadmap
+   Si TOUJOURS rien → demander
+
+2. **Combien de commis ?** → Compter les taches trouvees en 1, appliquer le tier (S/M/L/XL). Ne pas demander.
+
+3. **Ordre d'envoi ?** → Deduire des dependances :
+   - `cli-audit-tangle` (couplages = sequence obligatoire)
+   - Si tache B touche un fichier cree par tache A → B depend de A
+   - Si pas de dependance → parallele
+   Ne pas demander.
+
+4. **Plats hors carte ?** → Scanner :
+   - `ls {workspace}/` pour les repos voisins
+   - shared-state.md section "Contexte partage" (liens vers d'autres repos)
+   - CLAUDE.md (references a d'autres projets)
+   Ne pas demander.
+
+5. **Quel niveau de degustation ?** → Deduire du tier :
+   - S → `/cli-audit-code` only
+   - M → minimum viable (code + drift)
+   - L → standard (code + drift + test + sync)
+   - XL → complet
+   Ne pas demander.
+
+6. **Branche de service ?** → `git branch -a | head` + CLAUDE.md. C'est toujours ecrit. Ne pas demander.
+
+**Ne demander a l'utilisateur QUE si :**
+- Aucune source ne contient l'information (pas de roadmap, pas d'issues, pas de backlog)
+- Il y a une ambiguite critique (2 roadmaps contradictoires)
+- Le tier XL est detecte (confirmation cout tokens)
+
+Presenter le menu deduit et demander confirmation : "Voici ce que je vais lancer. OK ?"
 
 ## Phase 2 — La brigade s'installe
 
@@ -312,32 +345,47 @@ Read `references/shared-state-template.md` and customize.
 
 ### 2.2 — Les consignes du Chef (`{project}/.claude/prompts/chef-{session}.md`)
 
-Read `references/conductor-prompt-template.md`. The Chef:
+**OBLIGATION ABSOLUE : Read `references/conductor-prompt-template.md` BEFORE generating the prompt.**
+**Le prompt genere DOIT contenir les 3 Sous-Chefs votants + le Sous-Chef Merge.**
+**Si le prompt ne contient pas "sous-chef-scope", "sous-chef-secu", "sous-chef-qualite", "sous-chef-merge" → le prompt est INVALIDE.**
+
+Le prompt du Chef DOIT inclure dans cet ordre :
+1. TeamCreate
+2. **Spawn des 3 Sous-Chefs votants** (scope, secu, qualite) — copier VERBATIM depuis le template
+3. **Spawn du Sous-Chef Merge** — copier VERBATIM depuis le template
+4. **Protocole de vote avec rounds de resolution** — copier VERBATIM depuis le template
+5. Spawn des N Commis
+6. PERT
+7. Shutdown protocol (avec revue zones sensibles)
+
+Le Chef :
 - Creates the team (TeamCreate)
-- Spawns Sous-Chef + N Commis (Agent tool)
-- Sends the menu (PERT) to Sous-Chef
-- Receives "plat envoye" from Sous-Chef
-- Announces "envoyez !" to dependent commis
+- Spawns 3 Sous-Chefs votants + 1 Sous-Chef Merge + N Commis
+- Les permissions des Commis passent par les 3 Sous-Chefs (quorum 2/3 normal, 3/3 sensible)
+- Le Sous-Chef Merge gere les quality gates, merges, CI
 - Produces the rapport de service
 
-### 2.3 — Les consignes du Sous-Chef (embedded)
+### 2.3 — Les 3 Sous-Chefs votants (OBLIGATOIRE — embedded dans le prompt Chef)
 
-Spawned by Chef. The Sous-Chef:
-- Executes quality gates (/cli-audit-*)
-- Merges in gate pane (tmux send-keys)
-- Watches CI (gh run watch)
-- Updates shared-state.md
-- Reports to Chef
+**COPIER les prompts des 3 sous-chefs depuis `references/conductor-prompt-template.md` section "Spawn les 3 Sous-Chefs".**
 
-**CRITICAL:** Sous-Chef runs `mode: "bypassPermissions"` — il ne demande jamais.
+Chacun vote independamment : APPROVE / DENY+solution / CONCERN+solution.
+Rounds de resolution si pas de consensus. Escalade humaine < 2%.
 
-### 2.4 — Les fiches de poste des Commis (embedded)
+### 2.4 — Le Sous-Chef Merge (OBLIGATOIRE — embedded dans le prompt Chef)
+
+**COPIER le prompt depuis `references/conductor-prompt-template.md` section "Spawn le Sous-Chef Merge".**
+
+Gere les quality gates, merges, CI. Ne vote pas sur les permissions.
+
+### 2.5 — Les fiches de poste des Commis (embedded)
 
 Each commis prompt includes:
 - Shared state path (absolute)
 - Mission (le plat a preparer)
 - Steps (la recette)
-- SendMessage au Sous-Chef quand pret (NOT au Chef)
+- SendMessage au Sous-Chef Merge quand pret (NOT au Chef)
+- Les permissions passent par le quorum des 3 Sous-Chefs (le commis ne le sait pas)
 
 ### 2.5 — Tmuxinator (`~/.config/tmuxinator/{session}.yml`)
 
