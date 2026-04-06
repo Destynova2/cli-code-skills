@@ -154,6 +154,16 @@ git worktree add ../wt -b feat/x 2>/dev/null || true
 
 ---
 
+## G15 — PRs paralleles sur le meme fichier = conflit
+
+**Probleme:** Le chef ouvre N PRs en parallele qui touchent le meme fichier (ex: ci.yml). La premiere merge OK, les suivantes ont des conflits.
+
+**Fix:** Si plusieurs taches touchent le meme fichier, les sequencer dans le PERT (pas en parallele). Ou mieux : merger localement dans l'ordre, tester, puis push une seule PR.
+
+**Regle pour le sous-chef :** Avant de merger une PR, verifier si une autre PR ouverte touche le meme fichier. Si oui, merger la premiere, rebase la seconde, puis merger.
+
+---
+
 ## G14 — Read access aux repos externes
 
 **Probleme:** Un worker doit lire un autre repo (ex: sokolsky) mais n'a pas les permissions.

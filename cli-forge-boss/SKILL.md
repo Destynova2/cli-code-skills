@@ -183,6 +183,25 @@ Scale the brigade to the workload. Never deploy 5 commis for 2 tasks.
 
 For tier **S**: skip tmuxinator entirely. Use a single `claude` invocation with `--append-system-prompt` and one worktree. The chef handles quality gates directly.
 
+### 0.5 — Build coupling matrix
+
+Read `references/conflict-resolution.md`. Before assigning tasks:
+
+1. Run `/cli-audit-tangle` on the project
+2. Build the coupling matrix (file × task: R/W)
+3. If W/W conflict on same file → assign to same commis OR sequence in PERT
+4. Mark "hot files" (Cargo.toml, ci.yml, mod.rs) → managed by Sous-Chef only
+
+### 0.6 — Identify exploration candidates
+
+Read `references/parallel-exploration.md`. For each task, the Chef asks:
+
+- Is there a non-trivial architecture choice? → mark as EXPLORATION
+- Is there a complex bug with unknown root cause? → mark as HYPOTHESES
+- Did the user ask to "compare approaches"? → mark as EXPLORATION
+
+EXPLORATION tasks use 2-3 commis on the same problem with different approaches. The Sous-Chef runs the comparison grid and the Chef picks the winner. **Confirm with user before launching** (2-3x token cost).
+
 ## Phase 1 — Le menu
 
 Ask these questions (skip if clear from context):
@@ -276,6 +295,8 @@ Present to the user:
 | `references/tmuxinator-template.md` | Tmuxinator YAML |
 | `references/permissions-template.md` | settings.local.json |
 | `references/quality-gates.md` | La carte des degustations (audit skills) |
+| `references/conflict-resolution.md` | Arbre de decision, matrice de couplage, file locking, escalade |
+| `references/parallel-exploration.md` | Hypotheses concurrentes, approches paralleles, grille de comparaison |
 
 ## Integration with other cli-* skills
 
