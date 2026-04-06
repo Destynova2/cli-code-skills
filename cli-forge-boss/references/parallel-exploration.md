@@ -45,7 +45,60 @@ Le Sous-Chef compare :
 Le Chef valide et assigne le fix au commis gagnant
 ```
 
-**Anti-pattern : NE PAS faire debattre les commis entre eux.** L'ICLR 2025 montre que le debat multi-agent bat rarement un agent seul + chain-of-thought. Le Sous-Chef juge, les commis ne se parlent pas.
+**Anti-pattern : NE PAS faire debattre les commis entre eux.** Le Sous-Chef juge, les commis ne se parlent pas. Voir la section "Debat vs Parallele" ci-dessous pour comprendre pourquoi.
+
+## Debat vs Parallele — Quand le contexte different sert (et quand il ne sert pas)
+
+> Source: ICLR 2025 — "Multi-LLM-Agent Debate: A Critical Assessment"
+
+Le debat multi-agent (agents qui argumentent entre eux pour converger) **bat rarement un seul agent + chain-of-thought**. Trois raisons :
+
+1. **Biais de position** — chaque agent defend sa reponse initiale au lieu de chercher la verite
+2. **Complaisance** — l'agent "perdant" accepte souvent par defaut, pas par conviction
+3. **Cout 3-5x** — pour un resultat equivalent ou pire
+
+### Tableau decisionnel : debat, parallele, ou juge ?
+
+| La verite est... | Exemple | Methode | Qui decide | Debat entre commis ? |
+|------------------|---------|---------|------------|---------------------|
+| **Verifiable par un test** | "Quel algo est le plus rapide ?" | Parallele + bench (Pattern 2) | Les chiffres | ❌ Inutile — les tests parlent |
+| **Verifiable par la CI** | "Quel refactoring casse le moins ?" | Parallele + CI (Pattern 2) | Le CI vert/rouge | ❌ Inutile — la CI tranche |
+| **Factuelle mais distribuee** | "D'ou vient ce bug ?" (agent A voit les logs, B le code, C les metriques) | Hypotheses concurrentes (Pattern 1) | Le Sous-Chef synthetise les faits | ❌ Chacun rapporte ses preuves, pas d'echange |
+| **Subjective / gout** | "Comment nommer ce module ?" | Escalade au patron (humain) | L'humain | ❌ Les agents n'ont pas de gout |
+| **Normative / politique** | "On adopte quel framework ?" | Escalade au patron (humain) | L'humain (decision strategique) | ❌ Pas une decision technique |
+
+### Le contexte different est utile POUR la collecte, PAS pour la decision
+
+```
+UTILE :                                    INUTILE :
+Agent A lit les logs serveur               Agent A argumente "c'est un bug cache"
+Agent B lit le code source                 Agent B argumente "non c'est une race condition"
+Agent C lit les metriques Grafana          Agent C argumente "vous avez tous tort"
+         │                                              │
+         ▼                                              ▼
+Sous-Chef : "A a trouve une erreur        3 rounds de debat → l'agent le plus
+dans les logs a 14:32, B confirme que     verbeux "gagne" → biais de confiance
+fn parse() ne gere pas ce cas,            → decision potentiellement fausse
+C montre un spike de latence au
+meme moment → root cause identifiee"
+```
+
+**Regle pour la brigade :** Les commis sont des **enqueteurs**, pas des **avocats**. Ils collectent des faits dans leur domaine. Le Sous-Chef est le **juge** qui synthetise. Les commis ne plaident jamais.
+
+### Quand un vrai debat pourrait marcher (cas rare, <5%)
+
+Le seul cas ou un echange entre agents apporte de la valeur :
+
+- **Revue de code croisee** : Commis A relit le code de Commis B et vice-versa
+- Mais ce n'est PAS un debat — c'est une **relecture** avec retour factuel ("ligne 42 : cette assertion peut paniquer si X est vide")
+- Le Sous-Chef est deja charge de ce role (quality gates)
+- Donc meme ce cas est couvert sans debat inter-commis
+
+### Resume : 3 regles
+
+1. **Si c'est mesurable → bench, pas debat** (Pattern 2, grille de comparaison)
+2. **Si c'est factuel → collecter en parallele, synthetiser par le juge** (Pattern 1, Sous-Chef)
+3. **Si c'est subjectif → escalader a l'humain** (Appel au patron)
 
 ## Pattern 2 — Approches Concurrentes (Architecture / Refactoring)
 
