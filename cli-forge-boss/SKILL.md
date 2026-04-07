@@ -221,18 +221,22 @@ If a tool is missing → **show the install command for the detected OS** and st
 5. If project has an Obsidian vault : add Edit/Read permissions for the vault path (G22)
 6. Warn user : **do NOT run `brew upgrade claude-code` while the session is running** (G18)
 
-### 0.4 — Choose brigade size (Mitosis)
+### 0.4 — Choose model and brigade size (Mitosis)
 
-Scale the brigade to the workload. Never deploy 5 commis for 2 tasks.
+Read `references/simplified-model.md`. Two models existent — choisir selon le tier :
 
-| Signal | Tier | Brigade | Sous-Chefs | Quality gates |
-|--------|------|---------|------------|---------------|
-| 1-2 tasks, single repo | **S** | 1 commis, Chef fait tout | 0 — Chef valide lui-meme | `/cli-audit-code` only |
-| 3-4 tasks, single repo | **M** | 2-3 commis | 3 sous-chefs (scope, secu, qualite) + 1 merge | Minimum viable |
-| 5+ tasks or multi-repo | **L** | 4-5 commis | 3 sous-chefs + 1 merge | Standard |
-| 10+ tasks, monorepo, regulated | **XL** | 5+ commis | Grappes de sous-chefs (voir ci-dessous) | Complet |
+| Signal | Tier | Modele | Agents | Quality gates |
+|--------|------|--------|--------|---------------|
+| 1-2 tasks, single repo | **S** | Pas de brigade | 1 commis seul | Auto-check (proofreading) |
+| 3-4 tasks, single repo | **M** | **Stigmergie** | 1 sous-chef (3 lenses) + N commis | Adaptatif (reparation ADN) |
+| 5+ tasks or multi-repo | **L** | **Stigmergie** | 1 sous-chef (3 lenses) + N commis | Adaptatif (reparation ADN) |
+| 10+ tasks, monorepo, regulated | **XL** | **Brigade complete** | Chef + grappes sous-chefs + N commis | Complet (vote, audit trail) |
 
-For tier **S**: skip tmuxinator entirely. Use a single `claude` invocation with `--append-system-prompt` and one worktree. The chef handles quality gates directly.
+**Tiers S/M/L** : le Chef genere les fichiers a Phase 0 puis disparait. Les commis s'auto-organisent via shared-state.md (Boids + stigmergie). Le Sous-Chef unique review avec 3 lenses. Les commis en echec s'auto-terminent (apoptose).
+
+**Tier XL** : la brigade complete est maintenue pour la conformite reglementaire (audit trail des votes, tracabilite des decisions).
+
+For tier **S**: skip tmuxinator entirely. Use a single `claude` invocation with `--append-system-prompt` and one worktree.
 
 ### Tier XL — Grappes de Sous-Chefs (Brigades de parties)
 
@@ -463,6 +467,7 @@ Pour arreter : `CronDelete {job_id}`
 | `references/conflict-resolution.md` | Arbre de decision, matrice de couplage, file locking, escalade, stigmergie, patch bankruptcy, divergence, convergence, sprint health |
 | `references/anti-patterns-boss.md` | 10 anti-patterns nommes de la brigade (Ping-Pong, Ghost Commis, God Commis, etc.) |
 | `references/sprint-persistence.md` | Checkpoint, resume, rewind, fresh restart, sprint history (inspire de jj operation log) |
+| `references/simplified-model.md` | Modele stigmergie pour tiers S/M/L — Boids, quorum sensing, reparation ADN, reaction-diffusion, apoptose |
 | `references/parallel-exploration.md` | Hypotheses concurrentes, approches paralleles, grille de comparaison |
 
 ## Integration with other cli-* skills
