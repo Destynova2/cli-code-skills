@@ -157,6 +157,13 @@ Commis termine la cuisson
 
 ## Phase 0 — Mise en place
 
+**Avant tout, verifier s'il y a un sprint en cours ou en pause :**
+
+Read `references/sprint-persistence.md`. Check `.claude/sprint-history/current/` :
+- Si un sprint est **PAUSED** → proposer : Resume / Rewind / Fresh / Abandonner
+- Si un sprint est **DONE** → lire les gotchas-learned et zones sensibles pour le nouveau sprint
+- Si pas d'historique → sprint neuf
+
 Before generating anything, understand the project:
 
 ### 0.1 — Detect project type
@@ -455,6 +462,7 @@ Pour arreter : `CronDelete {job_id}`
 | `references/quality-gates.md` | La carte des degustations (audit skills) |
 | `references/conflict-resolution.md` | Arbre de decision, matrice de couplage, file locking, escalade, stigmergie, patch bankruptcy, divergence, convergence, sprint health |
 | `references/anti-patterns-boss.md` | 10 anti-patterns nommes de la brigade (Ping-Pong, Ghost Commis, God Commis, etc.) |
+| `references/sprint-persistence.md` | Checkpoint, resume, rewind, fresh restart, sprint history (inspire de jj operation log) |
 | `references/parallel-exploration.md` | Hypotheses concurrentes, approches paralleles, grille de comparaison |
 
 ## Integration with other cli-* skills
