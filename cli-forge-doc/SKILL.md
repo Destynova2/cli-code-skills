@@ -117,10 +117,23 @@ All project context is placed in standard files. An AI agent reads these files n
 
 ### Cleanup of existing AI markers
 
-If `CLAUDE.md`, `AGENTS.md`, `llms.txt`, or `llms-full.txt` exist in the project:
-1. **Absorb** their content into the standard files above
-2. **Delete** the AI marker files
-3. **Audit git history** for `Co-authored-by: Claude` or similar AI trailers — warn the user if found
+If any AI-specific files exist in the project, absorb their content and delete them:
+
+| File | Tool | Absorb into |
+|------|------|-------------|
+| `CLAUDE.md` | Claude Code | `CONTRIBUTING.md` |
+| `GEMINI.md` | Gemini CLI | `CONTRIBUTING.md` |
+| `AGENTS.md` | Codex/multi-tool | `docs/explanation/architecture.md` |
+| `llms.txt`, `llms-full.txt` | Generic | `docs/index.md` |
+| `.cursorrules`, `.cursor/rules/*.mdc` | Cursor | `CONTRIBUTING.md` (coding conventions) |
+| `.windsurfrules`, `.windsurf/rules/*.md` | Windsurf | `CONTRIBUTING.md` |
+| `.github/copilot-instructions.md` | Copilot | `CONTRIBUTING.md` |
+| `.aider.conf.yml` | Aider | Discard (tool config, not project knowledge) |
+
+After absorption:
+1. **Delete** all AI marker files listed above
+2. **Add** AI tool config dirs to `.gitignore` (`.cursor/`, `.windsurf/`, `.aider*`, `.claude/`, `.continue/`, `.junie/`)
+3. **Warn** the user about AI trailers in git history — delegate to `cli-git-conventional --audit-markers` for cleanup options
 
 ### Opt-in: AI marker files (`--ai-markers` flag)
 
