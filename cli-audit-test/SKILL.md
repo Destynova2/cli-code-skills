@@ -159,6 +159,7 @@ Use the output format below.
 |-------|-------------|
 | `cli-audit-code` | Scores code quality. cli-audit-test scores **test quality** |
 | `cli-audit-doc` | Scores doc quality. cli-audit-test checks **test documentation** |
+| `cli-audit-drift` | Checks behavioral conformity via contracts. cli-audit-test checks **test-level** drift detection (D13) |
 | `cli-audit-sync` | Verifies doc-code coherence. cli-audit-test verifies **test-requirement coherence** |
 | `cli-forge-schema` | Can visualize test plan as diagrams (pyramid, state machines) |
 | `cli-cycle` | Calls cli-audit-test as part of the full project review |
