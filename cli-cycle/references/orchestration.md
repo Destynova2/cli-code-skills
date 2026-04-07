@@ -65,15 +65,78 @@ These skills benefit from Wave 1 results or cross-reference multiple concerns.
 
 1. **Launch Wave 1** — all applicable skills in parallel
 2. **Wait for Wave 1 to complete**
-3. **Inject Wave 1 summaries** into Wave 2 prompts (top 3 issues + top 3 strengths per skill)
-4. **Launch Wave 2** — all applicable skills in parallel
-5. **Collect all results** for synthesis
+3. **Collect Dynamic Handoffs** from Wave 1 results (see Adaptive Handoffs below)
+4. **Inject Wave 1 summaries** into Wave 2 prompts (top 3 issues + top 3 strengths per skill)
+5. **Merge handoff-recommended skills** into Wave 2 (deduplicated)
+6. **Launch Wave 2** — all applicable skills in parallel (planned + handoff-added)
+7. **Collect Dynamic Handoffs** from Wave 2 results
+8. **If Wave 2 produced new handoffs** for skills not yet run → launch **Wave 3** (adaptive, max 1 extra wave)
+9. **Collect all results** for synthesis
 
-### Why 2 waves instead of all parallel?
+### Adaptive Handoffs (automatic in cli-cycle context)
 
-- Wave 2 skills that cross-reference (sync, drift, pipeline) produce **better results** when they know the code/doc/test landscape
-- Wave 1 skills are independent — no benefit from ordering them
-- 2 waves is the right granularity: finer (3+ waves) adds latency without quality gain
+When cli-cycle orchestrates, handoffs are **automatic** — not just recommendations. Each skill's Dynamic Handoffs section produces structured recommendations that cli-cycle collects and acts on.
+
+**Handoff registry format:**
+
+```
+After each wave, collect:
+  {skill_name: [{caller, target_scope, reason}]}
+
+Example after Wave 1:
+  cli-audit-tangle: [
+    {caller: "cli-audit-code", target: "src/core/", reason: "3 god modules detected"},
+  ]
+  cli-forge-pipeline: [
+    {caller: "cli-audit-test", target: null, reason: "CI has no test stage"},
+    {caller: "cli-audit-shell", target: ".gitlab-ci.yml", reason: "shell scripts are CI entrypoints"},
+  ]
+```
+
+**Deduplication rules (tangle-aware):**
+
+| Situation | Action |
+|-----------|--------|
+| Same skill + same target (or both null) | **Merge** — run once, combine reasons in the prompt |
+| Same skill + different targets | **Run once per unique target** — scoped runs |
+| Skill already in the current wave (planned) | **Skip** — already running |
+| Skill already ran in a previous wave | **Skip** — unless the new target is a different scope |
+| Skill marked "Skip" in applicability matrix | **Skip** — never auto-trigger generation skills (doc, hld, lld, arch, boss) |
+
+**Examples:**
+
+```
+# MERGE: same skill, no specific target
+cli-audit-test recommended by cli-audit-code (reason: C8 low)
+cli-audit-test recommended by cli-forge-pipeline (reason: CI has no test stage)
+→ Run cli-audit-test ONCE, inject both reasons into its prompt
+
+# SCOPED: same skill, different targets
+cli-audit-code recommended by cli-audit-tangle (target: src/core/, reason: god functions)
+cli-audit-code recommended by cli-audit-sync (target: src/api/, reason: dead functions)
+→ Run cli-audit-code TWICE: once on src/core/, once on src/api/
+
+# SKIP: already planned
+cli-forge-infra recommended by cli-audit-shell (target: deploy/)
+cli-forge-infra is already in Wave 2 (planned)
+→ Skip — just inject the handoff reason into cli-forge-infra's prompt
+
+# SKIP: generation skill
+cli-forge-doc recommended by cli-audit-doc (reason: missing architecture doc)
+cli-forge-doc is "Skip" in the matrix
+→ Skip auto-trigger — add to Recommendations section of final report instead
+```
+
+**Max waves:** 3 (Wave 1 planned + Wave 2 planned+handoffs + Wave 3 handoffs-only). Never more — if Wave 3 still produces handoffs, they go into the Recommendations section.
+
+### Why adaptive waves work
+
+- Wave 1 finds problems (god functions, missing tests, shell issues)
+- Handoffs tell cli-cycle WHICH specific skills should investigate further and WHERE
+- Wave 2 combines planned cross-cutting analysis + targeted follow-ups
+- Wave 3 (rare) catches cascading discoveries
+- Deduplication prevents the same skill from running 5 times because 5 different skills recommended it
+- Scoped deduplication preserves value: `cli-audit-code` on `src/core/` and `src/api/` are different analyses
 
 ---
 

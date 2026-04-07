@@ -62,10 +62,11 @@ Read `references/orchestration.md` for the full applicability matrix. Key rule: 
 
 Read `references/orchestration.md` for execution order, prompt patterns, and wave rules.
 
-**Wave 1 (foundation, parallel):** code, doc, test, tangle, tree, readme — independent scans
-**Wave 2 (cross-cutting, parallel):** sync, drift, pipeline, schema, infra — use Wave 1 context
+**Wave 1 (foundation, parallel):** code, doc, test, tangle, tree, readme, shell, wizard — independent scans
+**Wave 2 (cross-cutting + handoffs, parallel):** sync, drift, pipeline, schema, infra + skills recommended by Wave 1 handoffs
+**Wave 3 (adaptive, if needed):** skills recommended by Wave 2 handoffs that haven't run yet
 
-Wave 2 skills get Wave 1 summaries injected into their prompts for richer analysis.
+Wave 2 skills get Wave 1 summaries injected. Handoff-recommended skills get the caller's reason injected. Deduplication prevents duplicate runs (same skill + same scope = run once). See `references/orchestration.md` for the full adaptive handoff algorithm.
 
 ### Step 5 — Collect, classify, and present ALL corrections
 
