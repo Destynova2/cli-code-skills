@@ -143,7 +143,7 @@ When no CONTRACTS.md exists, the skill switches from audit to generation:
 
 3. **Generate CONTRACTS.md**: Read `references/contracts-template.md` for the template. Generate contracts for the top 5-10 critical functions.
 
-4. **Propose CONTRIBUTING.md additions**: Read `references/claude-md-template.md` for the drift surveillance instructions to add to the project's `CONTRIBUTING.md` (section "Drift Surveillance").
+4. **Propose CONTRIBUTING.md additions**: Read `references/drift-surveillance-template.md` for the drift surveillance instructions to add to the project's `CONTRIBUTING.md` (section "Drift Surveillance").
 
 5. **Output**: deliver CONTRACTS.md + CONTRIBUTING.md snippet, explain how to use them.
 

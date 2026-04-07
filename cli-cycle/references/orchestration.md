@@ -273,6 +273,27 @@ After the triage, always present:
 | `6` | Convergence autonome (dry-run → plan unifié) | N total |
 ```
 
+### Correction tools (used during Phoenix fix phase)
+
+During the fix phase (options 1-4 or convergence), cli-cycle uses **generation skills** as tools — not as audit skills. These are the "Skip" skills from the applicability matrix, activated **only** to fix triage items:
+
+| Tool skill | When to use during correction |
+|-----------|------------------------------|
+| `cli-forge-doc` | Triage items about missing CONTRIBUTING.md, architecture docs, troubleshooting guide |
+| `cli-forge-readme` | Triage items about missing/outdated README |
+| `cli-forge-schema` | Triage items about missing diagrams |
+| `cli-forge-pipeline` | Triage items about missing/broken CI stages (not just audit — can generate jobs) |
+| `cli-git-conventional` | **Always** — format ALL commit messages during correction using ghostwriter style, zero AI markers |
+
+**Workflow during correction:**
+1. Fix code/config issues directly (edit files)
+2. Generate missing docs via `cli-forge-doc` / `cli-forge-readme` if triage items require it
+3. Generate missing diagrams via `cli-forge-schema` if triage items require it
+4. Commit each logical batch using `cli-git-conventional` format (imperative, scoped, no AI trailers)
+5. Re-audit
+
+**Rule:** Generation skills are tools during correction, not standalone skills. They don't produce their full output format — they produce the specific files needed by the triage items.
+
 ### Phoenix re-audit (after fixes)
 
 When the user chooses a tier and fixes are applied:

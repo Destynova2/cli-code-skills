@@ -1,6 +1,6 @@
-# CLAUDE.md Template — Autophagy Instructions
+# Drift Surveillance Template — CONTRIBUTING.md Section
 
-> **When to read:** During Bootstrap Mode (Step 4) to generate the autophagy instructions for the project's CLAUDE.md.
+> **When to read:** During Bootstrap Mode (Step 4) to generate the drift surveillance instructions for the project's CONTRIBUTING.md.
 
 ---
 

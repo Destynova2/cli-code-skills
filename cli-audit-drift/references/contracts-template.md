@@ -14,7 +14,7 @@
 > changes that compile, pass tests, but violate the original intention.
 >
 > **Maintained by:** [team/person]
-> **Read by:** Claude Code (autophagy scan), code reviewers, QA
+> **Read by:** code reviewers, QA, CI drift checks
 > **Update policy:** Update this file when a drift is intentional (new requirement).
 > Never update it to match a bug — fix the code instead.
 ```
