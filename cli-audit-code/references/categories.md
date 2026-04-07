@@ -124,6 +124,10 @@ Check for:
 - Sensitive data in logs or error messages
 - Missing rate limiting on public endpoints
 - **Parse, don't validate at boundaries**
+- **Credential file permissions**: secret files (`.env`, `secret-*.yml`, `*credentials*`) should be mode 0600, not world-readable
+- **`.env` not in `.gitignore`**: tracked `.env` files = secrets in version history
+- **Raw secrets in config**: config files should reference secrets via env vars (`${VAR}`), not contain them inline
+- **Secrets in git history**: `git log -p -- '*.env' '*.secret*'` may reveal committed secrets even if removed from HEAD
 
 ## C10: IMMUTABILITY & STATE MANAGEMENT (7%)
 

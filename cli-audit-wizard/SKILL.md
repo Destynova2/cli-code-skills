@@ -117,7 +117,7 @@ Credentials (API keys, OAuth tokens) are the hardest part of any setup. The wiza
 
 This is the universal three-tier hierarchy used by `gh`, `gcloud`, `aws`, `railway`, `vercel`, `wrangler`, and every well-designed CLI. Deviation is an anti-pattern.
 
-> The full credential registry (verified paths, env vars, token prefixes, keychain service names) lives in `cli-audit-credential`. Read `../cli-audit-credential/references/credential-registry.md` for Claude Code, Codex, Copilot, Gemini, Mistral, Cursor, Continue, Aider, AWS, Ollama, 1Password, Bitwarden, and pass.
+> Credential hygiene (file permissions, .env in .gitignore, raw secrets in config) is checked by `cli-audit-code` dimension C9 (Security & Input Validation).
 
 ```
 credential_discovery(service):
@@ -511,7 +511,7 @@ wqi = 100
 
 | Skill | Relationship |
 |-------|-------------|
-| `cli-audit-credential` | Audits **credential health** (validity, expiry, hygiene). wizard audits the **UX flow** for setting them up |
+| `cli-audit-code` | C9 (Security) checks credential **hygiene** (permissions, .gitignore). wizard audits the **UX flow** for setting them up |
 | `cli-audit-code` | Scores code **quality** inside the wizard. wizard scores **UX flow** |
 | `cli-audit-shell` | If wizard is bash/gum-based, shell audit covers script quality |
 | `cli-audit-tangle` | Checks wizard config **dependency topology** (circular config refs) |

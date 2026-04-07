@@ -312,7 +312,7 @@ Note: `CLAUDE.md`, `GEMINI.md`, `AGENTS.md` are NOT gitignored — they are abso
 | `cli-cycle` | After fixes, cli-cycle should invoke cli-git-conventional for commit messages |
 | `cli-forge-pipeline` | Pipeline may enforce commit format via CI hooks |
 | `cli-audit-code` | Code audit may suggest refactors -- cli-git-conventional writes the commit |
-| `cli-audit-credential` | If credentials are rotated, cli-git-conventional writes `chore(auth):` |
+| `cli-audit-code` | If C9 flags credential issues, cli-git-conventional writes `chore(auth):` for rotation commits |
 
 ## Checklist (internal, before delivering a message)
 
