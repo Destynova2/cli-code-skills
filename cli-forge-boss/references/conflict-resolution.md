@@ -90,6 +90,51 @@ Apres la tentative 3, le Chef peut :
 
 ## Prevention renforcee (Phase 0)
 
+### Cycle detection sur le PERT (Tarjan — inspire de cli-audit-tangle)
+
+Avant de lancer les commis, verifier que le graphe de dependances est un DAG :
+
+```
+1. Construire le graphe : tache_A → tache_B si A doit finir avant B
+2. Appliquer Tarjan SCC sur le graphe
+3. Si SCC avec > 1 noeud → CYCLE DETECTE → ne pas lancer
+
+Exemple de cycle interdit :
+  tache_1 (auth) depend de tache_2 (database schema)
+  tache_2 (database) depend de tache_1 (auth models)
+  → SCC = {tache_1, tache_2} → CYCLE
+
+Resolution :
+  - Fusionner les 2 taches en 1 (meme commis)
+  - OU casser la dependance (interface/mock)
+  - OU sequencer explicitement (A puis B, pas parallele)
+```
+
+### Forward-only rule
+
+Les dependances entre commis ne peuvent aller que dans UN sens :
+- Commis A peut dependre du resultat de Commis B
+- Mais B ne peut PAS dependre de A en retour
+- Si bi-directionnel → fusionner en un seul commis
+
+### God-commis detection (Fourmis de feu)
+
+Un commis qui touche trop de fichiers = fourmi qui agrippe 12 voisines = SPOF.
+
+```
+Pour chaque commis, compter :
+  files_touched = nombre de fichiers dans sa tache
+  total_files = nombre total de fichiers touches par tous les commis
+
+Si files_touched / total_files > 0.5 → GOD-COMMIS
+  → Splitter la tache en 2 commis
+  → OU re-assigner certains fichiers a d'autres commis
+
+Si un commis a des W/W avec > 2 autres commis → HUB
+  → Sequencer ses merges en dernier
+  → OU le transformer en "commis de base" dont les autres dependent
+```
+
 ### Matrice de couplage
 
 Avant le coup de feu, le Chef construit une matrice :
