@@ -111,15 +111,48 @@ Phoenix — Quel tier attaquer ?
   [6] Convergence autonome (dry-run → plan unifié)
 ```
 
-If the user chooses a tier (1-4):
-1. Apply the corrections for that tier
-2. After completing the tier, **re-run only the affected skills** (not the full cycle)
-3. Present the updated triage with the new state
-4. Repeat the choice for remaining tiers
+### Step 6b — Correction pipeline (audit → forge → commit → re-audit)
+
+When the user chooses a tier (1-4) or convergence (6), corrections follow this pipeline:
+
+```
+For each triage item in the selected tier:
+  1. FIX: edit code/config directly OR trigger the forge skill that can produce the fix
+  2. GENERATE: if the item is about missing docs/diagrams/README → run the appropriate forge skill
+  3. COMMIT: format the commit using cli-git-conventional (ghostwriter, zero AI markers)
+  4. RE-AUDIT: re-run only the skills that sourced the fixed items
+```
+
+**Forge skills triggered automatically by audit findings:**
+
+| Audit finding | Forge skill triggered | What it produces |
+|--------------|----------------------|-----------------|
+| Missing CONTRIBUTING.md, architecture docs | `cli-forge-doc` | CONTRIBUTING.md, docs/explanation/architecture.md |
+| Missing or outdated README | `cli-forge-readme` | Updated README.md |
+| Missing diagrams | `cli-forge-schema` | Mermaid diagrams in docs or README |
+| CI/CD issues (missing stages, parallelism) | `cli-forge-pipeline` | Updated pipeline config |
+| Code fixes, config fixes | Direct edit | Modified files |
+
+**cli-git-conventional is ALWAYS used** — every correction commit goes through ghostwriter format. No exceptions, no AI trailers.
+
+**Example correction sequence:**
+```
+Triage item #5: "Missing CONTRIBUTING.md" (source: cli-audit-doc)
+  → cli-forge-doc generates CONTRIBUTING.md (absorbs CLAUDE.md content if present)
+  → git add CONTRIBUTING.md
+  → cli-git-conventional: "docs: add contributing guide with commit rules and git workflow"
+  → cli-audit-doc re-runs → item resolved
+
+Triage item #1: "Hardcoded password in Containerfile" (source: cli-audit-code)
+  → Direct edit: remove hardcoded value, add env var
+  → git add Containerfile entrypoint.sh
+  → cli-git-conventional: "fix(security): externalize healthcheck password"
+  → cli-audit-code re-runs → item resolved, may find cascade items
+```
 
 If the user chooses `[6]` Convergence autonome:
 1. Read `references/convergence.md` for the full algorithm
-2. Create an isolated worktree, run fix-audit loop autonomously (max 5 passes)
+2. Same pipeline but in an isolated worktree, fully autonomous
 3. Track cascades (issues that only appear after earlier fixes)
 4. Present a single unified plan with the complete diff
 5. User approves (apply all), selects (cherry-pick), or rejects (discard)

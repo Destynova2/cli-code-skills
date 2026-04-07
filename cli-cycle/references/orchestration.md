@@ -18,14 +18,14 @@
 | `cli-forge-tree` | Always (audit current structure) |
 | `cli-forge-schema` | Existing Mermaid diagrams found OR architecture worth diagramming |
 | `cli-forge-pipeline` | CI config exists (`.github/workflows/`, `.gitlab-ci.yml`, `Jenkinsfile`) |
-| `cli-forge-doc` | Skip (generation, not audit — unless no docs exist at all) |
-| `cli-forge-arch` | Skip (generation, not audit — unless user explicitly asks) |
-| `cli-forge-hld` | Skip (generation — use only when user asks to design/architect) |
-| `cli-forge-lld` | Skip (generation — use only when user asks for detailed design) |
+| `cli-forge-doc` | **Correction** — triggered by audit findings: missing CONTRIBUTING.md, architecture docs, troubleshooting |
+| `cli-forge-arch` | Skip (triggered only on explicit user request) |
+| `cli-forge-hld` | Skip (triggered only on explicit user request) |
+| `cli-forge-lld` | Skip (triggered only on explicit user request) |
 | `cli-audit-shell` | Shell scripts exist (`.sh` files or shebanged bash scripts) |
 | `cli-audit-wizard` | Interactive setup/init commands exist (`setup.sh`, `init`, `doctor`, wizard UX) |
 | `cli-forge-infra` | Infra files exist (`Dockerfile`, `*.tf`, `helmfile.yaml`, `k8s/`) |
-| `cli-git-conventional` | Skip (commit enforcement — triggered explicitly, not by cycle) |
+| `cli-git-conventional` | **Always** — formats all commits during correction phase. Zero AI markers |
 | `cli-forge-boss` | Skip (multi-agent orchestration — triggered explicitly) |
 
 ---
