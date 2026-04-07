@@ -30,6 +30,7 @@ Run every applicable `cli-*` skill on the current project, collect results, deli
 2. **Show everything.** Never truncate the correction list. The user sees ALL issues, organized by severity.
 3. **Phoenix loop.** Audit → user fixes → re-audit → repeat until convergence.
 4. **Convergence autonome.** When invoked with `--converge`, run the entire loop in an isolated worktree, then present a single unified plan. Read `references/convergence.md` for the full algorithm.
+5. **Flow graph.** Skills form a DAG: audit detects → forge corrects → git commits → re-audit verifies. No cycles allowed. Read `references/skill-flow.md` for the complete trigger graph, deduplication rules, and cycle detection.
 
 **Gotchas** — read `../../gotchas.md` before producing output to avoid known mistakes.
 
