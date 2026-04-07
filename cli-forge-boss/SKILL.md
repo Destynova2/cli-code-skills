@@ -293,6 +293,10 @@ EXPLORATION tasks use 2-3 commis on the same problem with different approaches. 
 
 ## Phase 1 — Le menu (auto-detection, NE PAS DEMANDER)
 
+**REGLE LANGUE : `git log --oneline -10` + `head -20 README.md`. Si le projet est en francais → TOUS les fichiers generes (prompts, shared-state, tmuxinator comments, rapports) sont en francais. Si en anglais → anglais. Le vocabulaire de la brigade (Menu, Commis, Sous-Chef) reste en francais quel que soit le projet.**
+
+**REGLE COMMITS : Les commis et le Sous-Chef Merge utilisent `cli-git-conventional` pour TOUS les commits. Ghostwriter style, zero marqueur AI, langue du projet.**
+
 **REGLE : Ne pose AUCUNE question si la reponse est dans le projet.**
 Lis TOUT avant de demander quoi que ce soit :
 
@@ -464,3 +468,6 @@ Pour arreter : `CronDelete {job_id}`
 | `/cli-cycle` | Fin de service — scorecard globale du sprint |
 | `/cli-forge-pipeline` | Optimiser le pipeline CI que les commis vont declencher |
 | `/cli-forge-tree` | Valider la structure du projet avant d'assigner les worktrees |
+| `/cli-git-conventional` | **TOUJOURS** — tous les commits des commis et du Sous-Chef Merge passent par ghostwriter. Zero AI markers |
+| `/cli-forge-doc` | Si quality gate detecte doc manquante — le Sous-Chef Merge declenche la generation |
+| `/cli-forge-schema` | Si quality gate detecte diagramme manquant — generation Mermaid |
