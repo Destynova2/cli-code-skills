@@ -204,6 +204,16 @@ Present the DCI score first, then the generated files. Summarize:
 - Top 3 highest-impact improvements still needed
 - Recommended next steps (ordered by effort vs impact)
 
+## Dynamic Handoffs
+
+| Condition detected | Recommend | Why |
+|-------------------|-----------|-----|
+| Project has shell scripts undocumented | `/cli-audit-shell` | Assess script quality for doc accuracy |
+| Architecture section reveals coupling concerns | `/cli-audit-tangle` | Topology audit |
+| README needs rewrite | `/cli-forge-readme` | Focused README generation |
+
+**Rule:** Recommend, don't auto-execute.
+
 ## Adaptation Rules
 
 1. **Scale to project size**: A 200-line CLI script needs a good README, not a docs site. A platform with 50K LOC needs the full Diátaxis treatment.

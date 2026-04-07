@@ -196,6 +196,16 @@ When no CONTRACTS.md exists, the skill switches from audit to generation:
 (copy-pasteable block with drift surveillance instructions)
 ```
 
+## Dynamic Handoffs
+
+| Condition detected | Recommend | Why |
+|-------------------|-----------|-----|
+| Contracted functions have god-level complexity | `/cli-audit-tangle` | Topology suggests extraction before contract can be enforced |
+| Drift caused by dependency update | `/cli-forge-infra` | Check version compatibility |
+| No tests covering contracted behavior | `/cli-audit-test` | Test the invariants |
+
+**Rule:** Recommend, don't auto-execute.
+
 ## Rules for the Scanner
 
 1. **Never auto-fix silently.** Name the gap, classify it, propose the fix — but always ask. The corbeau identifies inadequacy before acting.

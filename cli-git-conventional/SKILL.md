@@ -298,6 +298,16 @@ Note: `CLAUDE.md`, `GEMINI.md`, `AGENTS.md` are NOT gitignored — they are abso
 
 **Never run filter-repo or force push without explicit user approval.**
 
+## Dynamic Handoffs
+
+| Condition detected | Recommend | Why |
+|-------------------|-----------|-----|
+| AI markers found in history | `/cli-forge-doc` | Absorb CLAUDE.md/AGENTS.md into standard docs |
+| Commit messages reference issues | Project management (no skill) | Document as info |
+| Breaking changes detected | `/cli-forge-readme` | Update README with migration notes |
+
+**Rule:** Recommend, don't auto-execute.
+
 ## What this skill does NOT do
 
 - **Does not run git commands autonomously** -- it writes messages, the user (or the calling skill) executes

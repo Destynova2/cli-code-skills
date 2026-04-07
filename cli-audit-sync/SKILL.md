@@ -111,6 +111,17 @@ Launch sub-agents for each applicable layer. Read `references/layers.md` for det
 | `cli-forge-readme` | Generates READMEs. cli-audit-sync **verifies** existing README matches reality |
 | `cli-cycle` | Calls cli-audit-sync as part of the full project review |
 
+## Dynamic Handoffs
+
+| Condition detected | Recommend | Why |
+|-------------------|-----------|-----|
+| Shell commands in docs don't work | `/cli-audit-shell` | Audit the scripts referenced |
+| README architecture section outdated | `/cli-forge-readme` | Update README |
+| Stale diagrams | `/cli-forge-schema` | Regenerate from current code |
+| API reference mentions deleted functions | `/cli-audit-code` | Check for dead code |
+
+**Rule:** Recommend, don't auto-execute.
+
 ## What this skill does NOT do
 
 - **Does not fix docs** — it reports. Use `cli-forge-*` skills to fix

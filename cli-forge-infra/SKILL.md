@@ -99,6 +99,17 @@ These strategies are detailed in `references/patterns.md`. Read it when applying
 | **IDS (Imperative Debt Score)** | Scoring infra scripts | Count imperative patterns. Read `references/scoring.md` for formula. |
 | **DHS (Dependency Health Score)** | Evaluating third-party tools | Score stars × recency × maintenance. Read `references/scoring.md`. |
 
+## Dynamic Handoffs
+
+| Condition detected | Recommend | Why |
+|-------------------|-----------|-----|
+| Shell scripts doing infra work (LVM, user creation) | `/cli-audit-shell` | Shell quality audit |
+| Complex deployment needing architecture doc | `/cli-forge-hld` | Generate HLD |
+| Pipeline config present | `/cli-forge-pipeline` | Optimize CI/CD |
+| Multiple config files to manage | `/cli-forge-tree` | Project structure audit |
+
+**Rule:** Recommend, don't auto-execute.
+
 ## Rules
 
 1. **Always check for newer versions first.** Search latest stable, read changelogs, propose upgrades when they solve problems or fix CVEs.

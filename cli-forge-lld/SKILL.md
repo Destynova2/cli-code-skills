@@ -192,6 +192,16 @@ Read `references/anti-patterns.md` for the 9 anti-patterns table with descriptio
 
 ---
 
+## Dynamic Handoffs
+
+| Condition detected | Recommend | Why |
+|-------------------|-----------|-----|
+| LLD reveals security threats (STRIDE) | `/cli-audit-code` on affected components | C9 security check |
+| API contracts defined | `/cli-audit-drift` | Bootstrap CONTRACTS.md from the LLD |
+| Component has complex state machine | `/cli-forge-schema` | Generate state diagram |
+
+**Rule:** Recommend, don't auto-execute.
+
 ## Integration with other cli-* skills
 
 | Skill | Relationship |

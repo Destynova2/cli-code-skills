@@ -127,6 +127,21 @@ CQI = Σ(wᵢ × sᵢ) / Σ(wᵢ) × 10
 | `cli-forge-lld` | Validates implementation matches the LLD design |
 | `cli-cycle` | Calls cli-audit-code as part of full project review |
 
+## Dynamic Handoffs
+
+After your analysis, recommend these skills if conditions are met:
+
+| Condition detected | Recommend | Why |
+|-------------------|-----------|-----|
+| God class/module (C3 > 500 lines, many responsibilities) | `/cli-audit-tangle` | Topology analysis reveals optimal split points |
+| Hardcoded secrets or `.env` tracked in git (C9) | `/cli-git-conventional --audit-markers` | Check git history for leaked secrets |
+| Shell scripts in the project with quality issues | `/cli-audit-shell` | Deep bash-specific audit beyond C6 idioms |
+| Missing or stale documentation (C7 low) | `/cli-forge-doc` | Generate/update project docs |
+| Test quality issues (C8 low) | `/cli-audit-test` | Full test strategy audit |
+| CI/CD config present but not audited | `/cli-forge-pipeline` | Pipeline optimization |
+
+**Rule:** Recommend, don't auto-execute. Phrase as: "Consider running `/cli-audit-tangle` — 3 god modules detected that need topology analysis."
+
 ## Reference Sources
 
 - Ousterhout — *A Philosophy of Software Design* | Martin — *Clean Code* | Fowler — *Refactoring* | Tornhill — *Software Design X-Rays* | Feathers — *Working Effectively with Legacy Code*

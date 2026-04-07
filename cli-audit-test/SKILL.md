@@ -164,6 +164,17 @@ Use the output format below.
 | `cli-forge-schema` | Can visualize test plan as diagrams (pyramid, state machines) |
 | `cli-cycle` | Calls cli-audit-test as part of the full project review |
 
+## Dynamic Handoffs
+
+| Condition detected | Recommend | Why |
+|-------------------|-----------|-----|
+| No negative tests for security features | `/cli-audit-code` on security modules | Verify C9 coverage |
+| Test pyramid inverted (too many E2E, few unit) | `/cli-audit-tangle` | Find god functions that resist unit testing |
+| Missing drift detection in tests (D13 low) | `/cli-audit-drift` | Bootstrap CONTRACTS.md |
+| CI has no test stage | `/cli-forge-pipeline` | Add test jobs to pipeline |
+
+**Rule:** Recommend, don't auto-execute.
+
 ## What this skill does NOT do
 
 - **Does not run tests** — it audits the plan/structure

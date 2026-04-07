@@ -119,6 +119,17 @@ DQI = Σ(wᵢ × sᵢ) / Σ(wᵢ) × 10
 
 Both complement each other. Run cli-audit-doc for quality, cli-audit-sync for accuracy.
 
+## Dynamic Handoffs
+
+| Condition detected | Recommend | Why |
+|-------------------|-----------|-----|
+| Doc anti-pattern "The Lie" (docs describe nonexistent features) | `/cli-audit-sync` | Verify doc-code coherence |
+| Missing architecture explanation | `/cli-forge-doc` | Generate architecture docs |
+| README score low | `/cli-forge-readme` | Rewrite README |
+| Missing diagrams referenced in docs | `/cli-forge-schema` | Generate Mermaid diagrams |
+
+**Rule:** Recommend, don't auto-execute.
+
 ## What this skill does NOT do
 
 - **Does not fix docs** — it reports. Use `cli-forge-doc` to generate documentation

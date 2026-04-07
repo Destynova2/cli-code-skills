@@ -167,6 +167,18 @@ SQI = Sigma(wi x si) / Sigma(wi) x 10
 | `cli-forge-pipeline` | Optimizes CI/CD pipelines. cli-audit-shell audits **shell scripts used in CI** |
 | `cli-cycle` | Should call cli-audit-shell as part of full project review when shell scripts exist |
 
+## Dynamic Handoffs
+
+| Condition detected | Recommend | Why |
+|-------------------|-----------|-----|
+| Sed on YAML/JSON (AP7 Sed Surgeon) | `/cli-forge-infra` | Tooling ladder assessment, kustomize/yq recommendation |
+| Multiple scripts without getopts (AP8 Script Hydra) | `/cli-audit-wizard` | UX audit of the setup/init flow |
+| Shell injection risk in env blocks (AP9) | `/cli-audit-code` on the consuming code | Verify the sourcing code validates inputs |
+| Scripts are CI/CD entrypoints | `/cli-forge-pipeline` | Pipeline-level optimization |
+| Script > 100 lines with god functions | `/cli-audit-tangle` | Topology analysis for split points |
+
+**Rule:** Recommend, don't auto-execute.
+
 ## Reference Sources
 
 - Google — *Shell Style Guide* (primary authority)

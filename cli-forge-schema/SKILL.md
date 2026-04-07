@@ -215,6 +215,16 @@ Read `references/diagram-types.md` for detailed syntax and GitHub-tested example
 | Same diagram type for everything | Match type to data shape |
 | Wall of text in nodes | Short labels, details in docs |
 
+## Dynamic Handoffs
+
+| Condition detected | Recommend | Why |
+|-------------------|-----------|-----|
+| Architecture diagram reveals coupled modules | `/cli-audit-tangle` | Quantify the coupling |
+| Sequence diagram shows complex init flow | `/cli-audit-wizard` | Audit the setup UX |
+| ER diagram reveals missing docs | `/cli-audit-doc` | Documentation audit |
+
+**Rule:** Recommend, don't auto-execute.
+
 ## Integration with other cli-* skills
 
 | Skill | Relation |

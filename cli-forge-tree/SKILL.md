@@ -125,6 +125,16 @@ Output the SHS table at the end of the tree analysis.
 - **Audit**: list issues + suggested fixes, then show the "ideal" tree side-by-side
 - If the `readme` skill is also being used, feed the annotated tree into Tier 3 "Project Structure"
 
+## Dynamic Handoffs
+
+| Condition detected | Recommend | Why |
+|-------------------|-----------|-----|
+| Files in wrong directories | `/cli-audit-sync` | Check if docs reference old paths |
+| No CONTRIBUTING.md found | `/cli-forge-doc` | Generate contributing guide |
+| Deep nesting detected | `/cli-audit-tangle` | Check if structure reflects code coupling |
+
+**Rule:** Recommend, don't auto-execute.
+
 ## Integration with other cli-* skills
 
 | Skill | Relation |

@@ -105,6 +105,16 @@ RCI = Σ(wᵢ × sᵢ) / Σ(wᵢ) × 10
 - Show a brief summary: which tier sections were generated, what's missing/skipped
 - Output the RCI table at the end of the review
 
+## Dynamic Handoffs
+
+| Condition detected | Recommend | Why |
+|-------------------|-----------|-----|
+| Project needs full docs, not just README | `/cli-forge-doc` | Full documentation generation |
+| Architecture diagram needed | `/cli-forge-schema` | Generate Mermaid |
+| Commands section has untested scripts | `/cli-audit-shell` | Verify scripts work |
+
+**Rule:** Recommend, don't auto-execute.
+
 ## Integration with other cli-* skills
 
 | Skill | Relation |

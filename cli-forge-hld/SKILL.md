@@ -179,6 +179,16 @@ Before delivering, verify the HLD avoids common traps. Read `references/anti-pat
 **XL:** Context map | ATAM tradeoff | Glossary
 **Size:** S: 2-4p | M: 5-10p | L: 10-18p | XL: 15-25p — no section exists just because it's in the template
 
+## Dynamic Handoffs
+
+| Condition detected | Recommend | Why |
+|-------------------|-----------|-----|
+| HLD reveals components needing detailed design | `/cli-forge-lld` | Generate LLD |
+| Deployment architecture needs infrastructure | `/cli-forge-infra` | Ops integration |
+| Architecture needs visual diagrams | `/cli-forge-schema` | Generate C4 Mermaid |
+
+**Rule:** Recommend, don't auto-execute.
+
 ## Integration with other cli-* skills
 
 | Skill | Relationship |

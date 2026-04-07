@@ -340,6 +340,20 @@ tangle_score = 100
 | `cli-forge-pipeline` | Generates CI/CD pipelines. tangle audits their **dependency topology** |
 | `cli-cycle` | Should call cli-audit-tangle as part of the full project review |
 
+## Dynamic Handoffs
+
+After your analysis, recommend these skills if conditions are met:
+
+| Condition detected | Recommend | Why |
+|-------------------|-----------|-----|
+| CI/CD deadlocks or bottleneck jobs | `/cli-forge-pipeline` | Pipeline optimization with parallelism patterns |
+| Call graph worth visualizing (> 20 nodes) | `/cli-forge-schema` | Generate Mermaid diagram of the topology |
+| God functions with low code quality (LOC > 100, deep nesting) | `/cli-audit-code` on those files | Deep quality check on the most critical code |
+| Module boundaries suggest architectural redesign | `/cli-forge-hld` | High-level design for the new structure |
+| Shell scripts tangled (sourcing chains, circular includes) | `/cli-audit-shell` | Shell-specific structural analysis |
+
+**Rule:** Recommend, don't auto-execute. Phrase as: "Consider running `/cli-forge-pipeline` — 2 CI deadlocks detected in the `needs` graph."
+
 ## What this skill does NOT do
 
 - **Does not run code** — static analysis only

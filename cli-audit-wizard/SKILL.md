@@ -519,6 +519,16 @@ wqi = 100
 | `cli-forge-pipeline` | CI/CD pipelines. wizard audit checks **non-interactive CI mode** |
 | `cli-cycle` | Should call cli-audit-wizard as part of the full project review |
 
+## Dynamic Handoffs
+
+| Condition detected | Recommend | Why |
+|-------------------|-----------|-----|
+| Wizard is a bash script with UX issues | `/cli-audit-shell` | Shell quality audit |
+| Wizard generates YAML/config files | `/cli-forge-infra` | Validate generated configs |
+| Wizard has no --help or getopts | `/cli-audit-shell` (S9 CLI Ergonomics) | Shell quality audit |
+
+**Rule:** Recommend, don't auto-execute.
+
 ## What this skill does NOT do
 
 - **Does not design wizards** -- it audits existing ones and recommends improvements

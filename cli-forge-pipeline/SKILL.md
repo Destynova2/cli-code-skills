@@ -192,6 +192,17 @@ Si > 2 mutations passent silencieusement, le pipeline a des trous.
 - `references/runner-autoscaler.toml` — Config GitLab Runner autoscaler (abeilles)
 - `references/cache-strategy.md` — Stratégies de cache avancées (blob + mycelium)
 
+## Dynamic Handoffs
+
+| Condition detected | Recommend | Why |
+|-------------------|-----------|-----|
+| Shell scripts used as pipeline entrypoints | `/cli-audit-shell` | Audit the scripts |
+| Tests referenced in CI but not audited | `/cli-audit-test` | Test strategy audit |
+| Pipeline builds containers | `/cli-forge-infra` | Container/image audit |
+| Pipeline has > 10 jobs with complex dependencies | `/cli-audit-tangle` | CI dependency topology |
+
+**Rule:** Recommend, don't auto-execute.
+
 ## Integration with other cli-* skills
 
 | Skill | Relationship |
