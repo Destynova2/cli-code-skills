@@ -207,7 +207,7 @@ Zone sensible (3/3 unanimite requise) :
 - Cargo.toml / package.json (deps)
 - .env, credentials, secrets
 - src/auth/**, src/security/** (modules critiques)
-- CONTRACTS.md, CLAUDE.md (regles du projet)
+- CONTRACTS.md, CONTRIBUTING.md (regles du projet)
 
 IMPORTANT : La liste des zones sensibles est revue a chaque fin de sprint (voir "Revue des zones sensibles" dans le shutdown protocol). Si un sprint a revele un probleme (CI sautee, feature enlevee par hallucination, etc.), ajouter les fichiers concernes en zone sensible.
 

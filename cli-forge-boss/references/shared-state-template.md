@@ -79,7 +79,7 @@ Remplacer les `{variables}` par les valeurs du projet.
 | src/auth/** | Module authentification critique | initial | - |
 | src/security/** | Module securite critique | initial | - |
 | CONTRACTS.md | Regles du projet | initial | - |
-| CLAUDE.md | Instructions du projet | initial | - |
+| CONTRIBUTING.md | Instructions du projet | initial | - |
 
 ### Historique des hallucinations
 
