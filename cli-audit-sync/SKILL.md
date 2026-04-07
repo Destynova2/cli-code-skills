@@ -51,7 +51,7 @@ Read `references/layers.md` for detailed check tables, methodology, and safety r
 
 ### Step 1 — Discover documentation
 
-Glob: `**/*.md`, `docs/**/*`, `README*`, `CHANGELOG*`, `CONTRIBUTING*`, `AGENTS.md`, `CLAUDE.md`, `llms.txt`
+Glob: `**/*.md`, `docs/**/*`, `README*`, `CHANGELOG*`, `CONTRIBUTING*`
 
 ### Step 2 — Build code index (source of truth)
 

@@ -182,7 +182,7 @@ Use the detected type to:
 
 ### 0.2 — Read the project
 
-1. **Read the project** — CLAUDE.md, README, manifest file, src/ structure
+1. **Read the project** — README, CONTRIBUTING.md, docs/explanation/architecture.md, manifest file, src/ structure
 2. **Read git state** — branches, worktrees, CI config
 3. **Identify the menu** — what needs to be done? Check issues, roadmap, design docs
 
@@ -268,7 +268,7 @@ Le Chef detecte le tier au demarrage :
   - Nombre de taches → S/M/L
   - Multi-repo → L minimum
   - Fichier CONTRACTS.md ou compliance/ → XL
-  - Mention "regulated", "defense", "finance" dans CLAUDE.md → XL
+  - Mention "regulated", "defense", "finance" dans README/CONTRIBUTING.md → XL
   - L'utilisateur peut forcer : /cli-forge-boss --tier XL
 ```
 
@@ -298,11 +298,11 @@ Lis TOUT avant de demander quoi que ce soit :
 
 1. **Quels plats ?** → Lire dans cet ordre jusqu'a trouver :
    - `{project}/.claude/shared-state.md` section "Backlog" (travail du sprint precedent)
-   - Roadmap Obsidian (si vault specifie dans CLAUDE.md ou shared-state)
+   - Roadmap Obsidian (si vault specifie dans shared-state)
    - `gh issue list` (issues ouvertes)
    - `git log --oneline -20` (travail recent, ce qui manque)
-   - CLAUDE.md section roadmap/next steps
    - README.md section TODO/roadmap
+   - CONTRIBUTING.md section roadmap/next steps
    Si TOUJOURS rien → demander
 
 2. **Combien de commis ?** → Compter les taches trouvees en 1, appliquer le tier (S/M/L/XL). Ne pas demander.
@@ -316,7 +316,7 @@ Lis TOUT avant de demander quoi que ce soit :
 4. **Plats hors carte ?** → Scanner :
    - `ls {workspace}/` pour les repos voisins
    - shared-state.md section "Contexte partage" (liens vers d'autres repos)
-   - CLAUDE.md (references a d'autres projets)
+   - README.md / CONTRIBUTING.md (references a d'autres projets)
    Ne pas demander.
 
 5. **Quel niveau de degustation ?** → Deduire du tier :
@@ -326,7 +326,7 @@ Lis TOUT avant de demander quoi que ce soit :
    - XL → complet
    Ne pas demander.
 
-6. **Branche de service ?** → `git branch -a | head` + CLAUDE.md. C'est toujours ecrit. Ne pas demander.
+6. **Branche de service ?** → `git branch -a | head` + CONTRIBUTING.md. C'est toujours ecrit. Ne pas demander.
 
 **Ne demander a l'utilisateur QUE si :**
 - Aucune source ne contient l'information (pas de roadmap, pas d'issues, pas de backlog)

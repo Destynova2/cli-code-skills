@@ -57,18 +57,17 @@ For tier **L**: prioritize contracts whose implementation files appear in `git l
 
 ## Workflow
 
-### Step 0 — Locate or bootstrap CONTRACTS.md + CLAUDE.md check
+### Step 0 — Locate or bootstrap CONTRACTS.md
 
 1. Search for `CONTRACTS.md` at project root, then `docs/CONTRACTS.md`, then `contracts/`
-2. If found: read it, proceed to Step 0b
+2. If found: read it, proceed to Step 1
 3. If NOT found: switch to **Bootstrap Mode** (see below)
 
-**Step 0b — Verify CLAUDE.md autophagy instructions:**
+**Step 0b — Verify drift surveillance instructions:**
 
-1. Search for `CLAUDE.md` (or `.claude/settings.json` project instructions) at project root
-2. If CLAUDE.md exists, check if it contains autophagy/drift surveillance instructions
-3. If **missing autophagy section**: read `references/claude-md-template.md` and append the section to the report as a recommended CLAUDE.md update
-4. If **autophagy section exists but outdated** (references functions no longer in CONTRACTS.md, or missing new contracted functions): propose an update
+1. Search for drift surveillance instructions in: `CONTRIBUTING.md`, `.claude/settings.json`, or project docs
+2. If missing: append a drift surveillance section to the report as a recommended update to `CONTRIBUTING.md`
+3. If outdated (references functions no longer in CONTRACTS.md): propose an update
 
 ### Step 1 — Parse contracts
 
@@ -144,9 +143,9 @@ When no CONTRACTS.md exists, the skill switches from audit to generation:
 
 3. **Generate CONTRACTS.md**: Read `references/contracts-template.md` for the template. Generate contracts for the top 5-10 critical functions.
 
-4. **Propose CLAUDE.md additions**: Read `references/claude-md-template.md` for the autophagy instructions to add to the project's CLAUDE.md.
+4. **Propose CONTRIBUTING.md additions**: Read `references/claude-md-template.md` for the drift surveillance instructions to add to the project's `CONTRIBUTING.md` (section "Drift Surveillance").
 
-5. **Output**: deliver CONTRACTS.md + CLAUDE.md snippet, explain how to use them.
+5. **Output**: deliver CONTRACTS.md + CONTRIBUTING.md snippet, explain how to use them.
 
 ## Output Format
 
@@ -187,14 +186,14 @@ When no CONTRACTS.md exists, the skill switches from audit to generation:
 
 (diff-style additions to the drift history section)
 
-## CLAUDE.md Status
+## Drift Surveillance Status
 
-**Autophagy instructions:** {PRESENT / MISSING / OUTDATED}
+**Instructions in CONTRIBUTING.md:** {PRESENT / MISSING / OUTDATED}
 {if MISSING or OUTDATED: proposed additions below}
 
-### Proposed CLAUDE.md additions
+### Proposed CONTRIBUTING.md additions
 
-(copy-pasteable block with autophagy instructions)
+(copy-pasteable block with drift surveillance instructions)
 ```
 
 ## Rules for the Scanner

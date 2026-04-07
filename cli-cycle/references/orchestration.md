@@ -23,7 +23,11 @@
 | `cli-forge-hld` | Skip (generation — use only when user asks to design/architect) |
 | `cli-forge-lld` | Skip (generation — use only when user asks for detailed design) |
 | `cli-audit-shell` | Shell scripts exist (`.sh` files or shebanged bash scripts) |
+| `cli-audit-credential` | Secrets, API keys, or credential files detected (`.env`, `secret-*.yml`, tokens) |
+| `cli-audit-wizard` | Interactive setup/init commands exist (`setup.sh`, `init`, `doctor`, wizard UX) |
 | `cli-forge-infra` | Infra files exist (`Dockerfile`, `*.tf`, `helmfile.yaml`, `k8s/`) |
+| `cli-git-conventional` | Skip (commit enforcement — triggered explicitly, not by cycle) |
+| `cli-forge-boss` | Skip (multi-agent orchestration — triggered explicitly) |
 
 ---
 
@@ -44,6 +48,8 @@ These skills scan the codebase independently. Launch all in parallel.
 | `cli-forge-tree` | Project structure audit |
 | `cli-forge-readme` | README completeness audit (RCI) |
 | `cli-audit-shell` | Shell quality score (SQI), bash anti-patterns, tooling fitness |
+| `cli-audit-credential` | Credential health, secret hygiene, rotation status |
+| `cli-audit-wizard` | Setup UX quality, config lifecycle, scriptability |
 
 ### Wave 2 — Cross-cutting (parallel, after Wave 1)
 
