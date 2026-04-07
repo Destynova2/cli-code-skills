@@ -142,12 +142,31 @@ cli-forge-doc is "Skip" in the matrix
 
 ## Sub-agent prompt pattern
 
+### Language detection (MANDATORY — before launching any sub-agent)
+
+Before launching Wave 1, detect the project language:
+
+```bash
+# Check commit messages, README, docs, code comments
+git log --oneline -10  # commit language
+head -20 README.md     # doc language
+```
+
+The detected language is **injected into every sub-agent prompt**. This prevents skills from outputting English on a French project.
+
+### Sub-agent prompt template
+
 For each applicable skill, launch a sub-agent with:
 
 ```
 Read the skill instructions from ~/.claude/skills/{skill-name}/SKILL.md
+Read ~/.claude/skills/gotchas.md for known mistakes to avoid.
 
 Then execute that skill on the project at {project-path}.
+
+MANDATORY: Output language is {detected_language} (detected from git log and README).
+If the project commits are in French, your report, findings, and recommendations
+are in French. If English, in English. NEVER mix or switch.
 
 Important:
 - Follow the skill's workflow exactly as written

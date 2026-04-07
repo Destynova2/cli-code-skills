@@ -44,16 +44,17 @@ Glob: ~/.claude/skills/cli-*/SKILL.md
 
 Parse each SKILL.md frontmatter to extract: `name`, `description`, `argument-hint`.
 
-### Step 2 — Detect project context
+### Step 2 — Detect project context and language
 
-1. Read manifest (`Cargo.toml`, `package.json`, `go.mod`, etc.)
-2. Check for docs: `README.md`, `docs/`, `*.md`
-3. Check for schemas/diagrams: Mermaid blocks in `.md` files
-4. Check for infra: `Dockerfile`, `docker-compose.yml`, `*.tf`, `helmfile.yaml`
-5. Check for tests: `tests/`, `test/`, `spec/`, `e2e/`
-6. Check for contracts: `CONTRACTS.md`
-7. Check for CI: `.github/workflows/`, `.gitlab-ci.yml`
-8. Get project size: file count, primary language(s)
+1. **Detect output language** (MANDATORY): `git log --oneline -10` + `head -20 README.md`. If French → all output in French. If English → English. This language is injected into every sub-agent prompt. No exceptions.
+2. Read manifest (`Cargo.toml`, `package.json`, `go.mod`, etc.)
+3. Check for docs: `README.md`, `docs/`, `*.md`
+4. Check for schemas/diagrams: Mermaid blocks in `.md` files
+5. Check for infra: `Dockerfile`, `docker-compose.yml`, `*.tf`, `helmfile.yaml`
+6. Check for tests: `tests/`, `test/`, `spec/`, `e2e/`
+7. Check for contracts: `CONTRACTS.md`
+8. Check for CI: `.github/workflows/`, `.gitlab-ci.yml`
+9. Get project size: file count, primary language(s)
 
 ### Step 3 — Decide which skills to run
 

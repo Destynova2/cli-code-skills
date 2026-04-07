@@ -107,12 +107,24 @@ BREAKING CHANGE: /api/v1/* routes no longer served. Migrate to /api/v2/*.
 
 ## Workflow
 
-### Step 1 -- Analyze the diff
+### Step 1 -- Analyze the diff and detect language
 
 Before writing a commit message:
 1. Read `git diff --staged` (or the changes the user shared)
-2. Read `git log --oneline -5` for context and style
-3. Identify: is this one logical change or multiple? If multiple, suggest splitting
+2. Read `git log --oneline -10` for context, style, AND **language**
+3. **Detect commit language**: if existing commits are in French → write in French. If English → English. If mixed → follow the majority. **NEVER switch language** — a developer who wrote 14 commits in French doesn't suddenly switch to English
+4. Identify: is this one logical change or multiple? If multiple, suggest splitting
+
+**Language examples:**
+```bash
+# History is French → commit in French
+git log: "fix(ci): corrige perte de variable dans subshell"
+NEW:     "fix(security): externalise le mot de passe healthcheck"
+
+# History is English → commit in English
+git log: "fix(ci): fix variable loss in subshell"
+NEW:     "fix(security): externalize healthcheck password"
+```
 
 ### Step 2 -- Classify
 
@@ -327,8 +339,10 @@ Note: `CLAUDE.md`, `GEMINI.md`, `AGENTS.md` are NOT gitignored — they are abso
 ## Checklist (internal, before delivering a message)
 
 ```
+[ ] Language matches git log history (FR stays FR, EN stays EN)
 [ ] Type correct from allowed list
 [ ] Scope relevant (or absent if not applicable)
+[ ] Scope style matches history (security vs sec, ci vs pipeline)
 [ ] ! and/or BREAKING CHANGE footer if breaking
 [ ] Description: imperative present, lowercase, no period, <=72 chars
 [ ] Body separated by blank line if present

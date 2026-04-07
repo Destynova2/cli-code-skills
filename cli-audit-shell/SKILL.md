@@ -65,9 +65,11 @@ Score each dimension **0.0-1.0**, then compute a weighted SQI. Read `references/
 
 ## Workflow
 
-### Step 1 — Discover and sample
+### Step 1 — Discover, sample, and detect language
 
 Glob for shell scripts: `**/*.sh`, `**/Makefile`, shebanged files. For broad audit, prioritize: entry points (`setup.sh`, `install.sh`, `deploy.sh`), longest scripts, most-changed scripts (git log).
+
+**Detect output language**: `git log --oneline -10` + `head -20 README.md`. Report in the project's language (French commits → French report).
 
 ### Step 2 — Detect script context
 
