@@ -177,3 +177,105 @@ Inspiree du pattern d'Anthropic (C compiler build) :
 2. Si verrouille par un autre → SendMessage au Sous-Chef : "Besoin de modifier {fichier}, verrouille par {commis}"
 3. Le Sous-Chef decide : attendre, re-assigner, ou autoriser (si zones differentes dans le fichier)
 4. Le commis libere le verrou en faisant "Pret !"
+
+---
+
+## Stigmergie — tokens de completion (inspire des fourmis couperuses, cli-forge-pipeline)
+
+Les commis ne communiquent pas directement entre eux. Ils deposent des **tokens** dans shared-state.md quand une sous-tache est terminee. Les commis dependants attendent le token, pas un message du Chef.
+
+```markdown
+## Tokens de completion
+
+| Token | Commis | Timestamp | Consommable par |
+|-------|--------|-----------|-----------------|
+| schema-db-ready | commis-1 | 14:45 | commis-2, commis-3 |
+| api-endpoints-defined | commis-2 | 15:10 | commis-4 |
+```
+
+**Regles :**
+1. Un commis depose un token quand sa sous-tache est finie (pas quand tout son plat est pret)
+2. Un commis dependant poll les tokens avant de commencer sa partie dependante
+3. Le Chef n'intervient PAS dans la synchronisation par tokens — c'est de la stigmergie
+4. Si un token n'arrive pas dans le delai estime → le commis dependant alerte le Sous-Chef
+
+---
+
+## Patch Bankruptcy (inspire de cli-forge-infra)
+
+Apres 2 rejets de gate sur le meme diff, la probabilite que l'approche soit bonne est de 25%.
+
+```
+Tentative 1 : gate rejects → commis corrige
+Tentative 2 : gate rejects encore → STOP OBLIGATOIRE
+  → Le commis ne retente PAS
+  → Le Chef review : mauvaise approche ? mauvaise spec ? mauvais commis ?
+  → Options :
+    a) Re-assigner a un autre commis (approche differente)
+    b) Redefinir la spec (le Chef clarifie l'intention)
+    c) Fusionner avec un autre plat (la tache est mal decoupee)
+    d) Escalade au patron (humain)
+```
+
+**Jamais 3 tentatives sur la meme approche.** C'est statistiquement irrationnel (P=87.5% que l'approche est fausse).
+
+---
+
+## Divergence detection (inspire du Physarum / cli-forge-pipeline)
+
+Si un commis stall (pas de progres > 30min) ou regresse (gate approval → gate rejection sur le meme fichier) :
+
+```
+IF commis.idle_time > 30min:
+  → Chef alerte : "Commis {X} inactif depuis 30min sur {plat}"
+  → Options : relancer, re-assigner, escalade
+
+IF commis.regression_detected (gate approved on file A, then rejected after new edit):
+  → Sous-Chef flag : "Regression sur {fichier} — edit {hash} a casse ce qui marchait"
+  → Commis doit `git revert` avant de continuer
+
+IF same_gate.rejects(commis, same_diff) >= 2:
+  → Patch Bankruptcy (voir ci-dessus)
+```
+
+---
+
+## Convergence et early-stop (inspire de cli-cycle Phoenix)
+
+Le sprint s'arrete automatiquement quand :
+
+| Condition | Nom | Action |
+|-----------|-----|--------|
+| Tous les plats du PERT sont "Envoyes" | **COMPLET** | Rapport de service normal |
+| Score qualite >= cible ET 0 Tier 3 restant | **CONVERGE** | Arreter meme si des plats mineurs restent |
+| Gate rejection rate > 20% sur les 5 derniers diffs | **MISALIGNE** | Stop, replanifier — sous-chefs et commis ne sont pas d'accord |
+| Aucun merge depuis > 1h avec commis actifs | **BLOQUE** | Escalade au Chef, diagnostic NFD (verifier communication avant logique) |
+| Tier 3 cree par correction > Tier 3 resolus | **DIVERGE** | Stop immediat, presenter l'etat au patron |
+
+---
+
+## Sprint Health Scorecard (inspire des scoring frameworks cli-audit-*)
+
+A inclure dans le Rapport de Service final :
+
+```markdown
+## Sante du sprint
+
+| Metrique | Valeur | Seuil | Status |
+|----------|--------|-------|--------|
+| Taux d'approbation gates | 87% | > 85% | OK |
+| Taux de completion plats | 4/5 (80%) | > 80% | OK |
+| Temps moyen par merge | 22min | < 30min | OK |
+| Escalades au patron | 1 (2%) | < 5% | OK |
+| Regressions detectees | 0 | 0 | OK |
+| God-commis detectes | 0 | 0 | OK |
+| Patch Bankruptcy declenchees | 1 | < 2 | OK |
+| Tokens stigmergie utilises | 3 | - | Info |
+```
+
+| Score global | Verdict |
+|-------------|---------|
+| 80-100 | Excellent — brigade efficace |
+| 60-79 | Acceptable — quelques frictions |
+| 40-59 | Problematique — trop de rejets/escalades |
+| < 40 | Echec — replanifier la brigade |

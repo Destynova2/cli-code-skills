@@ -453,7 +453,8 @@ Pour arreter : `CronDelete {job_id}`
 | `references/tmuxinator-template.md` | Tmuxinator YAML |
 | `references/permissions-template.md` | settings.local.json |
 | `references/quality-gates.md` | La carte des degustations (audit skills) |
-| `references/conflict-resolution.md` | Arbre de decision, matrice de couplage, file locking, escalade |
+| `references/conflict-resolution.md` | Arbre de decision, matrice de couplage, file locking, escalade, stigmergie, patch bankruptcy, divergence, convergence, sprint health |
+| `references/anti-patterns-boss.md` | 10 anti-patterns nommes de la brigade (Ping-Pong, Ghost Commis, God Commis, etc.) |
 | `references/parallel-exploration.md` | Hypotheses concurrentes, approches paralleles, grille de comparaison |
 
 ## Integration with other cli-* skills
