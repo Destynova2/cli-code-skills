@@ -217,6 +217,33 @@ Context from prior audits (use to enrich your analysis, do not re-scan):
 | **Overall** | **6.8/10** | | |
 ```
 
+### Triangulation — Convergence of Evidence
+
+Before classifying any finding into a tier, apply **multi-method triangulation** (inspired by scientific critical thinking):
+
+```
+A finding is HIGH confidence ONLY IF detected by ≥2 independent methods.
+Examples:
+  - "Dead function" detected by cli-audit-tangle (call graph) AND cli-audit-code (DRY check) → HIGH
+  - "Hardcoded secret" detected by cli-audit-code (C9) only → MEDIUM (single source)
+  - "Missing test" detected by cli-audit-test only → MEDIUM
+  - Same issue flagged by 3+ skills → HIGHEST priority in triage
+```
+
+**Deduplication rule:** Findings about the same `file:line+description` from multiple skills are MERGED into one item with `confidence = number of detecting skills`.
+
+### GRADE-style confidence downgrading
+
+After triangulation, each finding gets a confidence score that influences its tier placement:
+
+| Start | Downgrade if... | Upgrade if... |
+|-------|-----------------|---------------|
+| HIGH (multi-method) | Single file only (-1), heuristic-based (-1) | Cross-file confirmed (+1), exact AST match (+1) |
+| MEDIUM (single source) | No file:line evidence (-1), pattern-only (-1) | Multi-line context (+1) |
+| LOW (heuristic) | Known false-positive pattern (-2) | Manual review confirmed (+2) |
+
+A LOW confidence finding can still be Tier 3 if the **impact** is critical (security, data loss). Confidence = how sure we are; tier = how urgent.
+
 ### Phoenix Triage 3-2-1 — Complete correction list
 
 **Rule: NEVER truncate. Show ALL corrections found, classified by tier.**

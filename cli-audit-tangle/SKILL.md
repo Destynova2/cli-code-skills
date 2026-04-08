@@ -159,9 +159,21 @@ If the project has module structure:
 3. Flag modules where coupling > cohesion (they shouldn't be separate)
 4. Flag modules where internal clusters suggest a split (Fiedler cut)
 
-**3d — Dead node detection**
+**3d — Dead node detection (with competing hypotheses)**
 
 Functions with in-degree = 0 AND not an entry point (main, test, public API) = potentially dead code.
+
+**Mandatory: enumerate ≥3 competing hypotheses before flagging** (inspired by scientific hypothesis-generation):
+
+| Hypothesis | Disproof condition |
+|-----------|-------------------|
+| H1: truly dead code | None of H2-H5 hold |
+| H2: called via reflection (`getattr`, `__import__`, dynamic dispatch) | Grep for the function name as a string literal in the codebase |
+| H3: public API for external consumers | Function is `pub` in `lib.rs` root, or in `__all__`, or in `mod.exports` |
+| H4: called from tests, examples, benches (excluded from main scan) | Re-scan with test/example/bench dirs included |
+| H5: called via macro expansion or trait dispatch | Grep for function name in macro definitions; check trait impls |
+
+**Only flag as dead if ALL 5 hypotheses are refuted.** A finding without disproof is downgraded to "POTENTIALLY DEAD — confirm manually."
 
 Read `references/analysis-methods.md` for detailed algorithms.
 

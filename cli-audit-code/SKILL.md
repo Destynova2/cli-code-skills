@@ -98,6 +98,7 @@ CQI = Σ(wᵢ × sᵢ) / Σ(wᵢ) × 10
 - **What**: [description]
 - **Why**: [named principle/smell it violates]
 - **Fix**: [concrete suggestion]
+- **Disproof**: [observation that would invalidate this finding — e.g., "this isn't dead code IF dynamic dispatch is used here"]
 
 ## Flags (should fix)
 [same format]
