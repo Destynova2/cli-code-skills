@@ -70,16 +70,56 @@ Remplacer les `{variables}` par les valeurs du projet.
 
 > Revue a chaque fin de sprint. Si un fichier cause des problemes, le passer ici.
 > Si un fichier est ici depuis 3 sprints sans incident, le repasser en zone normale.
+>
+> **Format machine-parseable** : la liste authoritative est le bloc `BOSS_SENSITIVE_PATHS`
+> ci-dessous. Le tableau humain est genere depuis ce bloc et sert a la documentation.
+> Le `/loop` Sous-Chef parse uniquement le bloc — toujours le tenir a jour.
+
+<!-- BOSS_SENSITIVE_PATHS:START -->
+```sensitive-paths
+# One glob pattern per line. Lines starting with # are comments.
+# Parsed by /loop Sous-Chef and the Chef shutdown protocol.
+# Format: <glob>    # <reason>
+.github/workflows/**          # CI = impact global
+**/Cargo.toml                 # Supply chain risk (Rust deps)
+**/package.json               # Supply chain risk (npm deps)
+**/go.mod                     # Supply chain risk (Go deps)
+**/pyproject.toml             # Supply chain risk (Python deps)
+**/requirements*.txt          # Supply chain risk (Python deps)
+.env                          # Secrets
+**/*.secret                   # Secrets
+**/credentials*               # Secrets
+src/auth/**                   # Authentification critique
+src/security/**               # Securite critique
+CONTRACTS.md                  # Regles du projet
+CONTRIBUTING.md               # Instructions du projet
+```
+<!-- BOSS_SENSITIVE_PATHS:END -->
+
+### Tableau humain (genere depuis le bloc ci-dessus)
 
 | Pattern | Raison | Depuis | Incidents |
 |---------|--------|--------|-----------|
 | .github/workflows/** | CI = impact global | initial | - |
-| Cargo.toml (section [dependencies]) | Supply chain risk | initial | - |
-| .env, *.secret, credentials* | Secrets | initial | - |
+| **/Cargo.toml | Supply chain risk (Rust) | initial | - |
+| **/package.json | Supply chain risk (npm) | initial | - |
+| .env, **/*.secret, **/credentials* | Secrets | initial | - |
 | src/auth/** | Module authentification critique | initial | - |
 | src/security/** | Module securite critique | initial | - |
-| CONTRACTS.md | Regles du projet | initial | - |
-| CONTRIBUTING.md | Instructions du projet | initial | - |
+| CONTRACTS.md, CONTRIBUTING.md | Regles du projet | initial | - |
+
+### Comment parser le bloc (pour /loop ou scripts)
+
+```bash
+# Extraire les patterns purs (sans commentaires, sans markers)
+sed -n '/<!-- BOSS_SENSITIVE_PATHS:START -->/,/<!-- BOSS_SENSITIVE_PATHS:END -->/p' \
+  {project}/.claude/shared-state.md \
+  | sed -n '/```sensitive-paths/,/```/p' \
+  | grep -v '^```' \
+  | grep -v '^#' \
+  | grep -v '^$' \
+  | awk '{print $1}'
+```
 
 ### Historique des hallucinations
 

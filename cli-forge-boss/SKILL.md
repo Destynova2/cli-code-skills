@@ -198,7 +198,7 @@ Use the detected type to:
 | Tool | Check | Install (Fedora/RHEL) | Install (macOS) | Install (Debian/Ubuntu) | Fallback |
 |------|-------|-----------------------|-----------------|-------------------------|----------|
 | tmux | `which tmux` | `sudo dnf install tmux` | `brew install tmux` | `sudo apt install tmux` | None — required |
-| tmuxinator | `which tmuxinator` | `gem install tmuxinator` | `gem install tmuxinator` | `gem install tmuxinator` | Raw tmux script (manual pane setup) |
+| tmuxinator | `which tmuxinator` | `brew install tmuxinator` (preferre) ou `gem install tmuxinator` | `brew install tmuxinator` | `gem install tmuxinator` | **Raw tmux script** — voir `references/raw-tmux-fallback.md` |
 | claude | `which claude` | `npm i -g @anthropic-ai/claude-code` | `npm i -g @anthropic-ai/claude-code` | `npm i -g @anthropic-ai/claude-code` | None — required |
 | gh | `which gh` | `sudo dnf install gh` | `brew install gh` | `sudo apt install gh` | Manual CI checks |
 
@@ -211,6 +211,12 @@ grep -q "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS" ~/.claude/settings.json 2>/dev/nu
 ```
 
 If a tool is missing → **show the install command for the detected OS** and stop.
+
+**Exception : tmuxinator manquant N'EST PAS bloquant.** Si Ruby/gem n'est pas dispo (env air-gapped, OS immutable type Bluefin/Silverblue), generer le fallback raw-tmux a la place :
+- Lire `references/raw-tmux-fallback.md`
+- Generer `{project}/.claude/scripts/boss-{session}.sh` (chmod +x)
+- Documenter dans le rapport Phase 4 : "tmuxinator absent → fallback raw-tmux genere"
+- Lancer avec `bash {project}/.claude/scripts/boss-{session}.sh` au lieu de `tmuxinator start {session}`
 
 **Auto-fix configuration (G19, G20, G22) — do ALL of these automatically, don't ask :**
 
@@ -282,6 +288,33 @@ Le Chef detecte le tier au demarrage :
   - Mention "regulated", "defense", "finance" dans README/CONTRIBUTING.md → XL
   - L'utilisateur peut forcer : /cli-forge-boss --tier XL
 ```
+
+**Confirmation de cout pour le tier XL (OBLIGATOIRE — auto-detection ou flag) :**
+
+Le tier XL coute environ **5-8x** le tier L en tokens (10 agents de validation au lieu de ~2,
+chaque diff vote par 9 sous-chefs au lieu de 3, audit trail genere a chaque tour).
+
+Avant de spawner la brigade XL, **toujours** afficher et demander confirmation :
+
+```
+=== TIER XL DETECTE ===
+Raison : {detection_reason}  # ex: "CONTRACTS.md present" ou "--tier XL flag"
+Brigade : Chef + 9 Sous-Chefs (3 grappes) + 1 Sous-Chef Merge + N Commis
+Cout estime : ~5-8x le tier L (chaque diff vote par 9 agents au lieu de 3)
+Duree estimee : ~2-3x le tier L (rounds de resolution inter-grappes)
+
+Justification recommandee :
+  - Projet reglemente (defense, finance, sante)
+  - Audit trail legal requis
+  - Cout d'erreur > cout des agents
+
+Continuer avec XL ? [y/N/downgrade-to-L]
+```
+
+Si l'utilisateur repond `downgrade-to-L`, passer en tier L et noter dans le rapport
+Phase 4 : "Tier XL detecte mais downgrade L sur demande utilisateur".
+
+**Cette confirmation est aussi obligatoire que celle de Phase 0.6 pour EXPLORATION.**
 
 ### 0.5 — Build coupling matrix
 
@@ -441,8 +474,10 @@ Present to the user:
 Apres que l'utilisateur lance `tmuxinator start`, **lancer automatiquement** le Sous-Chef via `/loop` :
 
 ```
-/loop 2m Sous-Chef check. Regarde le pane boss {session}:0.0 avec tmux capture-pane. Si permission en attente ("Do you want to make this edit"), lis le diff. Zones sensibles (NE PAS approuver, SKIP) : {zones_sensibles}. Zones normales : tout le reste → approuve avec tmux send-keys -t {session}:0.0 Enter. PUIS recheck immediatement (sleep 5 + capture-pane) — tant qu'il y a des permissions en file, continue a approuver. Arrete quand le boss est libre. Log chaque action.
+/loop 2m Sous-Chef check. Regarde le pane boss {session}:0.0 avec tmux capture-pane. Si permission en attente ("Do you want to make this edit"), lis le diff. Zones sensibles : parse le bloc BOSS_SENSITIVE_PATHS de {project}/.claude/shared-state.md (extrait entre <!-- BOSS_SENSITIVE_PATHS:START --> et :END, dans le fence ```sensitive-paths```, ignore les lignes # et vides, garde la 1re colonne). Si le diff touche un fichier matchant un de ces globs → SKIP (NE PAS approuver). Zones normales : tout le reste → approuve avec tmux send-keys -t {session}:0.0 Enter. PUIS recheck immediatement (sleep 5 + capture-pane) — tant qu'il y a des permissions en file, continue a approuver. Arrete quand le boss est libre. Log chaque action.
 ```
+
+**Pourquoi ce parsing structure** : avant, les zones sensibles etaient injectees comme texte opaque dans le prompt `/loop`. Resultat : le boss ne pouvait pas les mettre a jour entre deux loops (le prompt etait fige a la creation). Maintenant, le `/loop` re-lit le bloc a chaque tick, donc le Chef ou l'humain peut ajouter une zone sensible en plein sprint et la prochaine iteration la prend en compte.
 
 Le Sous-Chef tourne dans la session de l'utilisateur (cette session, pas dans tmux). Il surveille le boss toutes les 2 minutes et :
 - **APPROVE** les edits en zone normale (src/, tests/, shared-state.md)
@@ -469,6 +504,7 @@ Pour arreter : `CronDelete {job_id}`
 | `references/sprint-persistence.md` | Checkpoint, resume, rewind, fresh restart, sprint history (inspire de jj operation log) |
 | `references/simplified-model.md` | Modele stigmergie pour tiers S/M/L — Boids, quorum sensing, reparation ADN, reaction-diffusion, apoptose |
 | `references/parallel-exploration.md` | Hypotheses concurrentes, approches paralleles, grille de comparaison |
+| `references/raw-tmux-fallback.md` | Script bash POSIX equivalent au YAML tmuxinator (pour env sans Ruby) |
 
 ## Integration with other cli-* skills
 
