@@ -46,7 +46,7 @@
 
 ## File extensions
 
-- [2026-04-08] cli-forge-tree / cli-cycle — Ne JAMAIS renommer `.yml` ↔ `.yaml` dans un projet existant. Détecter la convention du projet (compter `*.yml` vs `*.yaml`) et utiliser celle-ci pour les nouveaux fichiers. Exceptions : Kustomize/Helm imposent `.yaml`, GitLab CI impose `.gitlab-ci.yml`, ces extensions sont non-négociables. Pour tout le reste, respecter ce qui existe.
+- [2026-04-08] cli-forge-tree / cli-cycle — Ne JAMAIS renommer `.yml` ↔ `.yaml` dans un projet existant. Détecter la convention du projet (compter `*.yml` vs `*.yaml`) et utiliser celle-ci pour les nouveaux fichiers. SEULE exception réelle : Helm `Chart.yaml` et `values.yaml` (forcé `.yaml` par helm/helm#7747). Tout le reste (Kustomize, Docker Compose, GitHub Actions, Ansible, K8s, GitLab CI) accepte les deux extensions. Vérifié dans le code source de Kustomize : `RecognizedKustomizationFileNames()` retourne explicitement les 3 noms.
 
 ## OPSEC / Stealth
 
