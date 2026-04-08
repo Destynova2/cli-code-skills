@@ -44,9 +44,37 @@
 - [2026-04-06] cli-forge-boss — Claude Code in interactive mode always waits for a first user message. The boss won't start autonomously from system prompt alone — needs a kick message.
 - [2026-04-06] cli-forge-boss — Do NOT use `-p` (print mode) for the boss. Print mode disables interactive mode and teammate tmux panes won't appear.
 
-## File extensions
+## Loi de conservation des conventions (RÈGLE GLOBALE)
 
-- [2026-04-08] cli-forge-tree / cli-cycle — Ne JAMAIS renommer `.yml` ↔ `.yaml` dans un projet existant. Détecter la convention du projet (compter `*.yml` vs `*.yaml`) et utiliser celle-ci pour les nouveaux fichiers. SEULE exception réelle : Helm `Chart.yaml` et `values.yaml` (forcé `.yaml` par helm/helm#7747). Tout le reste (Kustomize, Docker Compose, GitHub Actions, Ansible, K8s, GitLab CI) accepte les deux extensions. Vérifié dans le code source de Kustomize : `RecognizedKustomizationFileNames()` retourne explicitement les 3 noms.
+> **Inspirée de la première loi de Newton** : un objet conserve son état (immobile ou en mouvement uniforme) sauf si une force externe agit sur lui.
+> Appliquée au code : un projet conserve ses conventions existantes sauf si une **force externe concrète** l'oblige à changer.
+
+**La règle** : avant de modifier toute convention dans un projet existant (extension de fichier, naming, indentation, quoting, structure, langue, format), vérifier qu'une **force concrète** justifie le changement.
+
+**Forces qui justifient un changement** :
+- Erreur de l'outil (build cassé, parser qui crashe)
+- Faille de sécurité (CVE, exposition de secret)
+- Bug de fonctionnement (test qui échoue, runtime qui crashe)
+- Standard imposé par un outil utilisé dans le projet (ex: Helm exige `Chart.yaml`)
+- Demande explicite du user
+
+**Forces qui NE justifient PAS un changement** (forces fictives) :
+- "Cohérence" / "uniformité"
+- "Best practice"
+- "C'est plus moderne"
+- "L'autre fichier du projet utilise X"
+- Préférence esthétique du LLM
+
+**Protocole avant tout changement de convention** :
+1. Compter ce qui existe : `find . -name '*.yml' | wc -l` vs `find . -name '*.yaml' | wc -l`
+2. La majorité gagne pour les nouveaux fichiers
+3. Pour les fichiers existants : ne touche RIEN sans force concrète
+4. Si tu hésites, demande au user
+
+**Exemples de conventions à conserver** : extensions de fichier (`.yml`/`.yaml`, `.tf`/`.tofu`), naming (snake_case/camelCase/kebab-case), indentation (tabs/spaces, 2/4), quoting (`'`/`"`), structure de dossiers, format de config (TOML/YAML/JSON), langue des commits, langue des commentaires, branch naming, ordering des imports.
+
+**Cas particuliers documentés** :
+- `.yml` vs `.yaml` : Helm exige `.yaml` pour `Chart.yaml`/`values.yaml` (helm#7747). Tous les autres outils (Kustomize, Docker Compose, GitHub Actions, Ansible, GitLab CI) acceptent les deux. Suivre la convention dominante du projet.
 
 ## OPSEC / Stealth
 

@@ -116,6 +116,10 @@ Phoenix — Quel tier attaquer ?
 
 ### Step 6b — Correction pipeline (audit → forge → commit → re-audit)
 
+**Loi de conservation des conventions (lire `../../gotchas.md` section "Loi de conservation")** :
+
+Avant TOUTE correction qui touche une convention (extension de fichier, naming, indentation, quoting, langue), vérifier qu'une **force externe concrète** justifie le changement. Sinon, conserver l'état du projet. La cohérence, le best-practice, l'esthétique ne sont PAS des forces.
+
 **File-based tracking is MANDATORY** (prevents the LLM from forgetting items):
 
 ```bash
