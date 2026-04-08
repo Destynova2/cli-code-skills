@@ -19,7 +19,7 @@ Do NOT use symlinks — use real copies.
 
 ## Current skills (20)
 
-**Audit (10):** cli-audit-code, cli-audit-credential, cli-audit-doc, cli-audit-drift, cli-audit-shell, cli-audit-sync, cli-audit-tangle, cli-audit-test, cli-audit-wizard, cli-cycle
+**Audit (9):** cli-audit-code, cli-audit-doc, cli-audit-drift, cli-audit-shell, cli-audit-sync, cli-audit-tangle, cli-audit-test, cli-audit-wizard, cli-cycle
 
 **Forge (10):** cli-forge-arch, cli-forge-boss, cli-forge-doc, cli-forge-hld, cli-forge-infra, cli-forge-lld, cli-forge-pipeline, cli-forge-readme, cli-forge-schema, cli-forge-tree
 
