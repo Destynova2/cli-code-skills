@@ -202,6 +202,16 @@ project-name/
 - `compose.yml` > `docker-compose.yml` (Docker Compose V2+ standard)
 - Use `.containerfile` extension when multiple build targets exist
 
+**YAML extension rule (CRITICAL — don't rename existing files):**
+- **Never rename** `.yml` ↔ `.yaml` in an existing project. Respect what's there.
+- Some tools REQUIRE a specific extension and cannot be changed:
+  - Kustomize → `kustomization.yaml` (only)
+  - Helm → `Chart.yaml`, `values.yaml` (only)
+  - GitLab CI → `.gitlab-ci.yml` (only)
+  - Ansible → convention `.yml` (rarely changed)
+- Tools that accept both: GitHub Actions, Docker Compose, K8s manifests (when not via kustomize/helm)
+- For these dual-extension tools: **follow the project's existing convention**. If the project uses `.yml`, all new files use `.yml`. Don't introduce inconsistency.
+
 ---
 
 ## `kustomize` / `flux` (GitOps Kubernetes)

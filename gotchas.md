@@ -44,6 +44,10 @@
 - [2026-04-06] cli-forge-boss — Claude Code in interactive mode always waits for a first user message. The boss won't start autonomously from system prompt alone — needs a kick message.
 - [2026-04-06] cli-forge-boss — Do NOT use `-p` (print mode) for the boss. Print mode disables interactive mode and teammate tmux panes won't appear.
 
+## File extensions
+
+- [2026-04-08] cli-forge-tree / cli-cycle — Ne JAMAIS renommer `.yml` ↔ `.yaml` dans un projet existant. Détecter la convention du projet (compter `*.yml` vs `*.yaml`) et utiliser celle-ci pour les nouveaux fichiers. Exceptions : Kustomize/Helm imposent `.yaml`, GitLab CI impose `.gitlab-ci.yml`, ces extensions sont non-négociables. Pour tout le reste, respecter ce qui existe.
+
 ## OPSEC / Stealth
 
 - [2026-04-07] cli-forge-doc — AGENTS.md et CLAUDE.md sont des marqueurs AI visibles dans un repo. Score DREAD 8.8/10 : Information Disclosure (architecture complète, gotchas exploitables) + Repudiation (trace AI dans l'historique). En mode stealth, redistribuer tout le contenu dans CONTRIBUTING.md, docs/explanation/architecture.md, docs/TROUBLESHOOTING.md. Zéro fichier nommé "CLAUDE", "AGENTS", ou "llms".
