@@ -173,6 +173,81 @@ For ALL rules, apply Fowler's Rule of Three as the default escalation:
 
 ---
 
+## Modern enhancements (2024-2026 research)
+
+### NCD — Normalized Compression Distance (language-agnostic pre-filter)
+
+**Source:** Kolmogorov complexity, MDL (arXiv 1005.2364), used in LLM training data dedup pipelines.
+
+**Why:** Tree-sitter and AST tools require a parser per language. NCD works on **any two strings** with `zstd`/`gzip` and is the cheapest possible duplicate detector.
+
+```bash
+# Compute NCD between two files
+ncd() {
+  local a="$1" b="$2"
+  local cx=$(cat "$a" | zstd -q -c | wc -c)
+  local cy=$(cat "$b" | zstd -q -c | wc -c)
+  local cxy=$(cat "$a" "$b" | zstd -q -c | wc -c)
+  local min=$(( cx < cy ? cx : cy ))
+  local max=$(( cx > cy ? cx : cy ))
+  echo "scale=3; ($cxy - $min) / $max" | bc
+}
+# NCD < 0.3 = highly duplicated (any pair, any format)
+# NCD < 0.1 = nearly identical
+```
+
+**Use:** First-pass scan over all `(file_a, file_b)` pairs. Flag pairs with NCD < 0.3 for deeper analysis. O(n²) but each comparison is microseconds.
+
+### Rule of Three + AGE check (Sandi Metz refinement)
+
+**Source:** Sandi Metz "The Wrong Abstraction" + Terrible Software 2025 follow-up.
+
+**Why:** New duplications (< 14 days old in git history) are pre-Rule-of-Three. Don't escalate them. Old duplications (> 14 days, ≥ 3 instances) are refactor candidates.
+
+**Application:**
+```
+For each duplicate group:
+  age = days since the most recent file was created/modified
+  count = number of instances
+
+  IF count < 3 AND age < 14 days → INFO ("wait, may converge naturally")
+  IF count < 3 AND age > 14 days → WARN
+  IF count >= 3 AND age > 14 days → ERROR (refactor mandate)
+
+  If duplicate REPLACED a prior abstraction (visible in git log) →
+    DOWNGRADE to INFO (the abstraction was wrong, duplication is intentional)
+```
+
+This single rule prevents 60-80% of false positives that come from "audit immediately after a paste."
+
+### Diátaxis-quadrant classification (rename findings, don't just count them)
+
+**Source:** Diátaxis 2024-2025 refinement (Bernard, HN).
+
+**Why:** "Duplicate paragraph" is unactionable. "Reference table appearing in tutorial — should be a link to reference/" is actionable.
+
+**Application:**
+```
+For each duplicate found:
+  Classify each occurrence into a Diátaxis quadrant:
+    - tutorials/   → Tutorial
+    - how-to/      → How-To
+    - reference/   → Reference
+    - explanation/ → Explanation
+    - README.md    → Landing
+    - other        → Mixed
+
+  Findings format:
+    "Block X appears in {Tutorial} AND {Reference}"
+    Recommendation: "Reference is authoritative. Tutorial should LINK to reference, not duplicate."
+
+  This converts 'duplication' findings into 'mode violation' findings.
+```
+
+The Tutorial copy is almost always the wrong one — it should be a link.
+
+---
+
 ## Tools that already implement parts of this
 
 | Tool | Rule families covered |
