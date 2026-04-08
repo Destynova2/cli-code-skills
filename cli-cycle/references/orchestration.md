@@ -311,12 +311,11 @@ After the triage, always present:
 
 | Choix | Action | Items |
 |-------|--------|-------|
-| `1` | Tout corriger (🔴 → 🟡 → 🟢) | N total |
-| `2` | Corriger les 🔴 critiques | N |
-| `3` | Corriger les 🟡 majeurs | N |
-| `4` | Corriger les 🟢 mineurs | N |
+| `1` | Tout corriger (convergence autonome, plan unifié) | N total |
+| `2` | Corriger les 🔴 critiques uniquement | N |
+| `3` | Corriger les 🟡 majeurs uniquement | N |
+| `4` | Corriger les 🟢 mineurs uniquement | N |
 | `5` | Pas maintenant | — |
-| `6` | Convergence autonome (dry-run → plan unifié) | N total |
 ```
 
 ### Correction tools (used during Phoenix fix phase)

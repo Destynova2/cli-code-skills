@@ -105,15 +105,14 @@ After presenting the full triage, ask the user:
 
 ```
 Phoenix — Quel tier attaquer ?
-  [1] Tout corriger (autonome, plan unifié à la fin) ← REDIRIGE VERS [6]
+  [1] Tout corriger (convergence autonome, plan unifié)
   [2] Corriger les 🔴 critiques uniquement (N items)
   [3] Corriger les 🟡 majeurs uniquement (N items)
   [4] Corriger les 🟢 mineurs uniquement (N items)
   [5] Pas maintenant
-  [6] Convergence autonome (dry-run → plan unifié) ← MÊME QUE [1]
 ```
 
-**Note:** Options [1] et [6] sont identiques. Le mode "tout corriger interactif" n'existe plus — il a été remplacé par la convergence autonome qui est plus fiable (worktree isolé, file-based tracking, pas d'oubli d'items).
+**Option [1] = convergence autonome.** Le cycle tourne en worktree isolé, fait toutes les passes en autonome avec file-based tracking (pas d'oubli d'items), puis présente UN seul plan unifié à approuver/rejeter. Pas de mode "interactif item par item" — c'était trop fragile.
 
 ### Step 6b — Correction pipeline (audit → forge → commit → re-audit)
 
@@ -170,9 +169,9 @@ Triage item #1: "Hardcoded password in Containerfile" (source: cli-audit-code)
   → cli-audit-code re-runs → item resolved, may find cascade items
 ```
 
-If the user chooses `[6]` Convergence autonome:
+If the user chooses `[1]` Tout corriger:
 1. Read `references/convergence.md` for the full algorithm
-2. Same pipeline but in an isolated worktree, fully autonomous
+2. Run in an isolated worktree, fully autonomous
 3. Track cascades (issues that only appear after earlier fixes)
 4. Present a single unified plan with the complete diff
 5. User approves (apply all), selects (cherry-pick), or rejects (discard)
