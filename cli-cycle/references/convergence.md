@@ -50,6 +50,32 @@ Record:
 
 ### Step C3 — Autonomous fix loop
 
+**File-based progress tracking (MANDATORY — prevents the LLM from "forgetting" items):**
+
+Before starting the loop, write the full triage to a checkpoint file:
+
+```bash
+mkdir -p .claude/cycle-progress
+cat > .claude/cycle-progress/current.md <<'EOF'
+# Cycle Progress — Pass {N}
+
+## Tier 3 (N items)
+- [ ] #1 description (skill: cli-audit-X)
+- [ ] #2 description (skill: cli-audit-Y)
+...
+
+## Tier 2 (M items)
+- [ ] #N+1 description
+...
+
+## Tier 1 effort=Faible (K items)
+- [ ] #N+M+1 description
+...
+EOF
+```
+
+Then iterate **explicitly** with checkbox updates:
+
 ```
 pass = 1
 target_score = user_specified OR default 8.5
@@ -57,13 +83,26 @@ max_passes = user_specified OR default 10
 accumulated_findings = pass_0_findings
 
 WHILE (has_tier3 OR has_tier2) AND pass <= max_passes:
-  1. Fix ALL Tier 3 items from current findings
-  2. Fix ALL Tier 2 items from current findings
-  3. Fix Tier 1 items IF effort = "Faible" only
-  4. Re-run ONLY the skills that sourced the fixed items
-  5. Collect new findings (regressions + newly visible issues)
-  6. Add new findings to accumulated_findings (deduplicate by file:line + description similarity)
-  7. Mark resolved findings as RESOLVED
+
+  1. FOR EACH item in tier3 (ordered):
+       a. Read the item from .claude/cycle-progress/current.md
+       b. Apply the fix (direct edit OR forge skill OR cli-git-conventional)
+       c. Verify the fix succeeded (file changed, test passes)
+       d. Mark the item as [x] in current.md (sed -i "s/- \[ \] #${N}/- [x] #${N}/")
+       e. Append a log line to .claude/cycle-progress/log.txt
+       NEVER skip an item. NEVER batch-mark multiple items as done.
+       If a fix fails: mark as [!] (FAILED) and continue, don't stop.
+
+  2. FOR EACH item in tier2 (same protocol)
+
+  3. FOR EACH item in tier1 IF effort == "Faible" (same protocol)
+
+  4. Verify all items are [x] or [!] in current.md before continuing
+     If any [ ] remains → ERROR, you skipped items, restart the loop
+
+  5. Re-run ONLY the skills that sourced the fixed items
+  6. Collect new findings (regressions + newly visible issues)
+  7. Append new findings as [ ] to current.md (cascades)
   8. Compute new score
   9. EARLY-STOP checks (any true = BREAK):
      a. score >= target_score AND no Tier 3         → CONVERGED

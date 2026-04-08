@@ -105,24 +105,42 @@ After presenting the full triage, ask the user:
 
 ```
 Phoenix — Quel tier attaquer ?
-  [1] Tout corriger (🔴 → 🟡 → 🟢)
-  [2] Corriger les 🔴 critiques (N items)
-  [3] Corriger les 🟡 majeurs (N items)
-  [4] Corriger les 🟢 mineurs (N items)
+  [1] Tout corriger (autonome, plan unifié à la fin) ← REDIRIGE VERS [6]
+  [2] Corriger les 🔴 critiques uniquement (N items)
+  [3] Corriger les 🟡 majeurs uniquement (N items)
+  [4] Corriger les 🟢 mineurs uniquement (N items)
   [5] Pas maintenant
-  [6] Convergence autonome (dry-run → plan unifié)
+  [6] Convergence autonome (dry-run → plan unifié) ← MÊME QUE [1]
 ```
+
+**Note:** Options [1] et [6] sont identiques. Le mode "tout corriger interactif" n'existe plus — il a été remplacé par la convergence autonome qui est plus fiable (worktree isolé, file-based tracking, pas d'oubli d'items).
 
 ### Step 6b — Correction pipeline (audit → forge → commit → re-audit)
 
-When the user chooses a tier (1-4) or convergence (6), corrections follow this pipeline:
+**File-based tracking is MANDATORY** (prevents the LLM from forgetting items):
+
+```bash
+mkdir -p .claude/cycle-progress
+# Write the full triage as a checklist to current.md before starting
+```
+
+When the user chooses any correction option, follow this pipeline with **explicit per-item iteration**:
 
 ```
-For each triage item in the selected tier:
-  1. FIX: edit code/config directly OR trigger the forge skill that can produce the fix
-  2. GENERATE: if the item is about missing docs/diagrams/README → run the appropriate forge skill
-  3. COMMIT: format the commit using cli-git-conventional (ghostwriter, zero AI markers)
-  4. RE-AUDIT: re-run only the skills that sourced the fixed items
+1. Write triage to .claude/cycle-progress/current.md (all items as [ ])
+
+2. FOR EACH item in the selected tier (sequential, no batching):
+   a. FIX: edit code/config directly OR trigger the forge skill
+   b. GENERATE: if missing docs/diagrams → run the appropriate forge skill
+   c. COMMIT: format with cli-git-conventional (ghostwriter, zero AI markers)
+   d. MARK: update current.md from [ ] to [x]
+   e. LOG: append to .claude/cycle-progress/log.txt with timestamp
+   NEVER skip an item. NEVER mark multiple items as done in batch.
+
+3. VERIFY: grep "\[ \]" current.md → must return 0 unfinished items
+   If unfinished items remain → RESTART the loop, you forgot some
+
+4. RE-AUDIT: re-run only the skills that sourced the fixed items
 ```
 
 **Forge skills triggered automatically by audit findings:**
