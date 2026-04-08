@@ -64,6 +64,21 @@ Glob: `**/*.md`, `docs/**/*`, `README*`, `CHANGELOG*`, `CONTRIBUTING*`
 
 Launch sub-agents for each applicable layer. Read `references/layers.md` for detailed checks per layer.
 
+### Step 3b — Duplication scan (DRY/SSOT/KISS rules)
+
+Read `references/duplication-rules.md` for the 25 reproducible rules with citations (Hunt/Thomas, Fowler, Metz, McCabe, Diátaxis, SSOT).
+
+Run 5 rule families:
+- **D rules** — Doc-doc duplication (same paragraph/table/code block in ≥2 docs)
+- **C rules** — Code-code cross-format duplication (Makefile + CI YAML + scripts + docs)
+- **S rules** — SSOT violations (CLI flags, version strings, config defaults code↔doc)
+- **M rules** — Anti-false-DRY (Sandi Metz: don't escalate < 3 instances, flag wrong abstractions)
+- **I rules** — Information-theoretic duplication index (gzip ratio, optional)
+
+Apply Fowler's Rule of Three: 1 = ignore, 2 = warn, 3+ = error. **Exception:** if 2 instances have different values (drift), it's immediately critical.
+
+This fills a gap NO mainstream tool covers: cross-format command/env duplication detection.
+
 ### Step 4 — Synthesize report
 
 ## Output Format
