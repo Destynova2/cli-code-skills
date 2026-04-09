@@ -4,7 +4,17 @@
 
 ---
 
-## 10 Anti-Patterns
+## Test isolation — the chaperone principle
+
+> **Biomimetic frame — molecular chaperones (HSP60/HSP70).** When a protein misfolds in the cell, chaperones do not patch the broken structure in place — patching is impossible because misfolding is structural, not local. Instead, they fully unfold the protein and let it re-fold from a clean state. Sometimes this happens many times before the protein folds correctly; if it never does, the cell ubiquitinates it for destruction. The principle: **patching corrupted state never works, only a full reset does.**
+>
+> Tests are the same. A test that depends on residual state from a previous test is a half-folded protein looking for a chaperone that does not exist. The only sustainable strategy is for every test to start from a fully clean state — fresh database, fresh fixtures, fresh in-memory caches, fresh environment. Anything else is patching.
+
+This frame underlies two of the anti-patterns below: **State Bleed** (the structural cause) and **Flaky Acceptance** (the visible symptom). Test Data Leakage is the third leg, focused on the security side of the same hygiene problem.
+
+---
+
+## 11 Anti-Patterns
 
 Flag these known anti-patterns with severity and evidence:
 
@@ -19,6 +29,7 @@ Flag these known anti-patterns with severity and evidence:
 | Smoke-less Builds | La Taverne | No smoke test suite, CI runs full suite on every commit | Warning |
 | Combinatorial Explosion | La Taverne (Pairwise) | N parameters x M values tested exhaustively instead of pairwise | Info |
 | Test Data Leakage | TMMi | Hardcoded secrets, shared mutable state between tests | Warning |
+| State Bleed | Chaperone principle | Test outcome depends on residual state from a previous test — order dependency, missing teardown, shared in-memory singletons, persistent fixtures across tests. Structural cause behind most flaky tests | Critical |
 | Silent Drift Blindness | D13 (Biological) | No mutation/contract/property testing — only example-based tests, silent behavioral changes go undetected | Critical |
 
 ## Detection Heuristics
@@ -68,6 +79,17 @@ Flag these known anti-patterns with severity and evidence:
 - Tests sharing global state (database, files) without cleanup
 - Test order dependencies (test B fails if test A doesn't run first)
 
+### State Bleed
+- Test files that must run in a specific order — look for `@TestMethodOrder`, `@FixMethodOrder`, `pytest.mark.run(order=N)`, manual ordering in `tests/main.rs`
+- Tests that pass in isolation but fail in suite (or vice versa) — check CI logs for `FAILED ... PASSED on retry` patterns
+- Module-level fixtures or `static`/`lazy_static`/`OnceCell` mutable state in test files
+- Missing teardown: setup functions without matching teardown, `setUp` without `tearDown`, fixtures with no `finalizer`/`yield ... cleanup`
+- Database tests without per-test transaction rollback or per-test schema reset
+- Tests that mutate environment variables, global config, or `chdir` without restoring on exit
+- Filesystem tests that write to `/tmp` with hardcoded names instead of unique-per-test directories
+- In-memory caches (Redis client, HTTP client pool, ORM session) reused across tests without reset
+- **The "patch the state" smell:** any test code that does `if previous_run_left_X { clean_X() }` instead of always starting clean
+
 ### Silent Drift Blindness
 - No `cargo-mutants` / `mutmut` / `Stryker` / `pitest` in dependencies or CI
 - No `Pact` / `insta` / snapshot testing / consumer-driven contracts
@@ -89,4 +111,5 @@ Flag these known anti-patterns with severity and evidence:
 | Smoke-less Builds | Define a smoke suite (critical paths only). Run smoke on every commit, full suite on PR |
 | Combinatorial Explosion | Adopt pairwise testing (PICT tool). Reduces test count by 80%+ with same defect detection |
 | Test Data Leakage | Use test fixtures with cleanup. Generate data per test. Never hardcode secrets |
+| State Bleed | Every test must start from a fully reset state — fresh DB transaction (rolled back at the end), fresh tempdir, fresh in-memory caches, restored env vars, no static singletons. Run the suite in a randomized order (`pytest -p randomly`, `cargo test -- --shuffle`, `--testRandomOrderSeed`) to surface hidden order dependencies. The chaperone rule: if a test cannot start from a clean state, it is not a test, it is a fragment of a previous test |
 | Silent Drift Blindness | Add at least one drift detection layer: mutation testing (`cargo-mutants`) on critical paths, snapshot/contract testing (`insta`, `Pact`) on APIs, or property-based invariants (`proptest`) on core domain logic. Start with the layer that matches your biggest risk |

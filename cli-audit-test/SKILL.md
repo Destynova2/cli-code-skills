@@ -80,7 +80,7 @@ For each dimension: collect evidence (file references, counts, patterns), assign
 
 ### Step 4 — Detect anti-patterns
 
-Read `references/anti-patterns.md` for the 10 anti-patterns with detection rules and recommendations. Flag with severity and evidence.
+Read `references/anti-patterns.md` for the 11 anti-patterns with detection rules and recommendations. Flag with severity and evidence.
 
 ### Step 5 — Compute final score
 
