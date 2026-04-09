@@ -76,7 +76,7 @@ Thresholds:
 | Minor | Style or minor quality issue | Missing doc comment, verbose name |
 | Info | Suggestion, not a violation | "Consider using an iterator here" |
 
-## Anti-Patterns (Named, from Fowler/Mantyla taxonomy)
+## Anti-Patterns (Named, from Fowler/Mantyla + extended taxonomy)
 
 | Anti-Pattern | Category | Detection |
 |-------------|----------|-----------|
@@ -85,11 +85,15 @@ Thresholds:
 | **God Class / Blob** | C3 | File > 1000 lines, module does too many things |
 | **Primitive Obsession** | C6 | Using strings/ints where domain types should exist |
 | **Long Parameter List** | C2 | Function with > 5 parameters |
+| **Long Method** | C2 | Function > 30 lines that should crystallize into sub-functions |
+| **Tiny Wrapper / Premature Extraction** | C2 | Private function called exactly once, < 10 lines, same abstraction level as caller — should be **inlined** (apoptosis) |
 | **Data Clumps** | C4 | Same group of 3+ parameters appears in multiple functions |
 | **Dead Code / Lava Flow** | C7 | Commented-out code, unreachable branches |
 | **Inappropriate Intimacy** | C12 | Two modules know too much about each other's internals |
 | **Speculative Generality** | C4 | Abstraction built for future use that never came |
 | **Middle Man** | C3 | Class that delegates everything, adds nothing (shallow module) |
+| **Catch-All Module / Junk Drawer** | C3 | File named `utils`, `helpers`, `common`, `misc`, `shared`, `tools` — undifferentiated organelle, contents demix on inspection |
+| **Weasel-Word Naming** | C1 | Identifiers/files containing `Manager`, `Service`, `Factory`, `Helper`, `Handler`, `Processor`, `Data`, `Info` as the primary name (M-CONCISE-NAMES) |
 
 ## Comparative Benchmarks
 
@@ -116,6 +120,7 @@ Thresholds:
 - SQALE Method for Technical Debt
 - CodeScene Code Health model
 - Clippy lint categories (Rust)
+- Microsoft Pragmatic Rust Guidelines (M-CONCISE-NAMES, M-SMALLER-CRATES, M-LINT-OVERRIDE-EXPECT, M-PANIC-IS-STOP)
 
 ### YouTube / Podcasts
 - CodeAesthetic — software design principles, animated deep dives
