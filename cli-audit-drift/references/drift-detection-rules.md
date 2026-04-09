@@ -61,26 +61,47 @@ If the contracted function calls other contracted functions:
 
 **Drift if:** A dependency has drifted and the caller doesn't guard against it.
 
+### Check 6 — Orphan code detection (ubiquitin scan)
+
+The reverse of Check 5: instead of looking for code that drifted from its contract, look for **code whose contract has been removed but whose implementation remains**. This is the cellular equivalent of a misfolded protein that nobody bothered to ubiquitinate.
+
+1. **List currently contracted function names** from CONTRACTS.md
+2. **Inspect git history of the contracts file:** `git log -p -- CONTRACTS.md` (and `docs/CONTRACTS.md`, `contracts/`) over the last 6 months
+3. **For each contract that was removed**, check whether its implementation still exists:
+   - Grep for the function name across the codebase
+   - If found, locate its definition and check if it is still called from anywhere
+4. **Classify the finding:**
+   - Implementation exists and is called → orphan code that may still be load-bearing → propose either re-introducing the contract or removing the call sites + the function
+   - Implementation exists but has zero callers → dead orphan → propose explicit deletion
+   - Implementation no longer exists → clean (the deletion was performed when the contract was removed)
+
+**Drift if:** A contract was deleted from CONTRACTS.md but the corresponding implementation still lives in the codebase.
+
+**Why it matters:** without explicit deletion, orphan code accumulates as toxic tech debt. The next developer cannot tell whether the function is still load-bearing, is dead, or is half-migrated. Garbage collectors do not catch this — only an active tag (like ubiquitin) does. Skipping this check is how codebases silently accumulate "zombie" functions that compile, run, and confuse every reviewer for years.
+
 ---
 
 ## Classification decision tree
 
 ```
-Is the code behavior different from the contract?
-├── No → CLEAN (no drift)
+Does a current contract reference this code?
+├── No (contract was removed but implementation remains) → ORPHAN CODE (propose ubiquitin tag = explicit deletion)
 └── Yes →
-    Was there a recent code change?
-    ├── Yes →
-    │   Is there a corresponding requirement/ticket?
-    │   ├── Yes → EVOLUTION (contract needs update)
-    │   └── No → LOUPER (unintentional, propose fix)
-    └── No →
-        Was the contract recently added/updated?
-        ├── Yes → STALE CODE (code predates the contract, never matched)
+    Is the code behavior different from the contract?
+    ├── No → CLEAN (no drift)
+    └── Yes →
+        Was there a recent code change?
+        ├── Yes →
+        │   Is there a corresponding requirement/ticket?
+        │   ├── Yes → EVOLUTION (contract needs update)
+        │   └── No → LOUPER (unintentional, propose minimal re-fold from contract)
         └── No →
-            Is the contract vague enough to allow the current behavior?
-            ├── Yes → AMBIGUITY (contract needs clarification)
-            └── No → LOUPER (long-standing bug, propose fix)
+            Was the contract recently added/updated?
+            ├── Yes → STALE CODE (code predates the contract, never matched)
+            └── No →
+                Is the contract vague enough to allow the current behavior?
+                ├── Yes → AMBIGUITY (contract needs clarification)
+                └── No → LOUPER (long-standing bug, propose minimal re-fold from contract)
 ```
 
 ---

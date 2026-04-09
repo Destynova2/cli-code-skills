@@ -30,12 +30,27 @@ Detect silent behavioral drift between what code **was supposed to do** (intenti
 
 > "Le corbeau de Nouvelle-Calédonie ne subit pas son environnement — il identifie l'inadéquation entre ce qu'il voulait faire et ce qui s'est passé. Pas une erreur bruyante. Un résultat qui ne correspond pas à l'intention."
 
-## Core Principle — Two biological mechanisms
+## Core Principle — Three biological mechanisms
 
-| Organism | Mechanism | What it does in testing |
-|----------|-----------|------------------------|
-| **Corbeau de Nouvelle-Calédonie** | Gap detection between intention and result | Compares CONTRACTS.md (intention) against code (result). Names the gap precisely. Asks if intentional or accidental |
-| **Autophagie cellulaire** | Continuous conformity surveillance | Scans all contracted functions, isolates non-conforming code, proposes minimal correction or contract update |
+| Organism / mechanism | What it does in nature | What it does in this skill |
+|----------------------|------------------------|----------------------------|
+| **Corbeau de Nouvelle-Calédonie** | Detects the gap between intention and result | Compares CONTRACTS.md (intention) against code (behavior). Names the gap precisely. Asks if intentional or accidental |
+| **Autophagie cellulaire** | Continuous surveillance, isolates damaged components | Scans all contracted functions, isolates non-conforming code, proposes minimal correction or contract update |
+| **Repliement protéique + chaperones** | A 1D amino-acid sequence folds into a 3D functional structure; chaperones (HSP60/70) detect misfolds and force a clean re-fold from scratch | Contract (intent, 1D) "folds" into code (behavior, 3D); detected drift triggers a *minimal re-derivation from the contract*, never a patch on top of the drifted state. Removed contracts trigger explicit code deletion (ubiquitin tag) |
+
+### Why folding is the unifying frame
+
+A protein's amino-acid sequence is its **intention** (linear, source-of-truth). What the protein *does* in the cell depends on its **folded structure** (3D, emergent). The two are linked by physical laws but the link is not automatic — proteins can misfold and **still exist**. A misfolded protein takes up space, consumes ATP, and silently fails to do its job. It does not crash. It does not throw. It just no longer matches its intent.
+
+That is exactly what semantic drift looks like in code. The contract (CONTRACTS.md) is the sequence. The implementation is the folded structure. Drift is misfolding — and like misfolding, it is invisible to compilation, type checking, and "the tests still pass".
+
+The cell handles misfolding with two mechanisms that map directly onto this skill:
+
+1. **Chaperones (HSP60/HSP70)** detect misfolding and force a *complete unfold and re-fold from a clean state*. They never patch a partially-misfolded protein in place — patching is impossible because the misfolding is structural, not local. → **Skill rule:** when drift is detected, propose a *minimal correct fix that re-derives the code from the contract*, never a patch on top of the drifted state. This is the ground truth behind rule #3 ("Minimal fixes only"): you are not repairing a wound, you are re-folding a polypeptide.
+
+2. **Ubiquitin tagging + proteasome** is the explicit "to be destroyed" tag the cell posts on proteins that fail re-folding. The cell does not rely on reference counting — it actively marks for destruction, and the proteasome digests anything carrying the tag. → **Skill rule:** when a contract is removed but its implementation lingers, flag it as **Orphan code** — the code equivalent of an unubiquitinated misfolded protein — and propose explicit deletion. Without active tagging, orphan code accumulates as toxic tech debt that no garbage collector will ever reclaim.
+
+The deep takeaway: **a working protein matches its sequence's intent; a working function matches its contract's intent**. Drift is misfolding, and the only sustainable response is the cell's response — detect early, reset cleanly, mark explicitly. Patching never works in biology, and it does not work in code either.
 
 ## Mitosis — Scale to scope
 
@@ -112,10 +127,11 @@ For each detected drift:
 
 | Classification | Meaning | Action |
 |---------------|---------|--------|
-| **Louper** | Unintentional deviation from contract | Propose minimal fix |
+| **Louper** | Unintentional deviation from contract | Propose minimal fix (re-fold from contract, do not patch) |
 | **Evolution** | Intentional change, contract not updated | Propose contract update + alert stakeholders |
 | **Ambiguity** | Contract is vague, implementation chose one interpretation | Propose contract clarification |
 | **Stale contract** | Contract references code that no longer exists | Propose contract cleanup |
+| **Orphan code** | Code implements behavior whose contract has been removed (the contract was deleted from CONTRACTS.md but the implementation lingers) | Propose explicit deletion — the ubiquitin tag. If the code is still load-bearing, the contract must be re-introduced; otherwise it is dead protein and must be digested |
 
 ### Step 5 — Generate report
 
