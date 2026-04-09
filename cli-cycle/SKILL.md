@@ -15,12 +15,12 @@ allowed-tools:
 
 > **Optimization:** This skill uses on-demand loading. Heavy content lives in `references/` and is loaded only when needed.
 
-> **Language rule:** Detect the project's primary language (from README, comments, docs, commit messages). Output your report in that language. If the project is bilingual, ask the user which language to use before proceeding.
+> **Language rule:** Skill instructions are written in English. When generating user-facing output (reports, files, documentation), detect the project's primary language (from README, comments, docs, commit messages) and produce the output in that language. If the project is bilingual, ask the user which language to use before proceeding.
 
 # Cycle — Phoenix Continuous Improvement
 
-> *"Le phénix ne meurt pas — il brûle ce qui est impur et renaît plus fort.
-> Chaque cycle consume les défauts. Quand il n'y a plus rien à brûler, le projet est né."*
+> *"The phoenix does not die — it burns what is impure and is reborn stronger.
+> Each cycle consumes the flaws. When there is nothing left to burn, the project is born."*
 
 Run every applicable `cli-*` skill on the current project, collect results, deliver the **complete** list of corrections in 3 tiers, and loop until clean.
 
@@ -29,7 +29,7 @@ Run every applicable `cli-*` skill on the current project, collect results, deli
 1. **You don't duplicate logic — you delegate.** Each sub-agent reads the real SKILL.md and follows its instructions. You orchestrate, collect, and judge.
 2. **Show everything.** Never truncate the correction list. The user sees ALL issues, organized by severity.
 3. **Phoenix loop.** Audit → user fixes → re-audit → repeat until convergence.
-4. **Convergence autonome.** When invoked with `--converge`, run the entire loop in an isolated worktree, then present a single unified plan. Read `references/convergence.md` for the full algorithm.
+4. **Autonomous convergence.** When invoked with `--converge`, run the entire loop in an isolated worktree, then present a single unified plan. Read `references/convergence.md` for the full algorithm.
 5. **Flow graph.** Skills form a DAG: audit detects → forge corrects → git commits → re-audit verifies. No cycles allowed. Read `references/skill-flow.md` for the complete trigger graph, deduplication rules, and cycle detection.
 
 **Gotchas** — read `../../gotchas.md` before producing output to avoid known mistakes.
@@ -46,7 +46,7 @@ Parse each SKILL.md frontmatter to extract: `name`, `description`, `argument-hin
 
 ### Step 2 — Detect project context and language
 
-1. **Detect output language** (MANDATORY): `git log --oneline -10` + `head -20 README.md`. If French → all output in French. If English → English. This language is injected into every sub-agent prompt. No exceptions.
+1. **Detect output language** (MANDATORY): `git log --oneline -10` + `head -20 README.md`. Whatever language dominates the commits and README is the language all report output must use. Inject that language into every sub-agent prompt. No exceptions.
 2. Read manifest (`Cargo.toml`, `package.json`, `go.mod`, etc.)
 3. Check for docs: `README.md`, `docs/`, `*.md`
 4. Check for schemas/diagrams: Mermaid blocks in `.md` files
@@ -90,35 +90,35 @@ Every correction goes into exactly one tier. The tiers define **treatment order*
 
 | Tier | Name | Criteria | Action |
 |------|------|----------|--------|
-| **🔴 Tier 3** | **Critique** | Security flaws, broken functionality, data loss risk, hardcoded secrets, missing error handling that causes silent failure | Fix NOW — these block everything |
-| **🟡 Tier 2** | **Majeur** | Architecture debt, missing tests, obsolete docs, non-pinned versions, code smells with real impact (god functions, duplication) | Fix NEXT — these degrade over time |
-| **🟢 Tier 1** | **Mineur** | Style, missing diagrams, nice-to-have docs, structural organization, cosmetic improvements | Fix LATER — these improve but don't protect |
+| **🔴 Tier 3** | **Critical** | Security flaws, broken functionality, data loss risk, hardcoded secrets, missing error handling that causes silent failure | Fix NOW — these block everything |
+| **🟡 Tier 2** | **Major** | Architecture debt, missing tests, obsolete docs, non-pinned versions, code smells with real impact (god functions, duplication) | Fix NEXT — these degrade over time |
+| **🟢 Tier 1** | **Minor** | Style, missing diagrams, nice-to-have docs, structural organization, cosmetic improvements | Fix LATER — these improve but don't protect |
 
 **Display rules:**
 - Show ALL items in each tier — no "top N" truncation
-- Each item gets: `#`, description, effort (Faible/Moyen/Fort), source skill
-- Count per tier shown in the tier header: `🔴 Tier 3 — Critique (4 items)`
+- Each item gets: `#`, description, effort (Low/Medium/High), source skill
+- Count per tier shown in the tier header: `🔴 Tier 3 — Critical (4 items)`
 
 ### Step 6 — Phoenix Choice
 
-After presenting the full triage, ask the user:
+After presenting the full triage, ask the user. Phrase the prompt in the project's detected language; the English version below is the canonical template:
 
 ```
-Phoenix — Quel tier attaquer ?
-  [1] Tout corriger (convergence autonome, plan unifié)
-  [2] Corriger les 🔴 critiques uniquement (N items)
-  [3] Corriger les 🟡 majeurs uniquement (N items)
-  [4] Corriger les 🟢 mineurs uniquement (N items)
-  [5] Pas maintenant
+Phoenix — Which tier should we tackle?
+  [1] Fix everything (autonomous convergence, unified plan)
+  [2] Fix 🔴 critical only (N items)
+  [3] Fix 🟡 major only (N items)
+  [4] Fix 🟢 minor only (N items)
+  [5] Not now
 ```
 
-**Option [1] = convergence autonome.** Le cycle tourne en worktree isolé, fait toutes les passes en autonome avec file-based tracking (pas d'oubli d'items), puis présente UN seul plan unifié à approuver/rejeter. Pas de mode "interactif item par item" — c'était trop fragile.
+**Option [1] = autonomous convergence.** The cycle runs in an isolated worktree, performs all passes autonomously with file-based tracking (so no items get forgotten), then presents ONE unified plan to approve or reject. No per-item "interactive" mode — that proved too fragile.
 
 ### Step 6b — Correction pipeline (audit → forge → commit → re-audit)
 
-**Loi de conservation des conventions (lire `../../gotchas.md` section "Loi de conservation")** :
+**Convention conservation law (read `../../gotchas.md` section "Convention conservation")**:
 
-Avant TOUTE correction qui touche une convention (extension de fichier, naming, indentation, quoting, langue), vérifier qu'une **force externe concrète** justifie le changement. Sinon, conserver l'état du projet. La cohérence, le best-practice, l'esthétique ne sont PAS des forces.
+Before ANY correction that touches a convention (file extension, naming, indentation, quoting, language), verify that a **concrete external force** justifies the change. Otherwise, preserve the project's current state. Consistency, best-practice, and aesthetics are NOT forces.
 
 **File-based tracking is MANDATORY** (prevents the LLM from forgetting items):
 
@@ -173,7 +173,7 @@ Triage item #1: "Hardcoded password in Containerfile" (source: cli-audit-code)
   → cli-audit-code re-runs → item resolved, may find cascade items
 ```
 
-If the user chooses `[1]` Tout corriger:
+If the user chooses `[1]` Fix everything:
 1. Read `references/convergence.md` for the full algorithm
 2. Run in an isolated worktree, fully autonomous
 3. Track cascades (issues that only appear after earlier fixes)
@@ -190,16 +190,16 @@ The cycle stops automatically when **any** of these conditions is met:
 | Re-audit finds 0 new issues vs. previous pass | Fixes didn't introduce regressions — stable |
 | User chooses `[5]` | Explicit stop |
 
-When the cycle converges, output:
+When the cycle converges, output (translated into the project's detected language; English template below):
 
 ```
-🔥 Phoenix — Cycle terminé
+🔥 Phoenix — Cycle complete
 
-Passes effectuées : N
-Issues résolues : X / Y
-Score : avant → après
+Passes performed: N
+Issues resolved: X / Y
+Score: before → after
 
-Le projet a convergé. Aucun défaut critique ou majeur restant.
+The project has converged. No critical or major flaws remain.
 ```
 
 ### Step 8 — Output

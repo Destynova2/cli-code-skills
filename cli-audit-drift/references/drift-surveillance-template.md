@@ -7,7 +7,7 @@
 ## Template
 
 ```markdown
-## Semantic Drift Surveillance (Autophagie)
+## Semantic Drift Surveillance (Autophagy)
 
 This project uses CONTRACTS.md to record the intended behavior of critical functions.
 Before any commit or code review touching a contracted function, scan for drift:
@@ -22,8 +22,8 @@ Before any commit or code review touching a contracted function, scan for drift:
    - Compare actual behavior against the stated intention
 3. If drift detected:
    - **Name it precisely** ("mask treats field 'b' differently from field 'a' at line 47")
-   - **Classify it**: louper (bug) vs evolution (intentional change) vs ambiguity (vague contract)
-   - **If louper**: propose the minimal fix, do NOT auto-apply
+   - **Classify it**: miss (bug) vs evolution (intentional change) vs ambiguity (vague contract)
+   - **If miss**: propose the minimal fix, do NOT auto-apply
    - **If evolution**: propose a CONTRACTS.md update AND the code change
    - **If ambiguity**: ask for clarification before proceeding
 4. Never assume "it compiles, so it's correct" — the question is: **does it do what the intention says?**

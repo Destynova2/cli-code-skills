@@ -94,14 +94,14 @@ Does a current contract reference this code?
         ├── Yes →
         │   Is there a corresponding requirement/ticket?
         │   ├── Yes → EVOLUTION (contract needs update)
-        │   └── No → LOUPER (unintentional, propose minimal re-fold from contract)
+        │   └── No → MISS (unintentional, propose minimal re-fold from contract)
         └── No →
             Was the contract recently added/updated?
             ├── Yes → STALE CODE (code predates the contract, never matched)
             └── No →
                 Is the contract vague enough to allow the current behavior?
                 ├── Yes → AMBIGUITY (contract needs clarification)
-                └── No → LOUPER (long-standing bug, propose minimal re-fold from contract)
+                └── No → MISS (long-standing bug, propose minimal re-fold from contract)
 ```
 
 ---

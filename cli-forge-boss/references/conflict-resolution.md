@@ -2,280 +2,280 @@
 
 > Sources: Anthropic C compiler build, Claude Code Agent Teams docs, AlphaCode, MetaGPT, Addy Osmani "Code Agent Orchestra"
 
-## Principes
+## Principles
 
-1. **Prevention > Detection > Resolution.** Investir 80% en prevention, 15% en detection, 5% en resolution.
-2. **Le Sous-Chef gere les conflits, jamais les Commis.** Un commis qui rebase seul peut casser le travail d'un autre.
-3. **3 tentatives max.** Apres 3 echecs de resolution, escalade au Chef qui decide (re-assigner, sequencer, ou fusionner manuellement).
+1. **Prevention > Detection > Resolution.** Invest 80% in prevention, 15% in detection, 5% in resolution.
+2. **The Sous-Chef handles conflicts, never the Commis.** A commis that rebases alone can break someone else's work.
+3. **3 attempts max.** After 3 failed resolutions, escalate to the Chef who decides (reassign, sequence, or merge manually).
 
-## Arbre de decision
+## Decision tree
 
 ```
-Un commis annonce "Pret !"
+A commis announces "Pret !"
   │
   ▼
-Le Sous-Chef tente le merge
+The Sous-Chef attempts the merge
   │
-  ├─ OK (pas de conflit) ──────────── Merge + CI + "Plat envoye"
+  ├─ OK (no conflict) ─────────── Merge + CI + "Plat envoye"
   │
-  └─ CONFLIT detecte
+  └─ CONFLICT detected
        │
        ▼
-     Quel type de conflit ?
+     What kind of conflict?
        │
-       ├─ Fichier different, meme ligne (ex: Cargo.toml dependencies)
+       ├─ Different file, same line (e.g., Cargo.toml dependencies)
        │    │
        │    ▼
-       │  RESOLUTION AUTO : merge des deux ajouts
-       │  (le Sous-Chef fait `git checkout --theirs` ou merge manuel)
-       │  → Re-run CI → si OK → "Plat envoye"
+       │  AUTO RESOLUTION: merge both additions
+       │  (the Sous-Chef runs `git checkout --theirs` or merges manually)
+       │  → Re-run CI → if OK → "Plat envoye"
        │
-       ├─ Meme fichier, meme fonction (conflit semantique)
+       ├─ Same file, same function (semantic conflict)
        │    │
        │    ▼
-       │  Le Sous-Chef demande aux 2 commis concernes :
-       │  "Quel est l'intention de votre changement sur fn X ?"
-       │  → Compare les intentions
+       │  The Sous-Chef asks the 2 commis involved:
+       │  "What is the intent of your change on fn X?"
+       │  → Compare the intents
        │    │
-       │    ├─ Intentions compatibles → Sous-Chef fusionne
+       │    ├─ Compatible intents → the Sous-Chef merges
        │    │
-       │    └─ Intentions contradictoires → Escalade au Chef
+       │    └─ Contradictory intents → escalate to the Chef
        │         │
        │         ▼
-       │       Le Chef decide :
-       │         ├─ Garder approche A (re-assigner B)
-       │         ├─ Garder approche B (re-assigner A)
-       │         ├─ Fusionner (nouvelle spec)
-       │         └─ Sequencer (A d'abord, puis B s'adapte)
+       │       The Chef decides:
+       │         ├─ Keep approach A (reassign B)
+       │         ├─ Keep approach B (reassign A)
+       │         ├─ Merge (new spec)
+       │         └─ Sequence (A first, then B adapts)
        │
-       └─ Fichier de config partage (ci.yml, Cargo.toml, package.json)
+       └─ Shared config file (ci.yml, Cargo.toml, package.json)
             │
             ▼
-          REGLE G15 : Sequencer les merges
-          1. Merger la PR la plus ancienne d'abord
-          2. Rebase la suivante sur le resultat
-          3. Re-run CI sur la PR rebasee
-          4. Merger si CI verte
+          RULE G15: Sequence the merges
+          1. Merge the oldest PR first
+          2. Rebase the next one onto the result
+          3. Re-run CI on the rebased PR
+          4. Merge if CI is green
 ```
 
-## Protocole du Sous-Chef (avant chaque merge)
+## Sous-Chef protocol (before every merge)
 
 ```
 1. git fetch origin
-2. git log --oneline origin/{base}..{worker_branch} → lister les fichiers touches
-3. Comparer avec les fichiers des PRs deja mergees dans cette session
-4. SI overlap detecte :
-     → Tenter merge local (sans push)
-     → SI conflit :
-         → Lire le diff des deux cotes
-         → SI resolution triviale (ajouts non-conflictuels) : resoudre auto
-         → SINON : demander aux commis concernes via SendMessage
-5. Run CI localement (cargo test / npm test / etc.)
-6. SI CI verte : push + "Plat envoye"
-7. SI CI rouge : identifier la regression, renvoyer au commis
+2. git log --oneline origin/{base}..{worker_branch} → list touched files
+3. Compare with the files of the PRs already merged in this session
+4. IF overlap detected:
+     → Try a local merge (without push)
+     → IF conflict:
+         → Read the diff from both sides
+         → IF trivial resolution (non-conflicting additions): auto-resolve
+         → OTHERWISE: ask the commis involved via SendMessage
+5. Run CI locally (cargo test / npm test / etc.)
+6. IF green: push + "Plat envoye"
+7. IF red: identify the regression, send it back to the commis
 ```
 
-## Compteur de tentatives
+## Attempt counter
 
-| Tentative | Action |
-|-----------|--------|
-| 1 | Sous-Chef tente merge auto (trivial conflicts) |
-| 2 | Sous-Chef demande aux commis d'expliquer leur intention, fusionne |
-| 3 | Escalade au Chef : decision humaine ou re-assignation |
+| Attempt | Action |
+|---------|--------|
+| 1 | Sous-Chef tries an auto merge (trivial conflicts) |
+| 2 | Sous-Chef asks the commis to explain their intent, merges |
+| 3 | Escalate to the Chef: human decision or reassignment |
 
-Apres la tentative 3, le Chef peut :
-- **Re-assigner** : un seul commis prend les deux taches
-- **Sequencer** : transformer les taches paralleles en dependances dans le PERT
-- **Diviser** : splitter le fichier en conflit en modules separes (refactoring)
+After attempt 3, the Chef may:
+- **Reassign**: one commis takes both tasks
+- **Sequence**: turn parallel tasks into PERT dependencies
+- **Split**: refactor the conflicting file into separate modules
 
-## Prevention renforcee (Phase 0)
+## Reinforced prevention (Phase 0)
 
-### Cycle detection sur le PERT (Tarjan — inspire de cli-audit-tangle)
+### Cycle detection on the PERT (Tarjan — inspired by cli-audit-tangle)
 
-Avant de lancer les commis, verifier que le graphe de dependances est un DAG :
+Before launching the commis, verify that the dependency graph is a DAG:
 
 ```
-1. Construire le graphe : tache_A → tache_B si A doit finir avant B
-2. Appliquer Tarjan SCC sur le graphe
-3. Si SCC avec > 1 noeud → CYCLE DETECTE → ne pas lancer
+1. Build the graph: task_A → task_B if A must finish before B
+2. Apply Tarjan SCC on the graph
+3. If any SCC with > 1 node → CYCLE DETECTED → do not launch
 
-Exemple de cycle interdit :
-  tache_1 (auth) depend de tache_2 (database schema)
-  tache_2 (database) depend de tache_1 (auth models)
-  → SCC = {tache_1, tache_2} → CYCLE
+Forbidden cycle example:
+  task_1 (auth) depends on task_2 (database schema)
+  task_2 (database) depends on task_1 (auth models)
+  → SCC = {task_1, task_2} → CYCLE
 
-Resolution :
-  - Fusionner les 2 taches en 1 (meme commis)
-  - OU casser la dependance (interface/mock)
-  - OU sequencer explicitement (A puis B, pas parallele)
+Resolution:
+  - Merge the 2 tasks into 1 (same commis)
+  - OR break the dependency (interface/mock)
+  - OR sequence explicitly (A then B, no parallelism)
 ```
 
 ### Forward-only rule
 
-Les dependances entre commis ne peuvent aller que dans UN sens :
-- Commis A peut dependre du resultat de Commis B
-- Mais B ne peut PAS dependre de A en retour
-- Si bi-directionnel → fusionner en un seul commis
+Dependencies between commis can only go ONE way:
+- Commis A may depend on the result of Commis B
+- But B can NOT depend on A in return
+- If bidirectional → merge into a single commis
 
-### God-commis detection (Fourmis de feu)
+### God-commis detection (Fire ants)
 
-Un commis qui touche trop de fichiers = fourmi qui agrippe 12 voisines = SPOF.
-
-```
-Pour chaque commis, compter :
-  files_touched = nombre de fichiers dans sa tache
-  total_files = nombre total de fichiers touches par tous les commis
-
-Si files_touched / total_files > 0.5 → GOD-COMMIS
-  → Splitter la tache en 2 commis
-  → OU re-assigner certains fichiers a d'autres commis
-
-Si un commis a des W/W avec > 2 autres commis → HUB
-  → Sequencer ses merges en dernier
-  → OU le transformer en "commis de base" dont les autres dependent
-```
-
-### Matrice de couplage
-
-Avant le coup de feu, le Chef construit une matrice :
+A commis touching too many files = an ant gripping 12 neighbors = SPOF.
 
 ```
-          fichier_a  fichier_b  fichier_c  Cargo.toml
-tache_1      W          R          -          W
-tache_2      -          W          W          W
-tache_3      R          -          W          R
+For each commis, count:
+  files_touched = number of files in its task
+  total_files = total number of files touched across all commis
+
+If files_touched / total_files > 0.5 → GOD-COMMIS
+  → Split the task across 2 commis
+  → OR reassign some files to other commis
+
+If a commis has W/W overlap with > 2 other commis → HUB
+  → Sequence its merges last
+  → OR turn it into a "base commis" the others depend on
 ```
 
-- **W/W sur la meme colonne** = conflit garanti → assigner au meme commis OU sequencer
-- **R/W** = risque faible, acceptable en parallele
-- **R/R** = aucun risque
+### Coupling matrix
 
-### Fichiers "hot" (toujours en conflit)
+Before the coup de feu, the Chef builds a matrix:
 
-Certains fichiers sont touches par presque toutes les taches :
-- `Cargo.toml` / `package.json` (ajout de deps)
-- `ci.yml` / `.github/workflows/` (ajout de jobs)
+```
+          file_a   file_b   file_c   Cargo.toml
+task_1      W        R        -        W
+task_2      -        W        W        W
+task_3      R        -        W        R
+```
+
+- **W/W in the same column** = guaranteed conflict → assign to the same commis OR sequence
+- **R/W** = low risk, acceptable in parallel
+- **R/R** = no risk
+
+### "Hot" files (always in conflict)
+
+Some files get touched by almost every task:
+- `Cargo.toml` / `package.json` (new deps)
+- `ci.yml` / `.github/workflows/` (new jobs)
 - `mod.rs` / `index.ts` (re-exports)
 - `CHANGELOG.md`
 
-**Regle** : ces fichiers sont geres par le Sous-Chef APRES tous les merges. Les commis ne les touchent pas directement — ils listent leurs besoins dans shared-state.md ("Besoin: ajouter dep X dans Cargo.toml") et le Sous-Chef les applique en une passe finale.
+**Rule**: these files are handled by the Sous-Chef AFTER all the merges. Commis never touch them directly — they list their needs in shared-state.md ("Need: add dep X in Cargo.toml") and the Sous-Chef applies them in a single final pass.
 
 ## File locking via shared-state.md
 
-Inspiree du pattern d'Anthropic (C compiler build) :
+Inspired by Anthropic's pattern (C compiler build):
 
 ```markdown
-## Verrous actifs
+## Active locks
 
-| Fichier | Commis | Depuis | Raison |
-|---------|--------|--------|--------|
+| File | Commis | Since | Reason |
+|------|--------|-------|--------|
 | src/auth/mod.rs | commis-1 | 14:32 | refactoring auth flow |
 ```
 
-**Regles :**
-1. Un commis qui veut modifier un fichier verifie d'abord les verrous
-2. Si verrouille par un autre → SendMessage au Sous-Chef : "Besoin de modifier {fichier}, verrouille par {commis}"
-3. Le Sous-Chef decide : attendre, re-assigner, ou autoriser (si zones differentes dans le fichier)
-4. Le commis libere le verrou en faisant "Pret !"
+**Rules:**
+1. A commis that wants to edit a file checks the locks first
+2. If locked by another → SendMessage to the Sous-Chef: "Need to edit {file}, locked by {commis}"
+3. The Sous-Chef decides: wait, reassign, or authorize (if the zones in the file are different)
+4. The commis releases the lock when saying "Pret !"
 
 ---
 
-## Stigmergie — tokens de completion (inspire des fourmis couperuses, cli-forge-pipeline)
+## Stigmergy — completion tokens (inspired by leafcutter ants, cli-forge-pipeline)
 
-Les commis ne communiquent pas directement entre eux. Ils deposent des **tokens** dans shared-state.md quand une sous-tache est terminee. Les commis dependants attendent le token, pas un message du Chef.
+Commis do not communicate directly with each other. They drop **tokens** into shared-state.md when a subtask is done. Dependent commis wait for the token, not a message from the Chef.
 
 ```markdown
-## Tokens de completion
+## Completion tokens
 
-| Token | Commis | Timestamp | Consommable par |
-|-------|--------|-----------|-----------------|
+| Token | Commis | Timestamp | Consumable by |
+|-------|--------|-----------|---------------|
 | schema-db-ready | commis-1 | 14:45 | commis-2, commis-3 |
 | api-endpoints-defined | commis-2 | 15:10 | commis-4 |
 ```
 
-**Regles :**
-1. Un commis depose un token quand sa sous-tache est finie (pas quand tout son plat est pret)
-2. Un commis dependant poll les tokens avant de commencer sa partie dependante
-3. Le Chef n'intervient PAS dans la synchronisation par tokens — c'est de la stigmergie
-4. Si un token n'arrive pas dans le delai estime → le commis dependant alerte le Sous-Chef
+**Rules:**
+1. A commis drops a token when its subtask is done (not when its full plat is ready)
+2. A dependent commis polls for tokens before starting its dependent part
+3. The Chef does NOT intervene in token synchronization — this is stigmergy
+4. If a token doesn't arrive within the expected delay → the dependent commis alerts the Sous-Chef
 
 ---
 
-## Patch Bankruptcy (inspire de cli-forge-infra)
+## Patch Bankruptcy (inspired by cli-forge-infra)
 
-Apres 2 rejets de gate sur le meme diff, la probabilite que l'approche soit bonne est de 25%.
+After 2 gate rejections on the same diff, the probability that the approach is correct is 25%.
 
 ```
-Tentative 1 : gate rejects → commis corrige
-Tentative 2 : gate rejects encore → STOP OBLIGATOIRE
-  → Le commis ne retente PAS
-  → Le Chef review : mauvaise approche ? mauvaise spec ? mauvais commis ?
-  → Options :
-    a) Re-assigner a un autre commis (approche differente)
-    b) Redefinir la spec (le Chef clarifie l'intention)
-    c) Fusionner avec un autre plat (la tache est mal decoupee)
-    d) Escalade au patron (humain)
+Attempt 1: gate rejects → commis fixes
+Attempt 2: gate rejects again → MANDATORY STOP
+  → The commis does NOT retry
+  → The Chef reviews: wrong approach? wrong spec? wrong commis?
+  → Options:
+    a) Reassign to another commis (different approach)
+    b) Redefine the spec (the Chef clarifies intent)
+    c) Merge with another plat (the task is poorly split)
+    d) Escalate to the patron (human)
 ```
 
-**Jamais 3 tentatives sur la meme approche.** C'est statistiquement irrationnel (P=87.5% que l'approche est fausse).
+**Never 3 attempts on the same approach.** It is statistically irrational (P=87.5% the approach is wrong).
 
 ---
 
-## Divergence detection (inspire du Physarum / cli-forge-pipeline)
+## Divergence detection (inspired by Physarum / cli-forge-pipeline)
 
-Si un commis stall (pas de progres > 30min) ou regresse (gate approval → gate rejection sur le meme fichier) :
+If a commis stalls (no progress > 30min) or regresses (gate approval → gate rejection on the same file):
 
 ```
 IF commis.idle_time > 30min:
-  → Chef alerte : "Commis {X} inactif depuis 30min sur {plat}"
-  → Options : relancer, re-assigner, escalade
+  → Chef alerts: "Commis {X} inactive for 30min on {plat}"
+  → Options: restart, reassign, escalate
 
 IF commis.regression_detected (gate approved on file A, then rejected after new edit):
-  → Sous-Chef flag : "Regression sur {fichier} — edit {hash} a casse ce qui marchait"
-  → Commis doit `git revert` avant de continuer
+  → Sous-Chef flags: "Regression on {file} — edit {hash} broke what was working"
+  → Commis must `git revert` before continuing
 
 IF same_gate.rejects(commis, same_diff) >= 2:
-  → Patch Bankruptcy (voir ci-dessus)
+  → Patch Bankruptcy (see above)
 ```
 
 ---
 
-## Convergence et early-stop (inspire de cli-cycle Phoenix)
+## Convergence and early-stop (inspired by cli-cycle Phoenix)
 
-Le sprint s'arrete automatiquement quand :
+The sprint stops automatically when:
 
-| Condition | Nom | Action |
-|-----------|-----|--------|
-| Tous les plats du PERT sont "Envoyes" | **COMPLET** | Rapport de service normal |
-| Score qualite >= cible ET 0 Tier 3 restant | **CONVERGE** | Arreter meme si des plats mineurs restent |
-| Gate rejection rate > 20% sur les 5 derniers diffs | **MISALIGNE** | Stop, replanifier — sous-chefs et commis ne sont pas d'accord |
-| Aucun merge depuis > 1h avec commis actifs | **BLOQUE** | Escalade au Chef, diagnostic NFD (verifier communication avant logique) |
-| Tier 3 cree par correction > Tier 3 resolus | **DIVERGE** | Stop immediat, presenter l'etat au patron |
+| Condition | Name | Action |
+|-----------|------|--------|
+| Every plat in the PERT is "Envoye" | **COMPLETE** | Normal service report |
+| Quality score >= target AND 0 Tier 3 remaining | **CONVERGED** | Stop even if minor plats remain |
+| Gate rejection rate > 20% over the last 5 diffs | **MISALIGNED** | Stop, replan — sous-chefs and commis disagree |
+| No merges in > 1h with active commis | **STUCK** | Escalate to the Chef, NFD diagnostic (check communication before logic) |
+| Tier 3 created by fix > Tier 3 resolved | **DIVERGING** | Immediate stop, present the state to the patron |
 
 ---
 
-## Sprint Health Scorecard (inspire des scoring frameworks cli-audit-*)
+## Sprint Health Scorecard (inspired by the cli-audit-* scoring frameworks)
 
-A inclure dans le Rapport de Service final :
+To include in the final Service Report:
 
 ```markdown
-## Sante du sprint
+## Sprint health
 
-| Metrique | Valeur | Seuil | Status |
-|----------|--------|-------|--------|
-| Taux d'approbation gates | 87% | > 85% | OK |
-| Taux de completion plats | 4/5 (80%) | > 80% | OK |
-| Temps moyen par merge | 22min | < 30min | OK |
-| Escalades au patron | 1 (2%) | < 5% | OK |
-| Regressions detectees | 0 | 0 | OK |
-| God-commis detectes | 0 | 0 | OK |
-| Patch Bankruptcy declenchees | 1 | < 2 | OK |
-| Tokens stigmergie utilises | 3 | - | Info |
+| Metric | Value | Threshold | Status |
+|--------|-------|-----------|--------|
+| Gate approval rate | 87% | > 85% | OK |
+| Plat completion rate | 4/5 (80%) | > 80% | OK |
+| Average time per merge | 22min | < 30min | OK |
+| Escalations to patron | 1 (2%) | < 5% | OK |
+| Regressions detected | 0 | 0 | OK |
+| God-commis detected | 0 | 0 | OK |
+| Patch Bankruptcy triggered | 1 | < 2 | OK |
+| Stigmergy tokens used | 3 | - | Info |
 ```
 
-| Score global | Verdict |
-|-------------|---------|
-| 80-100 | Excellent — brigade efficace |
-| 60-79 | Acceptable — quelques frictions |
-| 40-59 | Problematique — trop de rejets/escalades |
-| < 40 | Echec — replanifier la brigade |
+| Overall score | Verdict |
+|---------------|---------|
+| 80-100 | Excellent — efficient brigade |
+| 60-79 | Acceptable — some friction |
+| 40-59 | Problematic — too many rejections/escalations |
+| < 40 | Failure — replan the brigade |

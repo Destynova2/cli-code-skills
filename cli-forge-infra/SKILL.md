@@ -8,7 +8,7 @@ agent: general-purpose
 
 > **Optimization:** This skill uses on-demand loading. Heavy content lives in `references/` and is loaded only when needed.
 
-> **Language rule:** Detect the project's primary language (from README, comments, docs, commit messages). Output your report in that language. If the project is bilingual, ask the user which language to use before proceeding.
+> **Language rule:** Skill instructions are written in English. When generating user-facing output, detect the project's primary language (from README, comments, docs, commit messages) and produce the report in that language. If the project is bilingual, ask the user which language to use before proceeding.
 
 # Infra Forge — Ops Integration & Simplification Engine
 
@@ -131,9 +131,9 @@ These strategies are detailed in `references/patterns.md`. Read it when applying
 
 | Skill | Relation |
 |-------|----------|
-| `/cli-audit-shell` | Auditer les scripts shell d'infra (deploy, entrypoints, init) |
-| `/cli-audit-sync` | Verifier que la doc infra correspond a la realite |
-| `/cli-forge-pipeline` | Optimiser le pipeline CI/CD qui deploie l'infra |
-| `/cli-forge-schema` | Generer des diagrammes d'architecture (C4, reseau, flux) |
-| `/cli-forge-hld` | Produire le HLD de l'architecture infra |
-| `/cli-cycle` | Audit complet du projet infra |
+| `/cli-audit-shell` | Audit the infra shell scripts (deploy, entrypoints, init) |
+| `/cli-audit-sync` | Verify that the infra docs match reality |
+| `/cli-forge-pipeline` | Optimize the CI/CD pipeline that deploys the infra |
+| `/cli-forge-schema` | Generate architecture diagrams (C4, network, flows) |
+| `/cli-forge-hld` | Produce the infra architecture HLD |
+| `/cli-cycle` | Full audit of the infra project |

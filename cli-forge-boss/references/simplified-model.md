@@ -1,167 +1,167 @@
-# Modele Simplifie — Stigmergie, Apoptose, Reparation ADN
+# Simplified Model — Stigmergy, Apoptosis, DNA Repair
 
-> **When to read:** Phase 0 — pour decider quel modele utiliser (simplifie ou brigade complete).
-
----
-
-## Principe : la nature ne coordonne pas, elle laisse emerger
-
-Le modele Brigade de Cuisine (Chef + 3 Sous-Chefs + Merge + N Commis) est justifie pour les projets reglementes (XL). Pour les tiers S/M/L, la nature offre un modele plus simple : **pas de coordinateur central, les agents s'auto-organisent via l'environnement partage.**
-
-```
-Brigade complete (XL) :           Stigmergie (S/M/L) :
-  Chef coordonne                    shared-state.md coordonne
-  3 Sous-Chefs votent               1 Sous-Chef (3 lenses) revoit
-  1 Sous-Chef Merge                 Commis mergent eux-memes
-  N Commis executent                N Commis s'auto-assignent
-
-  6+ agents                         2+ agents (1 sous-chef + N commis)
-  Messages inter-agents             Lecture/ecriture shared-state
-  Protocole de vote                 Decision interne du sous-chef
-  Chef = SPOF                       Pas de SPOF
-```
+> **When to read:** Phase 0 — to decide which model to use (simplified or full brigade).
 
 ---
 
-## Decision : quel modele utiliser
+## Principle: nature does not coordinate, it lets things emerge
 
-| Tier | Modele | Agents | Raison |
-|------|--------|--------|--------|
-| **S** (1-2 taches) | Pas de brigade | 1 commis seul | Un seul cuisinier n'a pas besoin de chef |
-| **M** (3-4 taches) | **Stigmergie** | 1 sous-chef + N commis | Auto-organisation suffit |
-| **L** (5+ taches) | **Stigmergie** | 1 sous-chef + N commis | Meme modele, plus de commis |
-| **XL** (reglemente) | **Brigade complete** | Chef + 3×3 sous-chefs + N commis | Audit trail, conformite, tracabilite |
+The Brigade de Cuisine model (Chef + 3 Sous-Chefs + Merge + N Commis) is justified for regulated projects (XL). For tiers S/M/L, nature offers a simpler model: **no central coordinator, agents self-organize via the shared environment.**
+
+```
+Full brigade (XL):                  Stigmergy (S/M/L):
+  Chef coordinates                   shared-state.md coordinates
+  3 Sous-Chefs vote                  1 Sous-Chef (3 lenses) reviews
+  1 Sous-Chef Merge                  Commis merge themselves
+  N Commis execute                   N Commis self-assign
+
+  6+ agents                          2+ agents (1 sous-chef + N commis)
+  Inter-agent messages               Read/write shared-state
+  Voting protocol                    Sous-chef internal decision
+  Chef = SPOF                        No SPOF
+```
 
 ---
 
-## Les 5 patterns du modele simplifie
+## Decision: which model to use
 
-### 1. Boids — 3 regles pour les commis (remplace le Chef runtime)
+| Tier | Model | Agents | Reason |
+|------|-------|--------|--------|
+| **S** (1-2 tasks) | No brigade | 1 commis alone | One cook does not need a chef |
+| **M** (3-4 tasks) | **Stigmergy** | 1 sous-chef + N commis | Self-organization is enough |
+| **L** (5+ tasks) | **Stigmergy** | 1 sous-chef + N commis | Same model, more commis |
+| **XL** (regulated) | **Full brigade** | Chef + 3×3 sous-chefs + N commis | Audit trail, compliance, traceability |
 
-Chaque commis suit 3 regles. Pas de Chef qui assigne ou surveille.
+---
 
-```
-SEPARATION : ne touche pas un fichier verrouille par un autre commis
-             (verifier shared-state.md section "Verrous")
+## The 5 patterns of the simplified model
 
-ALIGNEMENT : suis les memes conventions — commit style (cli-git-conventional),
-             langue du projet, branch naming
+### 1. Boids — 3 rules for the commis (replaces the runtime Chef)
 
-COHESION   : converge vers l'objectif du sprint
-             (verifier shared-state.md section "PERT" pour la progression)
-```
-
-Le Chef n'existe plus au runtime. Il genere les fichiers a Phase 0, puis disparait. Les commis se coordonnent via shared-state.md.
-
-### 2. Quorum Sensing — 1 Sous-Chef, 3 lenses (remplace 3 Sous-Chefs votants)
-
-Un seul agent de review qui applique 3 lenses sequentiellement. Pas de vote, pas de rounds de resolution, pas de consensus inter-agents.
+Each commis follows 3 rules. No Chef assigning or watching.
 
 ```
-Sous-Chef recoit un diff :
+SEPARATION: do not touch a file locked by another commis
+            (check shared-state.md "Locks" section)
 
-  Lens 1 — SCOPE : le changement est dans le perimetre de la tache ?
-    SI hors scope → DENY("hors perimetre : touche {fichier} non assigne")
+ALIGNMENT:  follow the same conventions — commit style (cli-git-conventional),
+            project language, branch naming
 
-  Lens 2 — SECURITE : secrets exposes ? deps non-verifiees ? eval() ?
-    SI risque secu → zone sensible : ESCALATE au patron
-    SI risque secu → zone normale : DENY("secret detecte dans {fichier}:L{line}")
-
-  Lens 3 — QUALITE : tests passent ? code propre ? pas de regression ?
-    SI qualite basse → DENY("test manquant pour {fonction}")
-
-  3 lenses passent → APPROVE
+COHESION:   converge toward the sprint goal
+            (check shared-state.md "PERT" section for progress)
 ```
 
-**Quand garder 3 sous-chefs separes :**
-- Tier XL (reglemente)
-- Diff > 200 lignes
-- Zone sensible (3/3 unanimite requise)
-- L'utilisateur le demande explicitement
+The Chef no longer exists at runtime. It generates the files in Phase 0, then disappears. The commis coordinate via shared-state.md.
 
-### 3. Reparation ADN — quality gates adaptatifs (remplace les gates systematiques)
+### 2. Quorum Sensing — 1 Sous-Chef, 3 lenses (replaces 3 voting Sous-Chefs)
 
-Les gates ne sont pas les memes pour tous les diffs. Comme la cellule : proofreading constant, mais checkpoint seulement quand il y a un probleme.
+One review agent applies 3 lenses sequentially. No vote, no resolution rounds, no inter-agent consensus.
 
 ```
-diff_size < 50 lignes ET zone normale :
-  → PROOFREADING : le commis auto-verifie (test + lint)
-  → Sous-Chef : check rapide (30s, 1 lens seulement — qualite)
-  → Pas d'audit skill
+Sous-Chef receives a diff:
 
-diff_size 50-200 lignes OU zone hot :
-  → MISMATCH REPAIR : le sous-chef lance /cli-audit-code
-  → 1 skill, pas 4
+  Lens 1 — SCOPE: is the change inside the task perimeter?
+    IF out of scope → DENY("out of perimeter: touches {file} not assigned")
 
-diff_size > 200 lignes OU zone sensible :
-  → CHECKPOINT : le sous-chef lance la batterie complete
-  → /cli-audit-code + /cli-audit-shell (si .sh) + /cli-audit-drift (si CONTRACTS.md)
+  Lens 2 — SECURITY: exposed secrets? unverified deps? eval()?
+    IF security risk → sensitive zone: ESCALATE to the patron
+    IF security risk → normal zone: DENY("secret detected in {file}:L{line}")
+
+  Lens 3 — QUALITY: tests pass? clean code? no regression?
+    IF low quality → DENY("missing test for {function}")
+
+  All 3 lenses pass → APPROVE
 ```
 
-**Resultat :** 60-70% des merges (petits diffs en zone normale) ne declenchent aucun audit skill. Le sous-chef les valide en 30 secondes.
+**When to keep 3 separate sous-chefs:**
+- Tier XL (regulated)
+- Diff > 200 lines
+- Sensitive zone (3/3 unanimity required)
+- The user explicitly asks for it
 
-### 4. Reaction-Diffusion — pool de taches auto-organise (remplace PERT monitoring)
+### 3. DNA Repair — adaptive quality gates (replaces systematic gates)
 
-Le PERT est calcule a Phase 0 et ecrit dans shared-state.md. Ensuite les commis se servent dans le pool par score de readiness.
+Gates are not the same for every diff. Like the cell: constant proofreading, but checkpoint only when there's a problem.
+
+```
+diff_size < 50 lines AND normal zone:
+  → PROOFREADING: the commis auto-verifies (test + lint)
+  → Sous-Chef: quick check (30s, 1 lens only — quality)
+  → No audit skill
+
+diff_size 50-200 lines OR hot zone:
+  → MISMATCH REPAIR: the sous-chef runs /cli-audit-code
+  → 1 skill, not 4
+
+diff_size > 200 lines OR sensitive zone:
+  → CHECKPOINT: the sous-chef runs the full battery
+  → /cli-audit-code + /cli-audit-shell (if .sh) + /cli-audit-drift (if CONTRACTS.md)
+```
+
+**Result:** 60-70% of merges (small diffs in a normal zone) trigger no audit skill. The sous-chef validates them in 30 seconds.
+
+### 4. Reaction-Diffusion — self-organized task pool (replaces PERT monitoring)
+
+The PERT is computed in Phase 0 and written to shared-state.md. Then the commis help themselves from the pool by readiness score.
 
 ```markdown
-## Pool de taches
+## Task pool
 
-| Tache | Readiness | Activateurs | Inhibiteurs | Commis |
-|-------|-----------|-------------|-------------|--------|
-| test-coverage | 1.0 | aucun requis | aucun | - |
-| auth-refactor | 0.9 | schema-ready (oui) | aucun | commis-1 |
-| api-endpoints | 0.3 | auth-done (non) | auth/mod.rs verrouille | - |
-| docs-update | 0.1 | api-done (non), tests-done (non) | aucun | - |
+| Task | Readiness | Activators | Inhibitors | Commis |
+|------|-----------|------------|------------|--------|
+| test-coverage | 1.0 | none required | none | - |
+| auth-refactor | 0.9 | schema-ready (yes) | none | commis-1 |
+| api-endpoints | 0.3 | auth-done (no) | auth/mod.rs locked | - |
+| docs-update | 0.1 | api-done (no), tests-done (no) | none | - |
 ```
 
-**Regles :**
-1. Un commis libre choisit la tache avec le readiness le plus haut
-2. Quand un commis termine, ses tokens mettent a jour le readiness des taches dependantes
-3. Pas besoin de Chef pour assigner ou rebalancer — le pool s'auto-organise
-4. Si 2 commis veulent la meme tache → premier arrive, premier servi (verrou dans shared-state)
+**Rules:**
+1. A free commis picks the task with the highest readiness
+2. When a commis finishes, its tokens update the readiness of dependent tasks
+3. No Chef needed to assign or rebalance — the pool self-organizes
+4. If 2 commis want the same task → first come, first served (lock in shared-state)
 
-### 5. Apoptose — auto-terminaison des commis en echec (remplace Patch Bankruptcy + Divergence Detection)
+### 5. Apoptosis — self-termination of failing commis (replaces Patch Bankruptcy + Divergence Detection)
 
-Un commis qui echoue se termine proprement, sans intervention du Chef.
+A failing commis terminates cleanly, no Chef intervention.
 
 ```
-SI meme_diff_rejete >= 2 :
-  → APOPTOSE (mauvaise approche)
-  → git revert vers last-good-state
-  → liberer tous les verrous
-  → ecrire dans shared-state : "TACHE {x} : APOPTOSE par commis-{n}, raison: {motif}"
-  → la tache retourne au pool avec readiness = 1.0
-  → un autre commis la prendra avec une approche differente
+IF same_diff_rejected >= 2:
+  → APOPTOSIS (wrong approach)
+  → git revert to last-good-state
+  → release all locks
+  → write to shared-state: "TASK {x}: APOPTOSIS by commis-{n}, reason: {motive}"
+  → the task returns to the pool with readiness = 1.0
+  → another commis will pick it up with a different approach
 
-SI idle > 30min sans progres :
-  → APOPTOSE (coince)
-  → meme procedure
+IF idle > 30min with no progress:
+  → APOPTOSIS (stuck)
+  → same procedure
 
-SI regression detectee (fichier qui passait les tests ne passe plus) :
-  → git revert du dernier edit
-  → retenter 1 fois
-  → si encore en echec → APOPTOSE
+IF regression detected (file that passed tests no longer passes):
+  → git revert of the last edit
+  → retry 1 time
+  → if still failing → APOPTOSIS
 ```
 
-**Comme Kubernetes :** le pod (commis) est jetable. Le workload (tache) est ce qui compte. On ne debug pas un commis en echec, on le remplace.
+**Like Kubernetes:** the pod (commis) is disposable. The workload (task) is what matters. You don't debug a failing commis, you replace it.
 
 ---
 
-## Architecture runtime du modele simplifie
+## Runtime architecture of the simplified model
 
 ```
 ┌─────────────────────────────────────────────┐
 │           shared-state.md                    │
-│  (le seul medium de coordination)            │
+│  (the only coordination medium)              │
 │                                              │
-│  Sections :                                  │
-│  - Pool de taches (readiness scores)         │
-│  - Verrous actifs                            │
-│  - Tokens de completion                      │
-│  - Zones sensibles                           │
-│  - Status des commis (ACTIF/APOPTOSE)        │
-│  - Backlog pour le prochain sprint           │
+│  Sections:                                   │
+│  - Task pool (readiness scores)              │
+│  - Active locks                              │
+│  - Completion tokens                         │
+│  - Sensitive zones                           │
+│  - Commis status (ACTIVE/APOPTOSIS)          │
+│  - Backlog for the next sprint               │
 └─────────┬───────────┬───────────┬────────────┘
           │           │           │
      ┌────▼────┐ ┌────▼────┐ ┌───▼─────┐
@@ -173,8 +173,8 @@ SI regression detectee (fichier qui passait les tests ne passe plus) :
      │ cohes.  │ │ cohes.  │ │ cohes.  │
      │         │ │         │ │         │
      │ Apopt:  │ │ Apopt:  │ │ Apopt:  │
-     │ 2 rejet │ │ 2 rejet │ │ 2 rejet │
-     │ = mort  │ │ = mort  │ │ = mort  │
+     │ 2 reject│ │ 2 reject│ │ 2 reject│
+     │ = die   │ │ = die   │ │ = die   │
      └────┬────┘ └────┬────┘ └────┬────┘
           │           │           │
           └─────┬─────┘           │
@@ -184,10 +184,10 @@ SI regression detectee (fichier qui passait les tests ne passe plus) :
           │ (3 lenses) │
           │            │
           │ scope      │
-          │ securite   │
-          │ qualite    │
+          │ security   │
+          │ quality    │
           │            │
-          │ Repair ADN:│
+          │ DNA repair:│
           │ small=skip │
           │ medium=1   │
           │ large=full │
@@ -196,15 +196,15 @@ SI regression detectee (fichier qui passait les tests ne passe plus) :
 
 ---
 
-## Comparaison
+## Comparison
 
-| Aspect | Brigade complete | Stigmergie |
-|--------|-----------------|------------|
-| Agents runtime | 6+ (Chef+3SC+Merge+N) | 2+ (1SC+N) |
-| Coordination | Messages inter-agents | Lecture/ecriture fichier |
-| Point de defaillance | Chef = SPOF | Pas de SPOF |
-| Cout tokens | Eleve (Chef pense + 3 votes) | Bas (1 review + N commis) |
-| Latence par merge | Haute (vote → resolution → merge) | Basse (review → merge) |
-| Audit trail | Explicite (votes, decisions) | Implicite (shared-state.md history, git log) |
-| Conformite reglementaire | Oui (tracabilite des votes) | Non (pas de vote auditable) |
-| Scalabilite | Limitee par le Chef | Illimitee (ajout de commis) |
+| Aspect | Full brigade | Stigmergy |
+|--------|--------------|-----------|
+| Runtime agents | 6+ (Chef+3SC+Merge+N) | 2+ (1SC+N) |
+| Coordination | Inter-agent messages | File read/write |
+| Point of failure | Chef = SPOF | No SPOF |
+| Token cost | High (Chef thinks + 3 votes) | Low (1 review + N commis) |
+| Latency per merge | High (vote → resolution → merge) | Low (review → merge) |
+| Audit trail | Explicit (votes, decisions) | Implicit (shared-state.md history, git log) |
+| Regulatory compliance | Yes (vote traceability) | No (no auditable vote) |
+| Scalability | Limited by the Chef | Unlimited (add more commis) |

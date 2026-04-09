@@ -1,11 +1,11 @@
 # Template — Permissions
 
-Generer dans `{project}/.claude/settings.local.json`.
+Generate at `{project}/.claude/settings.local.json`.
 
-## Principe
+## Principle
 
-Le boss et les workers doivent pouvoir travailler SANS AUCUN prompt de permission.
-Chaque permission manquante = le boss se bloque (G1).
+The boss and the workers must be able to work with ZERO permission prompts.
+Every missing permission = the boss blocks (G1).
 
 ---
 
@@ -51,24 +51,24 @@ Chaque permission manquante = le boss se bloque (G1).
       "Bash(sleep:*)",
       "Bash(tmux:*)",
 
-      // === File tools (couvrent tous les fichiers du projet) ===
+      // === File tools (cover every file in the project) ===
       "Read",
       "Edit",
       "Write",
       "Glob",
       "Grep",
 
-      // === Web (si necessaire) ===
+      // === Web (if needed) ===
       "WebSearch",
       "WebFetch",
 
-      // === Skills CLI (quality gates) ===
+      // === CLI skills (quality gates) ===
       "Skill(cli-*)",
 
-      // === Shared state (chemin absolu — G5) ===
+      // === Shared state (absolute path — G5) ===
       "Edit(//{project_path}/.claude/shared-state.md)",
 
-      // === Repos externes (G14) ===
+      // === External repos (G14) ===
       // "Read(//{external_repo_path}/**)",
 
       // === Side projects ===
@@ -95,10 +95,10 @@ Chaque permission manquante = le boss se bloque (G1).
 
 ## Checklist
 
-Avant de generer, verifier :
+Before generating, verify:
 
-- [ ] Tous les outils build du projet (cargo, npm, python, make, etc.)
-- [ ] Chemin absolu vers shared-state.md
-- [ ] Chemins absolus vers les repos externes que les workers doivent lire
-- [ ] Chemins absolus vers les side projects que les workers doivent ecrire
-- [ ] Skills CLI necessaires pour les quality gates
+- [ ] All the project's build tools (cargo, npm, python, make, etc.)
+- [ ] Absolute path to shared-state.md
+- [ ] Absolute paths to external repos the workers must read
+- [ ] Absolute paths to side projects the workers must write to
+- [ ] CLI skills needed for the quality gates

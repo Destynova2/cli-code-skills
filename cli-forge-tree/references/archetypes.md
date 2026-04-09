@@ -204,15 +204,15 @@ project-name/
 
 **YAML extension rule (CRITICAL — don't rename existing files):**
 - **Never rename** `.yml` ↔ `.yaml` in an existing project. Respect what's there.
-- **Only ONE tool actually rejects `.yml`** : Helm pour `Chart.yaml` et `values.yaml` (issue helm/helm#7747 fermée pour raisons d'écosystème). Les templates Helm dans `templates/` acceptent les deux.
-- **Tous les autres outils acceptent `.yml` ET `.yaml`** :
-  - Kustomize : code source accepte `kustomization.yaml`, `kustomization.yml`, et `Kustomization` (kustomize/api/konfig/general.go)
-  - GitHub Actions : `.yml` ou `.yaml` documenté comme équivalent
-  - Docker Compose : précédence `compose.yaml` > `compose.yml` > `docker-compose.yaml` > `docker-compose.yml`
-  - Ansible : convention `.yml`, accepte les deux
-  - GitLab CI : `.gitlab-ci.yml` est le défaut (mais `.gitlab-ci.yaml` fonctionne aussi avec config custom)
-  - Kubernetes manifests purs : les deux
-- **Règle** : suivre la convention du projet. Si le projet est en `.yml`, tout nouveau fichier en `.yml` (sauf `Chart.yaml`/`values.yaml` Helm qui sont forcés).
+- **Only ONE tool actually rejects `.yml`**: Helm for `Chart.yaml` and `values.yaml` (issue helm/helm#7747 closed for ecosystem reasons). Helm templates under `templates/` accept both.
+- **Every other tool accepts both `.yml` AND `.yaml`**:
+  - Kustomize: the source code accepts `kustomization.yaml`, `kustomization.yml`, and `Kustomization` (kustomize/api/konfig/general.go)
+  - GitHub Actions: `.yml` or `.yaml` is documented as equivalent
+  - Docker Compose: precedence `compose.yaml` > `compose.yml` > `docker-compose.yaml` > `docker-compose.yml`
+  - Ansible: `.yml` convention, accepts both
+  - GitLab CI: `.gitlab-ci.yml` is the default (but `.gitlab-ci.yaml` also works with a custom config)
+  - Plain Kubernetes manifests: both
+- **Rule**: follow the project convention. If the project uses `.yml`, new files go as `.yml` (except Helm's `Chart.yaml`/`values.yaml`, which are forced).
 
 ---
 

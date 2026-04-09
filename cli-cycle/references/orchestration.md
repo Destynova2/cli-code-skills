@@ -165,8 +165,8 @@ Read ~/.claude/skills/gotchas.md for known mistakes to avoid.
 Then execute that skill on the project at {project-path}.
 
 MANDATORY: Output language is {detected_language} (detected from git log and README).
-If the project commits are in French, your report, findings, and recommendations
-are in French. If English, in English. NEVER mix or switch.
+Produce your report, findings, and recommendations in that exact language.
+NEVER mix or switch languages within the report.
 
 Important:
 - Follow the skill's workflow exactly as written
@@ -254,68 +254,68 @@ The triage is inspired by emergency medicine triage (treat the most critical fir
 
 | Tier | Criteria | Examples |
 |------|----------|---------|
-| 🔴 **Tier 3 — Critique** | Security flaws, broken functionality, data loss risk, hardcoded secrets, missing error handling causing silent failure, permissions that prevent runtime | Hardcoded passwords, `runAsUser` mismatch, missing `exit 1` on fatal error, secrets in plaintext |
-| 🟡 **Tier 2 — Majeur** | Architecture debt, missing tests, obsolete/misleading docs, non-pinned versions, god functions, duplication with real impact, missing CI/CD | Unpinned `:latest` tags, monolithic scripts without functions, duplicated build logic, no negative tests, stale USER_STORY.md |
-| 🟢 **Tier 1 — Mineur** | Style, missing diagrams, nice-to-have docs, structural organization, cosmetic improvements, missing but non-critical metadata | Missing CHANGELOG/LICENSE, files in wrong directory, no Mermaid diagrams, missing Makefile |
+| 🔴 **Tier 3 — Critical** | Security flaws, broken functionality, data loss risk, hardcoded secrets, missing error handling causing silent failure, permissions that prevent runtime | Hardcoded passwords, `runAsUser` mismatch, missing `exit 1` on fatal error, secrets in plaintext |
+| 🟡 **Tier 2 — Major** | Architecture debt, missing tests, obsolete/misleading docs, non-pinned versions, god functions, duplication with real impact, missing CI/CD | Unpinned `:latest` tags, monolithic scripts without functions, duplicated build logic, no negative tests, stale USER_STORY.md |
+| 🟢 **Tier 1 — Minor** | Style, missing diagrams, nice-to-have docs, structural organization, cosmetic improvements, missing but non-critical metadata | Missing CHANGELOG/LICENSE, files in wrong directory, no Mermaid diagrams, missing Makefile |
 
 #### Triage output template
 
 ```markdown
-## 🔴 Tier 3 — Critique (N items)
+## 🔴 Tier 3 — Critical (N items)
 
 | # | Correction | Effort | Source |
 |---|-----------|--------|--------|
-| 1 | Fix DbGate mount — /root/.dbgate mais runAsUser: 1000 | Faible | cli-forge-infra |
-| 2 | Externaliser le mdp healthcheck — Hc!CIS2022check hardcodé en 2 endroits | Faible | cli-audit-code |
-| 3 | Substitution sed de mdp dans /tmp — visible sur le filesystem | Faible | cli-audit-code |
-| 4 | Timeout entrypoint sans exit — [ $i -eq 90 ] && echo "ERREUR" mais pas de exit 1 | Faible | cli-audit-code |
+| 1 | Fix DbGate mount — /root/.dbgate but runAsUser: 1000 | Low | cli-forge-infra |
+| 2 | Externalize healthcheck password — Hc!CIS2022check hardcoded in 2 places | Low | cli-audit-code |
+| 3 | sed password substitution in /tmp — visible on the filesystem | Low | cli-audit-code |
+| 4 | Entrypoint timeout without exit — [ $i -eq 90 ] && echo "ERROR" but no exit 1 | Low | cli-audit-code |
 
-## 🟡 Tier 2 — Majeur (N items)
-
-| # | Correction | Effort | Source |
-|---|-----------|--------|--------|
-| 5 | USER_STORY.md obsolète — décrit un projet Ansible/Windows qui n'existe plus | Moyen | cli-audit-sync |
-| 6 | Pinner DbGate — dbgate:latest → version fixe | Faible | cli-forge-infra |
-| 7 | entrypoint.sh monolithique — 6 responsabilités sans fonctions | Moyen | cli-audit-tangle |
-| 8 | build.sh dupliqué — pattern identique entre 2 images | Moyen | cli-audit-code |
-| 9 | Pas de tests négatifs | Moyen | cli-audit-test |
-| 10 | Pas de CI/CD pipeline | Fort | cli-forge-pipeline |
-| 11 | Pas de readiness/liveness probes K8s | Faible | cli-forge-infra |
-
-## 🟢 Tier 1 — Mineur (N items)
+## 🟡 Tier 2 — Major (N items)
 
 | # | Correction | Effort | Source |
 |---|-----------|--------|--------|
-| 12 | Fichiers XML CIS à la racine → security/ | Faible | cli-forge-tree |
-| 13 | Pas de README.md | Moyen | cli-forge-readme |
-| 14 | deploy/mssql.kube (quadlet) sans documentation | Faible | cli-audit-doc |
-| 15 | Pas de CHANGELOG, CONTRIBUTING, LICENSE | Faible | cli-audit-doc |
-| 16 | Pas de Makefile/Taskfile | Moyen | cli-forge-tree |
-| 17 | Pas de diagramme d'architecture | Faible | cli-forge-schema |
+| 5 | USER_STORY.md stale — describes an Ansible/Windows project that no longer exists | Medium | cli-audit-sync |
+| 6 | Pin DbGate — dbgate:latest → fixed version | Low | cli-forge-infra |
+| 7 | entrypoint.sh monolithic — 6 responsibilities with no functions | Medium | cli-audit-tangle |
+| 8 | build.sh duplicated — identical pattern between 2 images | Medium | cli-audit-code |
+| 9 | No negative tests | Medium | cli-audit-test |
+| 10 | No CI/CD pipeline | High | cli-forge-pipeline |
+| 11 | No K8s readiness/liveness probes | Low | cli-forge-infra |
+
+## 🟢 Tier 1 — Minor (N items)
+
+| # | Correction | Effort | Source |
+|---|-----------|--------|--------|
+| 12 | CIS XML files at the root → security/ | Low | cli-forge-tree |
+| 13 | No README.md | Medium | cli-forge-readme |
+| 14 | deploy/mssql.kube (quadlet) without documentation | Low | cli-audit-doc |
+| 15 | No CHANGELOG, CONTRIBUTING, LICENSE | Low | cli-audit-doc |
+| 16 | No Makefile/Taskfile | Medium | cli-forge-tree |
+| 17 | No architecture diagram | Low | cli-forge-schema |
 ```
 
 **Display rules:**
-- Count per tier in the header: `🔴 Tier 3 — Critique (4 items)`
+- Count per tier in the header: `🔴 Tier 3 — Critical (4 items)`
 - Within each tier, sort by effort ascending (quick wins first)
 - Each item has: `#` (global numbering), description, effort, source skill
 - **NEVER** add a "and N more..." or "see full report" — this IS the full report
 
 ### Phoenix Choice prompt
 
-After the triage, always present:
+After the triage, always present (translate into the project's detected language; this is the English template):
 
 ```markdown
 ---
 
-**Phoenix — Quel tier attaquer ?**
+**Phoenix — Which tier should we tackle?**
 
-| Choix | Action | Items |
-|-------|--------|-------|
-| `1` | Tout corriger (convergence autonome, plan unifié) | N total |
-| `2` | Corriger les 🔴 critiques uniquement | N |
-| `3` | Corriger les 🟡 majeurs uniquement | N |
-| `4` | Corriger les 🟢 mineurs uniquement | N |
-| `5` | Pas maintenant | — |
+| Choice | Action | Items |
+|--------|--------|-------|
+| `1` | Fix everything (autonomous convergence, unified plan) | N total |
+| `2` | Fix 🔴 critical only | N |
+| `3` | Fix 🟡 major only | N |
+| `4` | Fix 🟢 minor only | N |
+| `5` | Not now | — |
 ```
 
 ### Correction tools (used during Phoenix fix phase)
@@ -347,12 +347,12 @@ When the user chooses a tier and fixes are applied:
 2. **Present a delta report:**
 
 ```markdown
-## 🔥 Phoenix — Passe N
+## 🔥 Phoenix — Pass N
 
-Issues résolues cette passe : X
-Issues restantes : Y (🔴 A / 🟡 B / 🟢 C)
-Nouvelles issues détectées : Z (regressions from fixes)
-Score : avant → après
+Issues resolved this pass: X
+Issues remaining: Y (🔴 A / 🟡 B / 🟢 C)
+New issues detected: Z (regressions from fixes)
+Score: before → after
 ```
 
 3. **If new issues were introduced by fixes**, add them to the triage
@@ -364,14 +364,14 @@ The cycle stops when ANY of these is true:
 
 | Condition | Output |
 |-----------|--------|
-| 0 items in 🔴 + 🟡 | `🔥 Phoenix — Convergé. Aucun défaut critique ou majeur. N mineurs restants (optionnels).` |
-| Re-audit finds 0 new issues | `🔥 Phoenix — Stable. Les corrections n'ont pas introduit de régressions.` |
-| User chooses `5` | `🔥 Phoenix — Pausé. Reprendre avec /cli-cycle.` |
+| 0 items in 🔴 + 🟡 | `🔥 Phoenix — Converged. No critical or major flaws remain. N minor items left (optional).` |
+| Re-audit finds 0 new issues | `🔥 Phoenix — Stable. The fixes introduced no regressions.` |
+| User chooses `5` | `🔥 Phoenix — Paused. Resume with /cli-cycle.` |
 
 ### Strengths template
 
 ```markdown
-## Points forts
+## Strengths
 
 - Clean module boundaries (cli-audit-code: 9/10 on Structure)
 - Excellent naming conventions (cli-audit-code: 9/10 on Naming)

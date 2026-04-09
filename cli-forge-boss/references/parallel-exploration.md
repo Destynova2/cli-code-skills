@@ -1,230 +1,230 @@
-# Exploration Parallele — Best-of-N & Benchmarking
+# Parallel Exploration — Best-of-N & Benchmarking
 
 > Sources: AlphaCodium (Qodo), AlphaCode (DeepMind), Cursor Shadow Workspace, Claude Code Competing Hypotheses, ICLR 2025 MAD analysis
 
-## Quand utiliser ce pattern
+## When to use this pattern
 
-| Situation | Pattern standard (1 commis/tache) | Exploration parallele (N commis/tache) |
-|-----------|------------------------------------|---------------------------------------|
-| Tache bien definie, une seule approche evidente | ✅ | ❌ overkill |
-| Choix d'architecture (2-3 options valides) | ❌ risque d'ancrage | ✅ |
-| Bug complexe, cause racine inconnue | ❌ biais de confirmation | ✅ (hypotheses concurrentes) |
-| Optimisation performance (algorithme, structure) | ❌ | ✅ (bench obligatoire) |
-| Refactoring avec plusieurs decoupages possibles | ❌ | ✅ (comparer les resultats) |
+| Situation | Standard pattern (1 commis/task) | Parallel exploration (N commis/task) |
+|-----------|----------------------------------|--------------------------------------|
+| Well-defined task, one obvious approach | ✅ | ❌ overkill |
+| Architecture choice (2-3 valid options) | ❌ anchoring risk | ✅ |
+| Complex bug, unknown root cause | ❌ confirmation bias | ✅ (competing hypotheses) |
+| Performance optimization (algorithm, data structure) | ❌ | ✅ (benchmark required) |
+| Refactoring with multiple possible splits | ❌ | ✅ (compare the results) |
 
-**Regle : ne PAS utiliser pour plus de 30% des taches d'un sprint.** L'exploration parallele coute 2-3x plus de tokens. Reserver aux decisions a fort impact.
+**Rule: do NOT use this for more than 30% of a sprint's tasks.** Parallel exploration costs 2-3x more tokens. Reserve it for high-impact decisions.
 
-## Pattern 1 — Hypotheses Concurrentes (Debug)
+## Pattern 1 — Competing Hypotheses (Debug)
 
-Pour les bugs complexes ou la cause racine n'est pas evidente.
+For complex bugs where the root cause is not obvious.
 
 ```
-Le Chef identifie un bug
+The Chef identifies a bug
   │
   ▼
-Formuler 2-3 hypotheses distinctes :
-  H1: "Le bug vient du cache invalide"
-  H2: "Le bug vient d'une race condition"
-  H3: "Le bug vient d'un parsing incorrect"
+Formulate 2-3 distinct hypotheses:
+  H1: "The bug comes from an invalid cache"
+  H2: "The bug comes from a race condition"
+  H3: "The bug comes from incorrect parsing"
   │
   ▼
-Spawner 1 commis par hypothese (worktree separe chacun)
-  - Chaque commis recoit UNE hypothese
-  - Mission : prouver OU refuter l'hypothese
-  - Produire : evidence (logs, tests, reproducing scenario)
+Spawn 1 commis per hypothesis (separate worktree each)
+  - Each commis receives ONE hypothesis
+  - Mission: prove OR refute the hypothesis
+  - Produce: evidence (logs, tests, reproducing scenario)
   │
   ▼
-Les commis envoient leurs conclusions au Sous-Chef
+Commis send their conclusions to the Sous-Chef
   │
   ▼
-Le Sous-Chef compare :
-  - Quelle hypothese a des preuves reproductibles ?
-  - Quelle hypothese explique TOUS les symptomes ?
+The Sous-Chef compares:
+  - Which hypothesis has reproducible proof?
+  - Which hypothesis explains ALL the symptoms?
   │
   ▼
-Le Chef valide et assigne le fix au commis gagnant
+The Chef validates and assigns the fix to the winning commis
 ```
 
-**Anti-pattern : NE PAS faire debattre les commis entre eux.** Le Sous-Chef juge, les commis ne se parlent pas. Voir la section "Debat vs Parallele" ci-dessous pour comprendre pourquoi.
+**Anti-pattern: DO NOT have the commis debate each other.** The Sous-Chef judges, the commis never talk to each other. See "Debate vs Parallel" below for why.
 
-## Debat vs Parallele — Quand le contexte different sert (et quand il ne sert pas)
+## Debate vs Parallel — When different context helps (and when it doesn't)
 
 > Source: ICLR 2025 — "Multi-LLM-Agent Debate: A Critical Assessment"
 
-Le debat multi-agent (agents qui argumentent entre eux pour converger) **bat rarement un seul agent + chain-of-thought**. Trois raisons :
+Multi-agent debate (agents arguing with each other to converge) **rarely beats a single agent + chain-of-thought**. Three reasons:
 
-1. **Biais de position** — chaque agent defend sa reponse initiale au lieu de chercher la verite
-2. **Complaisance** — l'agent "perdant" accepte souvent par defaut, pas par conviction
-3. **Cout 3-5x** — pour un resultat equivalent ou pire
+1. **Position bias** — each agent defends its initial answer instead of hunting for the truth
+2. **Complacency** — the "losing" agent often concedes by default, not conviction
+3. **3-5x cost** — for an equivalent or worse result
 
-### Tableau decisionnel : debat, parallele, ou juge ?
+### Decision table: debate, parallel, or judge?
 
-| La verite est... | Exemple | Methode | Qui decide | Debat entre commis ? |
-|------------------|---------|---------|------------|---------------------|
-| **Verifiable par un test** | "Quel algo est le plus rapide ?" | Parallele + bench (Pattern 2) | Les chiffres | ❌ Inutile — les tests parlent |
-| **Verifiable par la CI** | "Quel refactoring casse le moins ?" | Parallele + CI (Pattern 2) | Le CI vert/rouge | ❌ Inutile — la CI tranche |
-| **Factuelle mais distribuee** | "D'ou vient ce bug ?" (agent A voit les logs, B le code, C les metriques) | Hypotheses concurrentes (Pattern 1) | Le Sous-Chef synthetise les faits | ❌ Chacun rapporte ses preuves, pas d'echange |
-| **Subjective / gout** | "Comment nommer ce module ?" | Escalade au patron (humain) | L'humain | ❌ Les agents n'ont pas de gout |
-| **Normative / politique** | "On adopte quel framework ?" | Escalade au patron (humain) | L'humain (decision strategique) | ❌ Pas une decision technique |
+| The truth is... | Example | Method | Who decides | Debate between commis? |
+|-----------------|---------|--------|-------------|------------------------|
+| **Verifiable by a test** | "Which algo is fastest?" | Parallel + bench (Pattern 2) | The numbers | ❌ Useless — the tests speak |
+| **Verifiable by CI** | "Which refactoring breaks least?" | Parallel + CI (Pattern 2) | Green/red CI | ❌ Useless — CI decides |
+| **Factual but distributed** | "Where does this bug come from?" (agent A sees logs, B code, C metrics) | Competing hypotheses (Pattern 1) | The Sous-Chef synthesizes the facts | ❌ Each reports its evidence, no exchange |
+| **Subjective / taste** | "How should we name this module?" | Escalate to the patron (human) | The human | ❌ Agents have no taste |
+| **Normative / political** | "Which framework do we adopt?" | Escalate to the patron (human) | The human (strategic decision) | ❌ Not a technical decision |
 
-### Le contexte different est utile POUR la collecte, PAS pour la decision
+### Different context is useful FOR collection, NOT for decision-making
 
 ```
-UTILE :                                    INUTILE :
-Agent A lit les logs serveur               Agent A argumente "c'est un bug cache"
-Agent B lit le code source                 Agent B argumente "non c'est une race condition"
-Agent C lit les metriques Grafana          Agent C argumente "vous avez tous tort"
+USEFUL:                                     USELESS:
+Agent A reads the server logs              Agent A argues "it's a cache bug"
+Agent B reads the source code              Agent B argues "no, race condition"
+Agent C reads Grafana metrics              Agent C argues "you're all wrong"
          │                                              │
          ▼                                              ▼
-Sous-Chef : "A a trouve une erreur        3 rounds de debat → l'agent le plus
-dans les logs a 14:32, B confirme que     verbeux "gagne" → biais de confiance
-fn parse() ne gere pas ce cas,            → decision potentiellement fausse
-C montre un spike de latence au
-meme moment → root cause identifiee"
+Sous-Chef: "A found an error in            3 rounds of debate → the most verbose
+the logs at 14:32, B confirms that         agent 'wins' → confidence bias
+fn parse() does not handle this case,      → potentially wrong decision
+C shows a latency spike at the same
+moment → root cause identified"
 ```
 
-**Regle pour la brigade :** Les commis sont des **enqueteurs**, pas des **avocats**. Ils collectent des faits dans leur domaine. Le Sous-Chef est le **juge** qui synthetise. Les commis ne plaident jamais.
+**Rule for the brigade:** Commis are **investigators**, not **lawyers**. They collect facts in their domain. The Sous-Chef is the **judge** who synthesizes. Commis never plead.
 
-### Quand un vrai debat pourrait marcher (cas rare, <5%)
+### When a real debate might work (rare case, <5%)
 
-Le seul cas ou un echange entre agents apporte de la valeur :
+The only case where exchange between agents adds value:
 
-- **Revue de code croisee** : Commis A relit le code de Commis B et vice-versa
-- Mais ce n'est PAS un debat — c'est une **relecture** avec retour factuel ("ligne 42 : cette assertion peut paniquer si X est vide")
-- Le Sous-Chef est deja charge de ce role (quality gates)
-- Donc meme ce cas est couvert sans debat inter-commis
+- **Cross code review**: Commis A re-reads Commis B's code and vice versa
+- But that is NOT a debate — it is a **re-read** with factual feedback ("line 42: this assertion can panic if X is empty")
+- The Sous-Chef already owns this role (quality gates)
+- So even this case is covered without inter-commis debate
 
-### Resume : 3 regles
+### Summary: 3 rules
 
-1. **Si c'est mesurable → bench, pas debat** (Pattern 2, grille de comparaison)
-2. **Si c'est factuel → collecter en parallele, synthetiser par le juge** (Pattern 1, Sous-Chef)
-3. **Si c'est subjectif → escalader a l'humain** (Appel au patron)
+1. **If it's measurable → benchmark, not debate** (Pattern 2, comparison grid)
+2. **If it's factual → collect in parallel, synthesize via the judge** (Pattern 1, Sous-Chef)
+3. **If it's subjective → escalate to the human** (Appel au patron)
 
-## Pattern 2 — Approches Concurrentes (Architecture / Refactoring)
+## Pattern 2 — Competing Approaches (Architecture / Refactoring)
 
-Pour les choix avec 2-3 solutions valides.
+For choices with 2-3 valid solutions.
 
 ```
-Le Chef definit le probleme + les contraintes
+The Chef defines the problem + constraints
   │
   ▼
-Assigner a 2-3 commis :
-  Commis A : "Implemente avec l'approche X (ex: trait objects)"
-  Commis B : "Implemente avec l'approche Y (ex: enum dispatch)"
-  Commis C : "Implemente avec l'approche Z (ex: generics)"
+Assign to 2-3 commis:
+  Commis A: "Implement with approach X (e.g., trait objects)"
+  Commis B: "Implement with approach Y (e.g., enum dispatch)"
+  Commis C: "Implement with approach Z (e.g., generics)"
   │
   ▼
-Chaque commis produit :
-  1. Implementation fonctionnelle (compile + tests passent)
-  2. Benchmark (si applicable)
-  3. Note : complexite, lignes de code, maintenabilite
+Each commis produces:
+  1. A working implementation (compiles + tests pass)
+  2. Benchmark (if applicable)
+  3. Notes: complexity, lines of code, maintainability
   │
   ▼
-Le Sous-Chef execute la grille de comparaison (voir ci-dessous)
+The Sous-Chef runs the comparison grid (see below)
   │
   ▼
-Le Chef choisit + les branches perdantes sont supprimees
+The Chef picks + the losing branches are deleted
 ```
 
-### Grille de comparaison
+### Comparison grid
 
-Le Sous-Chef remplit cette grille pour chaque approche :
+The Sous-Chef fills this grid for each approach:
 
-| Critere | Poids | Approche A | Approche B | Approche C |
-|---------|-------|-----------|-----------|-----------|
-| Tests passent | 10 | ✅/❌ | ✅/❌ | ✅/❌ |
+| Criterion | Weight | Approach A | Approach B | Approach C |
+|-----------|--------|-----------|-----------|-----------|
+| Tests pass | 10 | ✅/❌ | ✅/❌ | ✅/❌ |
 | CQI (/cli-audit-code) | 5 | score | score | score |
-| Lignes de code | 3 | N | N | N |
-| Complexite cyclomatique | 4 | N | N | N |
-| Performance (bench) | 5 (si applicable) | ms/op | ms/op | ms/op |
-| Couplage (/cli-audit-tangle) | 4 | score | score | score |
-| Facilite d'extension future | 3 | 1-5 | 1-5 | 1-5 |
+| Lines of code | 3 | N | N | N |
+| Cyclomatic complexity | 4 | N | N | N |
+| Performance (bench) | 5 (if applicable) | ms/op | ms/op | ms/op |
+| Coupling (/cli-audit-tangle) | 4 | score | score | score |
+| Ease of future extension | 3 | 1-5 | 1-5 | 1-5 |
 
-**Score** = somme(poids × note normalisee). L'approche avec le meilleur score gagne.
+**Score** = sum(weight × normalized grade). The approach with the best score wins.
 
-**Filtre eliminatoire** : si tests ne passent pas → elimine immediatement (pas de score).
+**Knock-out filter**: if tests don't pass → immediately eliminated (no score).
 
-## Pattern 3 — Flow AlphaCodium (Generation + Selection iterative)
+## Pattern 3 — AlphaCodium Flow (Iterative Generation + Selection)
 
-Pour les problemes algorithmiques ou les implementations critiques. Plus leger que le full parallel (2-3 variantes, pas N).
+For algorithmic problems or critical implementations. Lighter than full parallel (2-3 variants, not N).
 
 ```
-Phase 1 — Reflexion
-  Le commis analyse le probleme :
-  - Objectifs, contraintes, cas limites
-  - Pourquoi chaque test attend ce resultat
+Phase 1 — Reflection
+  The commis analyzes the problem:
+  - Goals, constraints, edge cases
+  - Why each test expects this result
   │
-Phase 2 — Generer 2-3 solutions
-  Le commis produit 2-3 variantes DANS LE MEME WORKTREE :
+Phase 2 — Generate 2-3 solutions
+  The commis produces 2-3 variants IN THE SAME WORKTREE:
   - solution_a.rs, solution_b.rs, solution_c.rs
   │
-Phase 3 — Classer
-  Le commis execute les tests sur chaque variante
-  Elimine celles qui echouent
-  Garde la plus simple parmi celles qui passent
+Phase 3 — Rank
+  The commis runs the tests on each variant
+  Eliminates the failing ones
+  Keeps the simplest among those that pass
   │
-Phase 4 — Generer des tests adversariaux
-  Le commis invente 6-8 cas limites supplementaires
-  Les execute sur la solution retenue
+Phase 4 — Generate adversarial tests
+  The commis invents 6-8 extra edge cases
+  Runs them against the chosen solution
   │
-Phase 5 — Iterer
-  Si un test adversarial echoue → corriger et revenir a Phase 4
-  Si 3 iterations sans convergence → escalade au Chef
+Phase 5 — Iterate
+  If an adversarial test fails → fix and return to Phase 4
+  If 3 iterations without convergence → escalate to the Chef
   │
-Phase 6 — Livrer
-  Supprimer les variantes perdantes
-  Commit uniquement la solution gagnante
+Phase 6 — Deliver
+  Delete the losing variants
+  Commit only the winning solution
 ```
 
-**Avantage** : ne coute qu'un seul commis (pas de duplication de worktree).
+**Advantage**: only costs one commis (no worktree duplication).
 
-## Integration dans le boss
+## Integration with the boss
 
-### Dans le PERT
+### In the PERT
 
-Marquer les taches en exploration parallele :
+Mark parallel-exploration tasks:
 
 ```
 ┌──────────────────────────────────┐
-│  T3: Refactoring auth module     │
+│  T3: Refactor auth module        │
 │  MODE: EXPLORATION (2 commis)    │
-│  Approche A: trait objects        │
-│  Approche B: enum dispatch        │
-│  GATE: comparaison + selection    │
+│  Approach A: trait objects        │
+│  Approach B: enum dispatch        │
+│  GATE: comparison + selection     │
 └──────────────────────────────────┘
 ```
 
-### Dans shared-state.md
+### In shared-state.md
 
-Ajouter une section :
+Add a section:
 
 ```markdown
-## Explorations en cours
+## Explorations in progress
 
-| Tache | Commis | Approche | Status | Score |
-|-------|--------|----------|--------|-------|
-| T3 | commis-1 | trait objects | En cours | - |
-| T3 | commis-2 | enum dispatch | En cours | - |
+| Task | Commis | Approach | Status | Score |
+|------|--------|----------|--------|-------|
+| T3 | commis-1 | trait objects | In progress | - |
+| T3 | commis-2 | enum dispatch | In progress | - |
 ```
 
-### Dans le prompt du Chef
+### In the Chef prompt
 
 ```
-Pour les taches marquees EXPLORATION :
-1. Spawner N commis avec chacun une approche differente
-2. Attendre que tous aient fini (ou timeout 30min)
-3. Demander au Sous-Chef d'executer la grille de comparaison
-4. Choisir l'approche gagnante
-5. Supprimer les worktrees/branches perdantes
-6. Continuer le PERT avec la branche gagnante
+For tasks marked EXPLORATION:
+1. Spawn N commis, each with a different approach
+2. Wait until all are done (or 30min timeout)
+3. Ask the Sous-Chef to run the comparison grid
+4. Pick the winning approach
+5. Delete the losing worktrees/branches
+6. Continue the PERT with the winning branch
 ```
 
-### Quand le Chef decide d'utiliser l'exploration
+### When the Chef decides to use exploration
 
-Le Chef propose l'exploration parallele si :
-- Le user a explicitement demande "compare les approches"
-- La tache a un scope > S dans la mitosis
-- Il y a un choix d'architecture non-trivial (2+ patterns applicables)
-- Le user n'a pas specifie d'approche precise
+The Chef proposes parallel exploration if:
+- The user explicitly asked "compare the approaches"
+- The task has a scope > S in the mitosis
+- There is a non-trivial architecture choice (2+ applicable patterns)
+- The user did not specify a precise approach
 
-Le Chef demande confirmation au user avant de lancer (cout tokens x2-3).
+The Chef asks for user confirmation before launching (x2-3 token cost).

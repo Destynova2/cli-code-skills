@@ -1,70 +1,71 @@
-# Quality Gates — Skills CLI pour merge gates
+# Quality Gates — CLI skills for merge gates
 
-## Gates disponibles
+## Available gates
 
-| Skill | Quand | Bloque si | Cout tokens |
-|-------|-------|-----------|-------------|
-| `/cli-audit-tangle` | Pre-cycle (Phase 0) | God functions, cycles | Eleve |
-| `/cli-audit-drift` | Par merge | Loupers (code ≠ contrat CONTRACTS.md) | Moyen |
-| `/cli-audit-code` | Par merge | CQI baisse > 0.2 | Moyen |
-| `/cli-audit-test` | Par merge | Pyramide tests desequilibree | Moyen |
-| `/cli-audit-sync` | Post-merge (si docs) | Docs desynchronisees | Moyen |
-| `/cli-cycle` | Fin de cycle | Regression globale | Eleve |
+| Skill | When | Blocks if | Token cost |
+|-------|------|-----------|------------|
+| `/cli-audit-tangle` | Pre-cycle (Phase 0) | God functions, cycles | High |
+| `/cli-audit-drift` | Per merge | Misses (code ≠ CONTRACTS.md contract) | Medium |
+| `/cli-audit-code` | Per merge | CQI drops by > 0.2 | Medium |
+| `/cli-audit-test` | Per merge | Test pyramid unbalanced | Medium |
+| `/cli-audit-sync` | Post-merge (if docs) | Docs out of sync | Medium |
+| `/cli-cycle` | End of cycle | Global regression | High |
 
-## Quand utiliser quoi
+## When to use what
 
-### Minimum viable (tout projet)
-
-```
-Phase 0 : /cli-audit-tangle -> assigner les modules
-Par merge : /cli-audit-code -> qualite minimum
-Fin cycle : /cli-cycle -> scorecard
-```
-
-### Standard (projet avec contrats/docs)
+### Minimum viable (any project)
 
 ```
-Phase 0 : /cli-audit-tangle
-Par merge : /cli-audit-code + /cli-audit-drift
-Post-merge docs : /cli-audit-sync
-Fin cycle : /cli-cycle
+Phase 0: /cli-audit-tangle -> assign modules
+Per merge: /cli-audit-code -> minimum quality
+End of cycle: /cli-cycle -> scorecard
 ```
 
-### Complet (projet enterprise/regulated)
+### Standard (project with contracts/docs)
 
 ```
-Phase 0 : /cli-audit-tangle
-Par merge : /cli-audit-code + /cli-audit-drift + /cli-audit-test
-Post-merge docs : /cli-audit-sync
-Fin cycle : /cli-cycle
+Phase 0: /cli-audit-tangle
+Per merge: /cli-audit-code + /cli-audit-drift
+Post-merge docs: /cli-audit-sync
+End of cycle: /cli-cycle
 ```
 
-## Integration dans le boss prompt
+### Full (enterprise/regulated project)
+
+```
+Phase 0: /cli-audit-tangle
+Per merge: /cli-audit-code + /cli-audit-drift + /cli-audit-test
+Post-merge docs: /cli-audit-sync
+End of cycle: /cli-cycle
+```
+
+## Integration in the boss prompt
 
 ```markdown
 ## Quality Gates
 
-### Protocole
+### Protocol
 
-1. Worker envoie "Tache terminee" via SendMessage
-2. Boss execute les gates dans gate :
+1. Worker sends "Task complete" via SendMessage
+2. Boss runs the gates in the gate window:
    /cli-audit-code {scope}
    /cli-audit-drift {scope}
-3. Si gate echoue :
-   SendMessage { to: "{worker}", summary: "gate failed", message: "GATE FAILED: {detail}. Corrige et recommit." }
-4. Attendre le fix, re-executer le gate
-5. Si gate passe : merger
+3. If a gate fails:
+   SendMessage { to: "{worker}", summary: "gate failed", message: "GATE FAILED: {detail}. Fix and recommit." }
+4. Wait for the fix, re-run the gate
+5. If the gate passes: merge
 ```
 
-## Protocole si gate echoue
+## Protocol when a gate fails
 
-1. Lire le rapport d'audit
-2. Identifier les fichiers/fonctions en cause
-3. Envoyer au worker concerne un message precis :
-   - Quel gate a echoue
-   - Quel fichier/fonction est en cause
-   - Ce que le contrat/regle attendait
-   - Ce que le code fait a la place
-4. Attendre le fix du worker
-5. Re-executer le gate
-6. Si 3 echecs consecutifs : escalader a l'utilisateur
+1. Read the audit report
+2. Identify the files/functions at fault
+3. Send the worker a precise message:
+   - Which gate failed
+   - Which file/function is at fault
+   - What the contract/rule expected
+   - What the code does instead
+4. Wait for the worker's fix
+5. Re-run the gate
+6. If 3 consecutive failures: escalate to the user
+```

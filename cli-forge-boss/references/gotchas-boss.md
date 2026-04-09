@@ -4,228 +4,228 @@
 
 ---
 
-## G1 — Permission UI bloque le boss (CRITIQUE)
+## G1 — Permission UI blocks the boss (CRITICAL)
 
-**Probleme:** Meme avec `--dangerously-skip-permissions`, le boss (team leader) recoit des prompts UI interactifs pour approuver les edits des workers. Le boss se bloque sur "Do you want to make this edit?" et attend un Enter humain.
+**Problem:** Even with `--dangerously-skip-permissions`, the boss (team leader) receives interactive UI prompts to approve worker edits. The boss gets stuck on "Do you want to make this edit?" and waits for a human Enter.
 
-**Cause:** Agent Teams design — le team leader est le gatekeeper des permissions des teammates. Le flag `--dangerously-skip-permissions` bypass les permissions du boss lui-meme, mais PAS celles des workers qui remontent au leader.
+**Cause:** Agent Teams design — the team leader is the gatekeeper for teammate permissions. The `--dangerously-skip-permissions` flag bypasses the boss's own permissions, but NOT those of the workers that bubble up to the leader.
 
-**Fix:** Ajouter `--permission-mode bypassPermissions` au boss en PLUS de `--dangerously-skip-permissions` :
+**Fix:** Add `--permission-mode bypassPermissions` to the boss IN ADDITION to `--dangerously-skip-permissions`:
 ```yaml
 claude --dangerously-skip-permissions --permission-mode bypassPermissions --teammate-mode tmux
 ```
 
-**Si oublie :** Le boss va se bloquer sur chaque edit de worker. Il faudra approuver manuellement avec Enter dans le pane boss.
+**If forgotten:** The boss will block on every worker edit. You'll have to approve manually with Enter in the boss pane.
 
 ---
 
-## G2 — --system-prompt-file n'existe pas
+## G2 — --system-prompt-file does not exist
 
-**Probleme:** Le flag `--system-prompt-file` n'existe pas dans Claude Code CLI. Le boss ne se lance pas.
+**Problem:** The `--system-prompt-file` flag does not exist in the Claude Code CLI. The boss will not launch.
 
-**Fix:** Utiliser `--append-system-prompt "$(cat path/to/prompt.md)"` pour charger un fichier prompt.
+**Fix:** Use `--append-system-prompt "$(cat path/to/prompt.md)"` to load a prompt file.
 
-**Alternative:** `--system-prompt "contenu inline"` mais limite pour les gros prompts.
+**Alternative:** `--system-prompt "inline content"` but limited for large prompts.
 
 ---
 
-## G3 — Claude attend un premier message
+## G3 — Claude waits for a first message
 
-**Probleme:** Claude Code en mode interactif attend toujours un premier message utilisateur. Le boss est lance mais ne fait rien.
+**Problem:** Claude Code in interactive mode always waits for a first user message. The boss is launched but does nothing.
 
-**Fix:** Inclure dans le boss prompt une instruction claire de demarrage autonome. Si ca ne suffit pas, l'utilisateur tape dans le pane boss ou on envoie via tmux :
+**Fix:** Include in the boss prompt a clear instruction to start autonomously. If that is not enough, the user types into the boss pane or we send via tmux:
 ```bash
-tmux send-keys -t {session}:boss "Lance le plan complet." Enter
+tmux send-keys -t {session}:boss "Run the full plan." Enter
 ```
 
-**NE PAS utiliser `-p` (print mode)** — ca desactive le mode interactif et les panes tmux des teammates ne s'afficheront pas.
+**DO NOT use `-p` (print mode)** — it disables interactive mode and the teammates' tmux panes will not show up.
 
 ---
 
-## G4 — Workers invisibles sans --teammate-mode tmux
+## G4 — Invisible workers without --teammate-mode tmux
 
-**Probleme:** Par defaut, les teammates Agent Teams sont des subprocesses invisibles. L'utilisateur ne voit rien dans tmux, juste le boss.
+**Problem:** By default, Agent Teams teammates are invisible subprocesses. The user sees nothing in tmux, just the boss.
 
-**Fix:** Toujours ajouter `--teammate-mode tmux` au boss :
+**Fix:** Always add `--teammate-mode tmux` to the boss:
 ```yaml
 claude --teammate-mode tmux
 ```
 
-**Alternative permanente:** Mettre `"teammateMode": "tmux"` dans `~/.claude.json`.
+**Permanent alternative:** Set `"teammateMode": "tmux"` in `~/.claude.json`.
 
 ---
 
-## G5 — shared-state.md hors du worktree = permission
+## G5 — shared-state.md outside the worktree = permission
 
-**Probleme:** Les workers dans des worktrees (`grob-wt-hit/`) veulent editer `shared-state.md` qui est dans le repo principal (`grob/.claude/`). Ca declenche une permission request vers le boss.
+**Problem:** Workers in worktrees (`grob-wt-hit/`) want to edit `shared-state.md` which lives in the main repo (`grob/.claude/`). This triggers a permission request back to the boss.
 
-**Fix:** Ajouter dans `settings.local.json` :
+**Fix:** Add to `settings.local.json`:
 ```json
 "Edit(//path/to/project/.claude/shared-state.md)"
 ```
 
-Et donner le chemin absolu dans les prompts workers :
+And give the absolute path in the worker prompts:
 ```
-MEMOIRE PARTAGEE : Lis /chemin/absolu/projet/.claude/shared-state.md
+SHARED MEMORY: Read /absolute/path/project/.claude/shared-state.md
 ```
 
 ---
 
-## G6 — Auto-approve Enter trop rapide
+## G6 — Auto-approve Enter too fast
 
-**Probleme:** Envoyer des `Enter` via tmux send-keys trop vite (< 1s) — Claude UI les ignore car il n'a pas eu le temps de render le prompt.
+**Problem:** Sending `Enter` keys via tmux send-keys too quickly (< 1s) — the Claude UI ignores them because it hasn't had time to render the prompt.
 
-**Fix:** Si on doit auto-approve, espacer de 3s minimum :
+**Fix:** If you must auto-approve, space them out by at least 3s:
 ```bash
 for i in $(seq 1 N); do tmux send-keys -t session:boss Enter; sleep 3; done
 ```
 
-**Mieux:** Utiliser G1 (`--permission-mode bypassPermissions`) pour ne jamais avoir de prompts.
+**Better:** Use G1 (`--permission-mode bypassPermissions`) so you never see prompts.
 
 ---
 
-## G7 — tmuxinator ne peut pas lancer Claude en background
+## G7 — tmuxinator cannot launch Claude in the background
 
-**Probleme:** Tenter de lancer `claude &` dans tmuxinator ou de faire un `bash -c 'claude & sleep...'` casse le TTY. Claude a besoin d'un vrai terminal.
+**Problem:** Attempting to launch `claude &` in tmuxinator or to do `bash -c 'claude & sleep...'` breaks the TTY. Claude needs a real terminal.
 
-**Fix:** Laisser tmuxinator lancer Claude normalement (foreground dans le pane). Ne pas essayer de backgrounder.
+**Fix:** Let tmuxinator launch Claude normally (foreground in the pane). Do not try to background it.
 
 ---
 
-## G8 — Workers recoivent le mauvais prompt
+## G8 — Workers receive the wrong prompt
 
-**Probleme:** Les auto-approve `Enter` envoyes au boss peuvent atterrir dans le prompt input d'un worker si le focus tmux a change, ou le message de lancement du boss se retrouve dans un pane worker.
+**Problem:** The auto-approve `Enter` keys sent to the boss can land in a worker's input prompt if the tmux focus changed, or the boss kick-off message ends up in a worker pane.
 
-**Fix:** Toujours cibler le bon pane :
+**Fix:** Always target the right pane:
 ```bash
-tmux send-keys -t {session}:0.0 Enter  # boss = toujours pane 0.0
+tmux send-keys -t {session}:0.0 Enter  # boss = always pane 0.0
 ```
 
 ---
 
-## G9 — Merge sans CI = catastrophe
+## G9 — Merge without CI = catastrophe
 
-**Probleme:** Le boss merge dans develop sans attendre la CI. La branche develop est cassee.
+**Problem:** The boss merges into develop without waiting for CI. The develop branch is broken.
 
-**Fix:** Le boss prompt DOIT contenir :
+**Fix:** The boss prompt MUST contain:
 ```
-CI verte OBLIGATOIRE entre chaque merge.
-Boucler sur: gh run watch
+CI green MANDATORY between every merge.
+Loop on: gh run watch
 ```
 
 ---
 
-## G10 — Workers touchent les memes fichiers
+## G10 — Workers touching the same files
 
-**Probleme:** Deux workers modifient le meme fichier (ex: `mod.rs`, `Cargo.toml`) → conflit de merge garanti.
+**Problem:** Two workers modify the same file (e.g., `mod.rs`, `Cargo.toml`) → merge conflict guaranteed.
 
 **Fix:**
-1. Phase 0 : `/cli-audit-tangle` pour identifier les couplages
-2. Assigner les fichiers couples au MEME worker
-3. Section "Conflits potentiels" dans shared-state.md
-4. Workers lisent "En cours" AVANT de coder
+1. Phase 0: `/cli-audit-tangle` to identify couplings
+2. Assign coupled files to the SAME worker
+3. "Potential conflicts" section in shared-state.md
+4. Workers read "In progress" BEFORE coding
 
 ---
 
-## G11 — Trop de workers = context window
+## G11 — Too many workers = context window
 
-**Probleme:** > 5 workers en parallele. Le boss depense trop de tokens a gerer les messages/permissions, et les workers se marchent dessus.
+**Problem:** > 5 workers in parallel. The boss spends too many tokens managing messages/permissions, and the workers step on each other.
 
-**Fix:** Maximum 5 workers. Si plus de 5 taches, sequencer en phases.
-
----
-
-## G12 — on_project_first_start n'existe pas dans tmuxinator
-
-**Probleme:** `on_project_first_start` n'est pas un hook valide tmuxinator. Le YAML est silencieusement ignore.
-
-**Fix:** Utiliser `on_project_start` (se lance a chaque start). Rendre les commandes idempotentes avec `2>/dev/null || true`.
+**Fix:** Maximum 5 workers. If more than 5 tasks, sequence them across phases.
 
 ---
 
-## G13 — Worktree sur branche existante
+## G12 — on_project_first_start does not exist in tmuxinator
 
-**Probleme:** `git worktree add ../wt -b feat/x` echoue si la branche existe deja.
+**Problem:** `on_project_first_start` is not a valid tmuxinator hook. The YAML is silently ignored.
 
-**Fix:** Rendre idempotent :
+**Fix:** Use `on_project_start` (runs on every start). Make the commands idempotent with `2>/dev/null || true`.
+
+---
+
+## G13 — Worktree on an existing branch
+
+**Problem:** `git worktree add ../wt -b feat/x` fails if the branch already exists.
+
+**Fix:** Make it idempotent:
 ```bash
 git worktree add ../wt -b feat/x 2>/dev/null || true
 ```
 
 ---
 
-## G18 — brew upgrade tue les workers en vol
+## G18 — brew upgrade kills workers mid-flight
 
-**Probleme:** Agent Teams resout le symlink `claude` en chemin absolu au moment du spawn (ex: `Caskroom/claude-code/2.1.84/claude`). Si `brew upgrade claude-code` tourne pendant la session, le chemin pointe vers une version supprimee. Les nouveaux workers crashent avec "Aucun fichier ou dossier".
+**Problem:** Agent Teams resolves the `claude` symlink to an absolute path at spawn time (e.g., `Caskroom/claude-code/2.1.84/claude`). If `brew upgrade claude-code` runs during the session, the path points to a deleted version. New workers crash with "No such file or directory".
 
-**Fix:** Ne JAMAIS faire `brew upgrade claude-code` pendant une session multi-agent. Si un upgrade a eu lieu : relancer le boss (`tmuxinator stop && tmuxinator start`).
+**Fix:** NEVER run `brew upgrade claude-code` during a multi-agent session. If an upgrade happened: restart the boss (`tmuxinator stop && tmuxinator start`).
 
-**Detection:** Si un worker meurt avec `env: ... Aucun fichier ou dossier`, verifier `ls /home/linuxbrew/.linuxbrew/Caskroom/claude-code/` — si la version du spawn n'y est plus, c'est ca.
-
----
-
-## G17 — Le Chef oublie de mettre a jour la roadmap
-
-**Probleme:** Le Chef code, merge, fait le rapport, mais ne met pas a jour la documentation du projet (roadmap, features, design docs). Le sprint suivant commence avec des docs obsoletes.
-
-**Fix:** Dans le shutdown protocol du Chef, etape OBLIGATOIRE avant le rapport final :
-1. Mettre a jour la roadmap (marquer FAIT, ajouter prochaines etapes)
-2. Mettre a jour le features doc (nouvelles fonctionnalites)
-3. Mettre a jour les design docs (statuts PROPOSED → DONE)
-4. Si Obsidian : mettre a jour les fichiers .md du vault
-
-**Le rapport final ne peut pas etre produit avant que les docs soient a jour.**
+**Detection:** If a worker dies with `env: ... No such file or directory`, check `ls /home/linuxbrew/.linuxbrew/Caskroom/claude-code/` — if the spawn-time version is gone, that's it.
 
 ---
 
-## G16 — Auto-approve aveugle = zero gardefou
+## G17 — The Chef forgets to update the roadmap
 
-**Probleme:** Pour debloquer le boss qui attend les permissions des workers, on spam Enter en boucle. Ca approuve tout sans verification — un worker pourrait editer un fichier sensible, pousser du code malveillant, ou toucher des fichiers hors de son scope.
+**Problem:** The Chef codes, merges, writes the report, but does not update the project's documentation (roadmap, features, design docs). The next sprint starts with stale docs.
 
-**Fix:** Ne JAMAIS auto-approve aveuglement. Le Sous-Chef doit lire le diff avant d'approuver. Regles du Sous-Chef :
-- **APPROVE** : edit dans le scope du worker (ses fichiers assignes + shared-state.md)
-- **DENY** : edit hors scope (fichier d'un autre worker, .env, credentials, ci.yml sans demande)
-- **DENY** : suppression de tests ou de security checks
-- **DENY** : modification de Cargo.toml deps sans justification
-- **ESCALE** : si doute, demander au Chef
+**Fix:** In the Chef's shutdown protocol, MANDATORY step before the final report:
+1. Update the roadmap (mark DONE, add next steps)
+2. Update the features doc (new capabilities)
+3. Update the design docs (statuses PROPOSED → DONE)
+4. If Obsidian: update the vault's .md files
 
-**Si pas de Sous-Chef** (session 2-tiers) : l'utilisateur est le Sous-Chef. Il regarde le pane boss et approuve/refuse manuellement.
-
----
-
-## G15 — PRs paralleles sur le meme fichier = conflit
-
-**Probleme:** Le chef ouvre N PRs en parallele qui touchent le meme fichier (ex: ci.yml). La premiere merge OK, les suivantes ont des conflits.
-
-**Fix:** Si plusieurs taches touchent le meme fichier, les sequencer dans le PERT (pas en parallele). Ou mieux : merger localement dans l'ordre, tester, puis push une seule PR.
-
-**Regle pour le sous-chef :** Avant de merger une PR, verifier si une autre PR ouverte touche le meme fichier. Si oui, merger la premiere, rebase la seconde, puis merger.
+**The final report cannot be produced before the docs are up to date.**
 
 ---
 
-## G14 — Read access aux repos externes
+## G16 — Blind auto-approve = zero safety net
 
-**Probleme:** Un worker doit lire un autre repo (ex: sokolsky) mais n'a pas les permissions.
+**Problem:** To unblock the boss waiting on worker permissions, people spam Enter in a loop. That approves everything without verification — a worker could edit a sensitive file, push malicious code, or touch files outside its scope.
 
-**Fix:** Ajouter dans `settings.local.json` :
+**Fix:** NEVER blind-auto-approve. The Sous-Chef must read the diff before approving. Sous-Chef rules:
+- **APPROVE**: edit within the worker's scope (its assigned files + shared-state.md)
+- **DENY**: edit outside scope (another worker's file, .env, credentials, ci.yml without a request)
+- **DENY**: removal of tests or security checks
+- **DENY**: change to Cargo.toml deps without justification
+- **ESCALATE**: if in doubt, ask the Chef
+
+**If no Sous-Chef** (2-tier session): the user IS the Sous-Chef. They watch the boss pane and approve/deny manually.
+
+---
+
+## G15 — Parallel PRs on the same file = conflict
+
+**Problem:** The chef opens N parallel PRs that touch the same file (e.g., ci.yml). The first merges fine, the rest have conflicts.
+
+**Fix:** If several tasks touch the same file, sequence them in the PERT (not parallel). Or better: merge locally in order, test, then push a single PR.
+
+**Rule for the sous-chef:** Before merging a PR, check if another open PR touches the same file. If so, merge the first, rebase the second, then merge.
+
+---
+
+## G14 — Read access to external repos
+
+**Problem:** A worker needs to read another repo (e.g., sokolsky) but does not have the permissions.
+
+**Fix:** Add to `settings.local.json`:
 ```json
 "Read(//path/to/other/repo/**)"
 ```
 
 ---
 
-## G19 — Agent Teams non active = pas de TeamCreate/SendMessage
+## G19 — Agent Teams not enabled = no TeamCreate/SendMessage
 
-**Probleme:** Le skill genere un prompt avec TeamCreate mais Agent Teams n'est pas active. Le boss n'a pas les outils.
+**Problem:** The skill generates a prompt with TeamCreate but Agent Teams is not enabled. The boss does not have the tools.
 
-**Fix automatique dans le skill (Phase 0.3)** :
-1. Verifier `~/.claude/settings.json` pour `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS`
-2. Verifier `~/.claude.json` pour `teammateMode`
-3. Si absent : les ajouter automatiquement AVANT de generer le tmuxinator
-4. Verifier `skipDangerousModePermissionPrompt` dans `~/.claude/settings.json`
+**Automatic fix in the skill (Phase 0.3):**
+1. Check `~/.claude/settings.json` for `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS`
+2. Check `~/.claude.json` for `teammateMode`
+3. If missing: add them automatically BEFORE generating the tmuxinator
+4. Check `skipDangerousModePermissionPrompt` in `~/.claude/settings.json`
 
 ```bash
-# Check + fix automatique
+# Automatic check + fix
 python3 -c "
 import json, os
 p = os.path.expanduser('~/.claude/settings.json')
@@ -238,42 +238,42 @@ json.dump(d, open(p, 'w'), indent=2)
 
 ---
 
-## G20 — Le Chef doit envoyer le premier message manuellement
+## G20 — The Chef has to send the first message manually
 
-**Probleme:** Claude Code en interactif attend toujours un message. Le tmuxinator lance Claude, mais rien ne se passe. L'utilisateur doit aller dans le pane et taper "Lance le plan".
+**Problem:** Claude Code in interactive mode always waits for a message. tmuxinator launches Claude, but nothing happens. The user has to open the pane and type "Run the plan".
 
-**Fix dans le tmuxinator** : ajouter un `on_project_start` qui envoie le premier message apres un delai :
+**Fix in tmuxinator**: add an `on_project_start` that sends the first message after a delay:
 
 ```yaml
 on_project_start:
   # ... worktree setup ...
-  # Auto-kick le chef apres 12s (temps de boot Claude)
-  - sleep 12 && tmux send-keys -t {session}:conductor "Lance le service complet. Pilotage autonome." Enter &
+  # Auto-kick the chef after 12s (Claude boot time)
+  - sleep 12 && tmux send-keys -t {session}:conductor "Run the full service. Autonomous pilot." Enter &
 ```
 
-Le `&` en fin de commande lance en background — tmuxinator ne bloque pas dessus.
+The trailing `&` launches in the background — tmuxinator does not block on it.
 
 ---
 
-## G21 — Le boss idle pense que les workers tournent
+## G21 — Idle boss thinks workers are running
 
-**Probleme:** Les workers sont morts (G18, crash, timeout) mais le boss affiche `Idle · teammates running`. Il attend des rapports qui ne viendront jamais.
+**Problem:** The workers are dead (G18, crash, timeout) but the boss shows `Idle · teammates running`. It waits for reports that will never come.
 
-**Fix dans le prompt du Chef** : ajouter un watchdog :
+**Fix in the Chef prompt**: add a watchdog:
 
 ```
-WATCHDOG : Si tu es idle depuis plus de 10 minutes et qu'aucun worker ne t'a envoye de message, verifie s'ils sont encore vivants. Essaie de leur envoyer un ping :
-  SendMessage { to: "worker-X", summary: "ping", message: "Es-tu vivant? Reponds." }
-Si pas de reponse en 30s : le worker est mort. Fais le travail toi-meme ou relance.
+WATCHDOG: If you've been idle for more than 10 minutes and no worker has sent you a message, check whether they are still alive. Try to ping them:
+  SendMessage { to: "worker-X", summary: "ping", message: "Are you alive? Answer." }
+If no answer within 30s: the worker is dead. Do the work yourself or restart.
 ```
 
 ---
 
-## G22 — Obsidian docs pas dans le scope des permissions
+## G22 — Obsidian docs not in permissions scope
 
-**Probleme:** Le Chef doit mettre a jour les docs Obsidian (roadmap, features) mais le vault Obsidian est hors du projet. Les edits sont bloques par les permissions.
+**Problem:** The Chef must update the Obsidian docs (roadmap, features) but the Obsidian vault lives outside the project. Edits are blocked by permissions.
 
-**Fix dans settings.local.json** : ajouter les chemins Obsidian :
+**Fix in settings.local.json**: add the Obsidian paths:
 
 ```json
 "Edit(//{obsidian_vault_path}/**)",
@@ -282,17 +282,17 @@ Si pas de reponse en 30s : le worker est mort. Fais le travail toi-meme ou relan
 
 ---
 
-## G23 — Pas de fallback quand les workers crashent
+## G23 — No fallback when workers crash
 
-**Probleme:** Si tous les workers sont morts (G18) et qu'on ne peut pas relancer tmuxinator, le sprint est bloque.
+**Problem:** If all workers are dead (G18) and you cannot restart tmuxinator, the sprint is stuck.
 
-**Fix dans le prompt du Chef** : plan B explicite :
+**Fix in the Chef prompt**: an explicit Plan B:
 
 ```
-SI LES WORKERS SONT MORTS :
-1. Ne PAS essayer de re-spawner (meme erreur)
-2. Faire le travail TOI-MEME directement dans cette session
-3. Utiliser les worktrees existants (cd /path/to/worktree)
-4. Un seul job a la fois (pas de parallelisme) mais ca avance
-5. Signaler a l'utilisateur : "Workers morts, je continue en solo"
+IF THE WORKERS ARE DEAD:
+1. Do NOT try to re-spawn (same error)
+2. Do the work YOURSELF directly in this session
+3. Use the existing worktrees (cd /path/to/worktree)
+4. One job at a time (no parallelism) but keep moving
+5. Tell the user: "Workers dead, continuing solo"
 ```

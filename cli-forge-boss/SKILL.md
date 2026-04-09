@@ -9,7 +9,7 @@ description: >
   Use when the user wants to parallelize work across multiple Claude Code agents, orchestrate
   a multi-agent sprint, or says 'boss', 'multi-agent', 'orchestrate', 'parallelize agents',
   'team of claudes', 'sprint multi-agent', 'brigade', 'conductor', 'chef'.
-  Also triggers on 'swarm', 'agent team', 'workers paralleles', 'PERT multi-agent'.
+  Also triggers on 'swarm', 'agent team', 'parallel workers', 'PERT multi-agent'.
 argument-hint: "[project-path-or-name]"
 context: fork
 agent: general-purpose
@@ -25,126 +25,127 @@ allowed-tools:
 
 > **Optimization:** Heavy content lives in `references/`. Load on demand.
 
-> **Language rule:** Detect the project's primary language (from README, comments, docs, commit messages). Output ALL generated files (prompts, shared-state, tmuxinator comments) in that language. If the project is bilingual, ask the user which language to use before proceeding. The Brigade vocabulary (Menu, Commis, Sous-Chef, etc.) stays in French regardless — it's the pattern's terminology, not the output language.
+> **Language rule:** Skill instructions are written in English. When generating user-facing files (prompts, shared-state, tmuxinator comments, reports), detect the project's primary language (from README, comments, docs, commit messages) and produce those files in that language. If the project is bilingual, ask the user which language to use before proceeding. The Brigade vocabulary (Menu, Commis, Sous-Chef, Chef, Plat, Mise en place, etc.) stays in French regardless — it's the pattern's canonical terminology, not prose.
 
 > **Gotchas:** Read `../../gotchas.md` AND `references/gotchas-boss.md` before producing output.
 
 # CLI Forge Boss — Brigade de Cuisine
 
 > *"On ne cuisine pas seul. On cuisine en brigade."* — Auguste Escoffier
+> (*"You don't cook alone. You cook in a brigade."*)
 
-## La Brigade
+## The Brigade
 
 ```
 ┌─────────────────────────────────────────────────────┐
 │                      CLIENT                          │
-│  (utilisateur, ticket, roadmap)                      │
+│  (user, ticket, roadmap)                             │
 │                                                      │
-│  Commande des plats via le MENU (PERT)               │
-│  "Je veux: decision tokens + E2E + sokolsky"         │
+│  Orders plats via the MENU (PERT)                    │
+│  "I want: decision tokens + E2E + sokolsky"          │
 └──────────────────────┬──────────────────────────────┘
-                       │ commande
+                       │ order
 ┌──────────────────────▼──────────────────────────────┐
 │                  CHEF DE CUISINE                     │
-│  (planifie, decide, orchestre)                       │
+│  (plans, decides, orchestrates)                      │
 │                                                      │
-│  - Lit le menu (PERT / roadmap)                      │
-│  - Repartit les plats entre les commis               │
-│  - Decide de l'ordre d'envoi                         │
-│  - Demande au sous-chef de gouter avant envoi        │
-│  - Annonce : "Envoyez !" quand c'est pret            │
-│  - NE CUISINE JAMAIS                                 │
+│  - Reads the menu (PERT / roadmap)                   │
+│  - Assigns plats to the commis                       │
+│  - Decides the order in which to send them out       │
+│  - Asks the Sous-Chef to taste before sending        │
+│  - Calls "Envoyez !" when it's ready                 │
+│  - NEVER COOKS                                       │
 └──────────────────────┬──────────────────────────────┘
                        │ SendMessage
 ┌──────────────────────▼──────────────────────────────┐
-│              3 SOUS-CHEFS VOTANTS                    │
-│  (goutent, jugent — quorum 2/3)                      │
+│              3 VOTING SOUS-CHEFS                     │
+│  (taste, judge — quorum 2/3)                         │
 │                                                      │
-│  sous-chef-scope   : le plat est dans le poste?      │
-│  sous-chef-secu    : pas de verre pile dans le plat? │
-│  sous-chef-qualite : le gout est bon?                │
+│  sous-chef-scope   : is the plat in your station?    │
+│  sous-chef-secu    : any broken glass in the plat?   │
+│  sous-chef-qualite : does it taste right?            │
 │                                                      │
-│  2/3 APPROVE → passe                                 │
-│  1 DENY → renvoi en cuisine                          │
-│  1 ESCALATE → appel au patron (humain, ~5% des cas)  │
+│  2/3 APPROVE → passes                                │
+│  1 DENY → sent back to the kitchen                   │
+│  1 ESCALATE → call the patron (human, ~5% of cases)  │
 ├──────────────────────────────────────────────────────┤
 │              SOUS-CHEF MERGE                         │
-│  (dresse, envoie au pass)                            │
+│  (plates up, sends to the pass)                      │
 │                                                      │
 │  - Quality gates (/cli-audit-*)                      │
 │  - Merge + CI (tmux send-keys gate)                  │
-│  - Met a jour le carnet (shared-state.md)            │
-│  - Tourne en bypassPermissions                       │
+│  - Updates the carnet (shared-state.md)              │
+│  - Runs in bypassPermissions                         │
 └──────────────────────┬──────────────────────────────┘
                        │ SendMessage
 ┌──────────────────────▼──────────────────────────────┐
 │              COMMIS (x N)                            │
-│  (cuisinent, preparent, dressent)                    │
+│  (cook, prep, plate)                                 │
 │                                                      │
-│  - Chacun a son poste (worktree / projet)            │
-│  - Preparent leur plat (code, test, commit)          │
-│  - Annoncent "Pret !" au sous-chef-merge             │
-│  - NE DECIDENT PAS de l'envoi                        │
+│  - Each has their own station (worktree / project)   │
+│  - Prepare their plat (code, test, commit)           │
+│  - Announce "Pret !" to the sous-chef-merge          │
+│  - DO NOT DECIDE when to send out                    │
 └─────────────────────────────────────────────────────┘
 ```
 
-### Quand le patron (humain) intervient
+### When the patron (human) steps in
 
-**~5% des cas.** L'humain est appele uniquement quand un Sous-Chef vote ESCALATE :
+**~5% of cases.** The human is called only when a Sous-Chef votes ESCALATE:
 
-| Cas | Qui escalade | Pourquoi |
+| Case | Who escalates | Why |
 |---|---|---|
-| Edit sur `.github/workflows/` | sous-chef-scope | CI = impact global |
-| Nouvelle dep dans Cargo.toml | sous-chef-secu | Supply chain risk |
-| Suppression de tests | sous-chef-secu | Jamais auto-approve |
-| Diff > 200 lignes | sous-chef-qualite | Trop gros pour juger vite |
-| Fichier d'un autre worker | sous-chef-scope | Conflit potentiel |
+| Edit on `.github/workflows/` | sous-chef-scope | CI = global impact |
+| New dep in Cargo.toml | sous-chef-secu | Supply chain risk |
+| Test removal | sous-chef-secu | Never auto-approve |
+| Diff > 200 lines | sous-chef-qualite | Too big to judge quickly |
+| File from another worker | sous-chef-scope | Potential conflict |
 
-Tout le reste passe sans intervention humaine.
+Everything else passes without human intervention.
 
-### Le vocabulaire de la brigade
+### Brigade vocabulary
 
-| Brigade | Code | Exemple |
-|---------|------|---------|
-| **Carte du jour** | Revue zones sensibles (debut de sprint) | "ci.yml passe en 3/3, log_backend reste en 2/3" |
-| **Marche** | Inventaire du projet (git log, PRs, incidents) | "3 DENY sur ci.yml au sprint S3" |
-| **Produit frais** | Zone normale (2/3) sans incident | "src/features/ : 0 DENY en 3 sprints" |
-| **Produit sensible** | Zone 3/3 unanimite requise | "Cargo.toml : advisory rustls-pemfile" |
-| **Produit retire** | Hallucination passee → cas de test | "Auto-approve aveugle → G16" |
-| **Nouvelle recette** | Nouveau module a classifier | "log_backend → normal, self_tuning → sensible" |
-| Menu | PERT / roadmap | "Sprint S3 : 4 plats" |
-| Commande | Ticket / tache | "feat/hit-decision-tokens" |
-| Plat | Feature merged + CI verte | PR #88 merged |
-| Mise en place | shared-state.md "En cours" | Worker ecrit ses fichiers cibles |
-| Cuisson | Coding + tests | Worker code dans son worktree |
+| Brigade term | Meaning | Example |
+|---|---|---|
+| **Carte du jour** | Review of sensitive zones (sprint start) | "ci.yml moves to 3/3, log_backend stays 2/3" |
+| **Marche** | Project inventory (git log, PRs, incidents) | "3 DENYs on ci.yml during sprint S3" |
+| **Produit frais** | Normal zone (2/3) with no incidents | "src/features/ : 0 DENY in 3 sprints" |
+| **Produit sensible** | 3/3 unanimity required | "Cargo.toml: rustls-pemfile advisory" |
+| **Produit retire** | Past hallucination → now a test case | "Blind auto-approve → G16" |
+| **Nouvelle recette** | New module to classify | "log_backend → normal, self_tuning → sensitive" |
+| Menu | PERT / roadmap | "Sprint S3: 4 plats" |
+| Commande | Ticket / task | "feat/hit-decision-tokens" |
+| Plat | Feature merged + CI green | PR #88 merged |
+| Mise en place | shared-state.md "In progress" | Worker writes its target files |
+| Cuisson | Coding + tests | Worker codes in its worktree |
 | Dressage | Commit + cleanup | cargo fmt, clippy clean |
-| Gouter | Vote quorum des Sous-Chefs | "2/3 APPROVE (normal) ou 3/3 (sensible)" |
+| Gouter | Quorum vote by the Sous-Chefs | "2/3 APPROVE (normal) or 3/3 (sensitive)" |
 | Pass | CI pipeline | gh run watch |
-| Envoi | Merge + feu vert | "Envoyez ! feat/x merge." |
-| Renvoi | Gate failed ou quorum DENY | "Renvoie ! Le Sous-Chef Secu propose: ..." |
-| Appel au patron | ESCALATE (< 2%) | "Patron, edit sur ci.yml, 3 rounds sans consensus" |
-| Coup de feu | Phase parallele | 4 commis en meme temps |
-| Service | Sprint complet | Phase 0 → Phase N → rapport |
+| Envoi | Merge + green light | "Envoyez! feat/x merged." |
+| Renvoi | Gate failed or quorum DENY | "Renvoie! Sous-Chef Secu proposes: ..." |
+| Appel au patron | ESCALATE (< 2%) | "Patron, edit on ci.yml, 3 rounds without consensus" |
+| Coup de feu | Parallel phase | 4 commis at the same time |
+| Service | Full sprint | Phase 0 → Phase N → report |
 
-### Flux de communication
+### Communication flow
 
 ```
-Commis edite un fichier
-  → Chef envoie le diff aux 3 Sous-Chefs votants (parallele)
-  → 2/3 APPROVE → passe automatiquement (zero humain)
-  → 1 DENY → renvoi au commis avec la raison
-  → 1 ESCALATE → Chef notifie le patron (humain)
+Commis edits a file
+  → Chef sends the diff to the 3 voting Sous-Chefs (parallel)
+  → 2/3 APPROVE → passes automatically (zero human)
+  → 1 DENY → sent back to the commis with a reason
+  → 1 ESCALATE → Chef notifies the patron (human)
 
-Commis termine la cuisson
-  → "Pret !" au Sous-Chef Merge (SendMessage)
-  → Sous-Chef Merge goute (quality gates)
-  → SI bon :
-      → Sous-Chef Merge dresse et envoie (merge + CI)
-      → Sous-Chef Merge au Chef : "Plat envoye, table servie"
-      → Chef aux commis dependants : "Envoyez le suivant !"
-  → SI pas bon :
-      → Sous-Chef au Commis : "Renvoi ! Trop de sel dans fn X"
-      → Sous-Chef au Chef : "Renvoi sur plat Y, commis corrige"
+Commis finishes cooking
+  → "Pret !" to the Sous-Chef Merge (SendMessage)
+  → Sous-Chef Merge tastes (quality gates)
+  → IF good:
+      → Sous-Chef Merge plates up and sends (merge + CI)
+      → Sous-Chef Merge to Chef: "Plat sent, table served"
+      → Chef to dependent commis: "Envoyez the next one!"
+  → IF not good:
+      → Sous-Chef to Commis: "Renvoi! Too much salt in fn X"
+      → Sous-Chef to Chef: "Renvoi on plat Y, commis is fixing it"
 ```
 
 ## Input
@@ -157,12 +158,12 @@ Commis termine la cuisson
 
 ## Phase 0 — Mise en place
 
-**Avant tout, verifier s'il y a un sprint en cours ou en pause :**
+**First, check whether a sprint is currently running or paused:**
 
-Read `references/sprint-persistence.md`. Check `.claude/sprint-history/current/` :
-- Si un sprint est **PAUSED** → proposer : Resume / Rewind / Fresh / Abandonner
-- Si un sprint est **DONE** → lire les gotchas-learned et zones sensibles pour le nouveau sprint
-- Si pas d'historique → sprint neuf
+Read `references/sprint-persistence.md`. Check `.claude/sprint-history/current/`:
+- If a sprint is **PAUSED** → offer: Resume / Rewind / Fresh / Abandon
+- If a sprint is **DONE** → read the gotchas-learned and sensitive zones for the new sprint
+- If no history → fresh sprint
 
 Before generating anything, understand the project:
 
@@ -198,7 +199,7 @@ Use the detected type to:
 | Tool | Check | Install (Fedora/RHEL) | Install (macOS) | Install (Debian/Ubuntu) | Fallback |
 |------|-------|-----------------------|-----------------|-------------------------|----------|
 | tmux | `which tmux` | `sudo dnf install tmux` | `brew install tmux` | `sudo apt install tmux` | None — required |
-| tmuxinator | `which tmuxinator` | `brew install tmuxinator` (preferre) ou `gem install tmuxinator` | `brew install tmuxinator` | `gem install tmuxinator` | **Raw tmux script** — voir `references/raw-tmux-fallback.md` |
+| tmuxinator | `which tmuxinator` | `brew install tmuxinator` (preferred) or `gem install tmuxinator` | `brew install tmuxinator` | `gem install tmuxinator` | **Raw tmux script** — see `references/raw-tmux-fallback.md` |
 | claude | `which claude` | `npm i -g @anthropic-ai/claude-code` | `npm i -g @anthropic-ai/claude-code` | `npm i -g @anthropic-ai/claude-code` | None — required |
 | gh | `which gh` | `sudo dnf install gh` | `brew install gh` | `sudo apt install gh` | Manual CI checks |
 
@@ -212,109 +213,107 @@ grep -q "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS" ~/.claude/settings.json 2>/dev/nu
 
 If a tool is missing → **show the install command for the detected OS** and stop.
 
-**Exception : tmuxinator manquant N'EST PAS bloquant.** Si Ruby/gem n'est pas dispo (env air-gapped, OS immutable type Bluefin/Silverblue), generer le fallback raw-tmux a la place :
-- Lire `references/raw-tmux-fallback.md`
-- Generer `{project}/.claude/scripts/boss-{session}.sh` (chmod +x)
-- Documenter dans le rapport Phase 4 : "tmuxinator absent → fallback raw-tmux genere"
-- Lancer avec `bash {project}/.claude/scripts/boss-{session}.sh` au lieu de `tmuxinator start {session}`
+**Exception: missing tmuxinator is NOT a blocker.** If Ruby/gem is not available (air-gapped env, immutable OS like Bluefin/Silverblue), generate the raw-tmux fallback instead:
+- Read `references/raw-tmux-fallback.md`
+- Generate `{project}/.claude/scripts/boss-{session}.sh` (chmod +x)
+- Document in the Phase 4 report: "tmuxinator missing → raw-tmux fallback generated"
+- Launch with `bash {project}/.claude/scripts/boss-{session}.sh` instead of `tmuxinator start {session}`
 
-**Auto-fix configuration (G19, G20, G22) — do ALL of these automatically, don't ask :**
+**Auto-fix configuration (G19, G20, G22) — do ALL of these automatically, don't ask:**
 
-1. `~/.claude/settings.json` : ensure `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` + `skipDangerousModePermissionPrompt=true`
-2. `~/.claude.json` : ensure `"teammateMode": "tmux"`
-3. `{project}/.claude/settings.local.json` : ensure all permissions (build tools, shared-state, external repos, Obsidian vault, Team tools)
-4. Tmuxinator `on_project_start` : ensure auto-kick message with `sleep 12 && tmux send-keys ... &` (G20)
-5. If project has an Obsidian vault : add Edit/Read permissions for the vault path (G22)
-6. Warn user : **do NOT run `brew upgrade claude-code` while the session is running** (G18)
+1. `~/.claude/settings.json`: ensure `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` + `skipDangerousModePermissionPrompt=true`
+2. `~/.claude.json`: ensure `"teammateMode": "tmux"`
+3. `{project}/.claude/settings.local.json`: ensure all permissions (build tools, shared-state, external repos, Obsidian vault, Team tools)
+4. Tmuxinator `on_project_start`: ensure auto-kick message with `sleep 12 && tmux send-keys ... &` (G20)
+5. If project has an Obsidian vault: add Edit/Read permissions for the vault path (G22)
+6. Warn user: **do NOT run `brew upgrade claude-code` while the session is running** (G18)
 
 ### 0.4 — Choose model and brigade size (Mitosis)
 
-Read `references/simplified-model.md`. Two models existent — choisir selon le tier :
+Read `references/simplified-model.md`. Two models exist — pick based on tier:
 
-| Signal | Tier | Modele | Agents | Quality gates |
+| Signal | Tier | Model | Agents | Quality gates |
 |--------|------|--------|--------|---------------|
-| 1-2 tasks, single repo | **S** | Pas de brigade | 1 commis seul | Auto-check (proofreading) |
-| 3-4 tasks, single repo | **M** | **Stigmergie** | 1 sous-chef (3 lenses) + N commis | Adaptatif (reparation ADN) |
-| 5+ tasks or multi-repo | **L** | **Stigmergie** | 1 sous-chef (3 lenses) + N commis | Adaptatif (reparation ADN) |
-| 10+ tasks, monorepo, regulated | **XL** | **Brigade complete** | Chef + grappes sous-chefs + N commis | Complet (vote, audit trail) |
+| 1-2 tasks, single repo | **S** | No brigade | 1 commis alone | Auto-check (proofreading) |
+| 3-4 tasks, single repo | **M** | **Stigmergy** | 1 sous-chef (3 lenses) + N commis | Adaptive (DNA repair) |
+| 5+ tasks or multi-repo | **L** | **Stigmergy** | 1 sous-chef (3 lenses) + N commis | Adaptive (DNA repair) |
+| 10+ tasks, monorepo, regulated | **XL** | **Full brigade** | Chef + sous-chef clusters + N commis | Full (vote, audit trail) |
 
-**Tiers S/M/L** : le Chef genere les fichiers a Phase 0 puis disparait. Les commis s'auto-organisent via shared-state.md (Boids + stigmergie). Le Sous-Chef unique review avec 3 lenses. Les commis en echec s'auto-terminent (apoptose).
+**Tiers S/M/L**: the Chef generates files in Phase 0 and then disappears. Commis self-organize via shared-state.md (Boids + stigmergy). The single Sous-Chef reviews with 3 lenses. Commis that fail self-terminate (apoptosis).
 
-**Tier XL** : la brigade complete est maintenue pour la conformite reglementaire (audit trail des votes, tracabilite des decisions).
+**Tier XL**: the full brigade is kept for regulatory compliance (vote audit trail, decision traceability).
 
 For tier **S**: skip tmuxinator entirely. Use a single `claude` invocation with `--append-system-prompt` and one worktree.
 
-### Tier XL — Grappes de Sous-Chefs (Brigades de parties)
+### Tier XL — Sous-Chef clusters (Brigades de parties)
 
-Pour les gros projets (monorepo, multi-domaines, reglemente), chaque domaine a sa propre grappe de 3 sous-chefs. Chaque grappe vote en interne (2/3), puis les grappes votent entre elles (2/3 normal, 3/3 sensible).
+For large projects (monorepos, multi-domain, regulated), each domain has its own cluster of 3 sous-chefs. Each cluster votes internally (2/3), then the clusters vote among themselves (2/3 normal, 3/3 sensitive).
 
 ```
 Chef de Cuisine
   │
-  ├── Grappe SECURITE (3 sous-chefs) — vote interne 2/3
+  ├── SECURITY cluster (3 sous-chefs) — internal vote 2/3
   │   ├── sous-chef-secrets     (DLP, credentials, env vars)
-  │   ├── sous-chef-deps        (supply chain, advisories, licences)
-  │   └── sous-chef-perimeter   (scope, acces, permissions fichiers)
-  │   → Produit 1 avis consolide : APPROVE / DENY+solution
+  │   ├── sous-chef-deps        (supply chain, advisories, licenses)
+  │   └── sous-chef-perimeter   (scope, access, file permissions)
+  │   → Produces 1 consolidated verdict: APPROVE / DENY+solution
   │
-  ├── Grappe QUALITE (3 sous-chefs) — vote interne 2/3
+  ├── QUALITY cluster (3 sous-chefs) — internal vote 2/3
   │   ├── sous-chef-coherence   (mission, design, architecture)
-  │   ├── sous-chef-tests       (coverage, pyramide, regression)
+  │   ├── sous-chef-tests       (coverage, pyramid, regression)
   │   └── sous-chef-proprete    (code smells, dead code, naming)
-  │   → Produit 1 avis consolide
+  │   → Produces 1 consolidated verdict
   │
-  └── Grappe OPS (3 sous-chefs) — vote interne 2/3
+  └── OPS cluster (3 sous-chefs) — internal vote 2/3
       ├── sous-chef-ci          (pipelines, workflows, matrix)
       ├── sous-chef-deploy      (infra, docker, helm)
       └── sous-chef-perf        (benchmarks, timeouts, resources)
-      → Produit 1 avis consolide
+      → Produces 1 consolidated verdict
 
-Vote inter-grappes :
-  Zone normale : 2/3 grappes APPROVE → passe
-  Zone sensible : 3/3 grappes APPROVE → passe
-  DENY : la grappe qui DENY propose une solution
-  Rounds de resolution : identiques au tier M
+Inter-cluster vote:
+  Normal zone: 2/3 clusters APPROVE → passes
+  Sensitive zone: 3/3 clusters APPROVE → passes
+  DENY: the cluster that DENYs proposes a solution
+  Resolution rounds: identical to tier M
 ```
 
-Le tier XL c'est **9 sous-chefs + 1 merge = 10 agents de validation**. A utiliser uniquement quand le cout des erreurs justifie le cout des agents (reglemente, defense, finance).
+Tier XL means **9 sous-chefs + 1 merge = 10 validation agents**. Use it only when the cost of errors justifies the cost of the agents (regulated, defense, finance).
 
-**Logique de choix (le Chef decide au Phase 0) :**
+**Selection logic (the Chef decides in Phase 0):**
 
 ```
-Le Chef detecte le tier au demarrage :
-  - Nombre de taches → S/M/L
+The Chef detects the tier at startup:
+  - Number of tasks → S/M/L
   - Multi-repo → L minimum
-  - Fichier CONTRACTS.md ou compliance/ → XL
-  - Mention "regulated", "defense", "finance" dans README/CONTRIBUTING.md → XL
-  - L'utilisateur peut forcer : /cli-forge-boss --tier XL
+  - CONTRACTS.md file or compliance/ → XL
+  - Mention of "regulated", "defense", "finance" in README/CONTRIBUTING.md → XL
+  - User can force: /cli-forge-boss --tier XL
 ```
 
-**Confirmation de cout pour le tier XL (OBLIGATOIRE — auto-detection ou flag) :**
+**Cost confirmation for tier XL (MANDATORY — auto-detect or flag):**
 
-Le tier XL coute environ **5-8x** le tier L en tokens (10 agents de validation au lieu de ~2,
-chaque diff vote par 9 sous-chefs au lieu de 3, audit trail genere a chaque tour).
+Tier XL costs roughly **5-8x** the tier L token spend (10 validation agents instead of ~2, each diff voted on by 9 sous-chefs instead of 3, audit trail generated every round).
 
-Avant de spawner la brigade XL, **toujours** afficher et demander confirmation :
+Before spawning the XL brigade, **always** display and ask for confirmation:
 
 ```
-=== TIER XL DETECTE ===
-Raison : {detection_reason}  # ex: "CONTRACTS.md present" ou "--tier XL flag"
-Brigade : Chef + 9 Sous-Chefs (3 grappes) + 1 Sous-Chef Merge + N Commis
-Cout estime : ~5-8x le tier L (chaque diff vote par 9 agents au lieu de 3)
-Duree estimee : ~2-3x le tier L (rounds de resolution inter-grappes)
+=== TIER XL DETECTED ===
+Reason: {detection_reason}  # e.g., "CONTRACTS.md present" or "--tier XL flag"
+Brigade: Chef + 9 Sous-Chefs (3 clusters) + 1 Sous-Chef Merge + N Commis
+Estimated cost: ~5-8x tier L (each diff voted on by 9 agents instead of 3)
+Estimated duration: ~2-3x tier L (inter-cluster resolution rounds)
 
-Justification recommandee :
-  - Projet reglemente (defense, finance, sante)
-  - Audit trail legal requis
-  - Cout d'erreur > cout des agents
+Recommended justification:
+  - Regulated project (defense, finance, healthcare)
+  - Legal audit trail required
+  - Cost of errors > cost of agents
 
-Continuer avec XL ? [y/N/downgrade-to-L]
+Continue with XL? [y/N/downgrade-to-L]
 ```
 
-Si l'utilisateur repond `downgrade-to-L`, passer en tier L et noter dans le rapport
-Phase 4 : "Tier XL detecte mais downgrade L sur demande utilisateur".
+If the user answers `downgrade-to-L`, switch to tier L and note in the Phase 4 report: "Tier XL detected but downgraded to L at user request".
 
-**Cette confirmation est aussi obligatoire que celle de Phase 0.6 pour EXPLORATION.**
+**This confirmation is as mandatory as the Phase 0.6 confirmation for EXPLORATION.**
 
 ### 0.5 — Build coupling matrix
 
@@ -322,8 +321,8 @@ Read `references/conflict-resolution.md`. Before assigning tasks:
 
 1. Run `/cli-audit-tangle` on the project
 2. Build the coupling matrix (file × task: R/W)
-3. If W/W conflict on same file → assign to same commis OR sequence in PERT
-4. Mark "hot files" (Cargo.toml, ci.yml, mod.rs) → managed by Sous-Chef only
+3. If W/W conflict on the same file → assign to the same commis OR sequence in the PERT
+4. Mark "hot files" (Cargo.toml, ci.yml, mod.rs) → managed by the Sous-Chef only
 
 ### 0.6 — Identify exploration candidates
 
@@ -335,105 +334,105 @@ Read `references/parallel-exploration.md`. For each task, the Chef asks:
 
 EXPLORATION tasks use 2-3 commis on the same problem with different approaches. The Sous-Chef runs the comparison grid and the Chef picks the winner. **Confirm with user before launching** (2-3x token cost).
 
-## Phase 1 — Le menu (auto-detection, NE PAS DEMANDER)
+## Phase 1 — The menu (auto-detection, DO NOT ASK)
 
-**REGLE LANGUE : `git log --oneline -10` + `head -20 README.md`. Si le projet est en francais → TOUS les fichiers generes (prompts, shared-state, tmuxinator comments, rapports) sont en francais. Si en anglais → anglais. Le vocabulaire de la brigade (Menu, Commis, Sous-Chef) reste en francais quel que soit le projet.**
+**LANGUAGE RULE: run `git log --oneline -10` + `head -20 README.md`. If the project is in French → ALL generated files (prompts, shared-state, tmuxinator comments, reports) are in French. If English → English. The Brigade vocabulary (Menu, Commis, Sous-Chef) stays in French regardless of the project language.**
 
-**REGLE COMMITS : Les commis et le Sous-Chef Merge utilisent `cli-git-conventional` pour TOUS les commits. Ghostwriter style, zero marqueur AI, langue du projet.**
+**COMMITS RULE: commis and the Sous-Chef Merge use `cli-git-conventional` for ALL commits. Ghostwriter style, zero AI marker, project language.**
 
-**REGLE : Ne pose AUCUNE question si la reponse est dans le projet.**
-Lis TOUT avant de demander quoi que ce soit :
+**RULE: do NOT ask any question if the answer is in the project.**
+Read EVERYTHING before asking anything:
 
-1. **Quels plats ?** → Lire dans cet ordre jusqu'a trouver :
-   - `{project}/.claude/shared-state.md` section "Backlog" (travail du sprint precedent)
-   - Roadmap Obsidian (si vault specifie dans shared-state)
-   - `gh issue list` (issues ouvertes)
-   - `git log --oneline -20` (travail recent, ce qui manque)
-   - README.md section TODO/roadmap
-   - CONTRIBUTING.md section roadmap/next steps
-   Si TOUJOURS rien → demander
+1. **Which plats?** → Read in this order until found:
+   - `{project}/.claude/shared-state.md` "Backlog" section (work from the previous sprint)
+   - Obsidian roadmap (if vault is specified in shared-state)
+   - `gh issue list` (open issues)
+   - `git log --oneline -20` (recent work, what's missing)
+   - README.md TODO/roadmap section
+   - CONTRIBUTING.md roadmap/next steps section
+   Only if NOTHING found → ask
 
-2. **Combien de commis ?** → Compter les taches trouvees en 1, appliquer le tier (S/M/L/XL). Ne pas demander.
+2. **How many commis?** → Count the tasks found in step 1, apply the tier (S/M/L/XL). Don't ask.
 
-3. **Ordre d'envoi ?** → Deduire des dependances :
-   - `cli-audit-tangle` (couplages = sequence obligatoire)
-   - Si tache B touche un fichier cree par tache A → B depend de A
-   - Si pas de dependance → parallele
-   Ne pas demander.
+3. **Sending order?** → Derive from dependencies:
+   - `cli-audit-tangle` (couplings = required sequence)
+   - If task B touches a file created by task A → B depends on A
+   - Otherwise → parallel
+   Don't ask.
 
-4. **Plats hors carte ?** → Scanner :
-   - `ls {workspace}/` pour les repos voisins
-   - shared-state.md section "Contexte partage" (liens vers d'autres repos)
-   - README.md / CONTRIBUTING.md (references a d'autres projets)
-   Ne pas demander.
+4. **Plats off-menu?** → Scan:
+   - `ls {workspace}/` for neighbouring repos
+   - shared-state.md "Shared context" section (links to other repos)
+   - README.md / CONTRIBUTING.md (references to other projects)
+   Don't ask.
 
-5. **Quel niveau de degustation ?** → Deduire du tier :
+5. **What tasting level?** → Derive from the tier:
    - S → `/cli-audit-code` only
    - M → minimum viable (code + drift)
    - L → standard (code + drift + test + sync)
-   - XL → complet
-   Ne pas demander.
+   - XL → complete
+   Don't ask.
 
-6. **Branche de service ?** → `git branch -a | head` + CONTRIBUTING.md. C'est toujours ecrit. Ne pas demander.
+6. **Service branch?** → `git branch -a | head` + CONTRIBUTING.md. It's always written down. Don't ask.
 
-**Ne demander a l'utilisateur QUE si :**
-- Aucune source ne contient l'information (pas de roadmap, pas d'issues, pas de backlog)
-- Il y a une ambiguite critique (2 roadmaps contradictoires)
-- Le tier XL est detecte (confirmation cout tokens)
+**Only ask the user if:**
+- No source contains the information (no roadmap, no issues, no backlog)
+- There is a critical ambiguity (2 contradictory roadmaps)
+- Tier XL is detected (token cost confirmation)
 
-Presenter le menu deduit et demander confirmation : "Voici ce que je vais lancer. OK ?"
+Present the deduced menu and ask for confirmation: "Here's what I'm going to launch. OK?"
 
-## Phase 2 — La brigade s'installe
+## Phase 2 — The brigade sets up
 
 Read `references/templates.md` for templates. Generate:
 
-### 2.1 — Le carnet de cuisine (`{project}/.claude/shared-state.md`)
+### 2.1 — The carnet de cuisine (`{project}/.claude/shared-state.md`)
 
 Read `references/shared-state-template.md` and customize.
 
-### 2.2 — Les consignes du Chef (`{project}/.claude/prompts/chef-{session}.md`)
+### 2.2 — The Chef's instructions (`{project}/.claude/prompts/chef-{session}.md`)
 
-**OBLIGATION ABSOLUE : Read `references/conductor-prompt-template.md` BEFORE generating the prompt.**
-**Le prompt genere DOIT contenir les 3 Sous-Chefs votants + le Sous-Chef Merge.**
-**Si le prompt ne contient pas "sous-chef-scope", "sous-chef-secu", "sous-chef-qualite", "sous-chef-merge" → le prompt est INVALIDE.**
+**ABSOLUTE REQUIREMENT: read `references/conductor-prompt-template.md` BEFORE generating the prompt.**
+**The generated prompt MUST contain the 3 voting Sous-Chefs + the Sous-Chef Merge.**
+**If the prompt does not contain "sous-chef-scope", "sous-chef-secu", "sous-chef-qualite", "sous-chef-merge" → the prompt is INVALID.**
 
-Le prompt du Chef DOIT inclure dans cet ordre :
+The Chef prompt MUST include, in this order:
 1. TeamCreate
-2. **Spawn des 3 Sous-Chefs votants** (scope, secu, qualite) — copier VERBATIM depuis le template
-3. **Spawn du Sous-Chef Merge** — copier VERBATIM depuis le template
-4. **Protocole de vote avec rounds de resolution** — copier VERBATIM depuis le template
-5. Spawn des N Commis
+2. **Spawn the 3 voting Sous-Chefs** (scope, secu, qualite) — copy VERBATIM from the template
+3. **Spawn the Sous-Chef Merge** — copy VERBATIM from the template
+4. **Voting protocol with resolution rounds** — copy VERBATIM from the template
+5. Spawn the N Commis
 6. PERT
-7. Shutdown protocol (avec revue zones sensibles)
+7. Shutdown protocol (with sensitive-zone review)
 
-Le Chef :
+The Chef:
 - Creates the team (TeamCreate)
-- Spawns 3 Sous-Chefs votants + 1 Sous-Chef Merge + N Commis
-- Les permissions des Commis passent par les 3 Sous-Chefs (quorum 2/3 normal, 3/3 sensible)
-- Le Sous-Chef Merge gere les quality gates, merges, CI
-- Produces the rapport de service
+- Spawns 3 voting Sous-Chefs + 1 Sous-Chef Merge + N Commis
+- Commis permissions flow through the 3 Sous-Chefs (quorum 2/3 normal, 3/3 sensitive)
+- The Sous-Chef Merge handles quality gates, merges, CI
+- Produces the service report
 
-### 2.3 — Les 3 Sous-Chefs votants (OBLIGATOIRE — embedded dans le prompt Chef)
+### 2.3 — The 3 voting Sous-Chefs (MANDATORY — embedded in the Chef prompt)
 
-**COPIER les prompts des 3 sous-chefs depuis `references/conductor-prompt-template.md` section "Spawn les 3 Sous-Chefs".**
+**COPY the prompts of the 3 sous-chefs from `references/conductor-prompt-template.md` section "Spawn the 3 Sous-Chefs".**
 
-Chacun vote independamment : APPROVE / DENY+solution / CONCERN+solution.
-Rounds de resolution si pas de consensus. Escalade humaine < 2%.
+Each votes independently: APPROVE / DENY+solution / CONCERN+solution.
+Resolution rounds if no consensus. Human escalation < 2%.
 
-### 2.4 — Le Sous-Chef Merge (OBLIGATOIRE — embedded dans le prompt Chef)
+### 2.4 — The Sous-Chef Merge (MANDATORY — embedded in the Chef prompt)
 
-**COPIER le prompt depuis `references/conductor-prompt-template.md` section "Spawn le Sous-Chef Merge".**
+**COPY the prompt from `references/conductor-prompt-template.md` section "Spawn the Sous-Chef Merge".**
 
-Gere les quality gates, merges, CI. Ne vote pas sur les permissions.
+Handles quality gates, merges, CI. Does not vote on permissions.
 
-### 2.5 — Les fiches de poste des Commis (embedded)
+### 2.5 — Commis station sheets (embedded)
 
 Each commis prompt includes:
 - Shared state path (absolute)
-- Mission (le plat a preparer)
-- Steps (la recette)
-- SendMessage au Sous-Chef Merge quand pret (NOT au Chef)
-- Les permissions passent par le quorum des 3 Sous-Chefs (le commis ne le sait pas)
+- Mission (the plat to prepare)
+- Steps (the recipe)
+- SendMessage to the Sous-Chef Merge when ready (NOT to the Chef)
+- Permissions go through the quorum of the 3 Sous-Chefs (the commis does not know this)
 
 ### 2.5 — Tmuxinator (`~/.config/tmuxinator/{session}.yml`)
 
@@ -452,7 +451,7 @@ Read `references/permissions-template.md`.
 
 **ALWAYS** include gotchas from `references/gotchas-boss.md` in the chef prompt.
 
-## Phase 3 — Verification avant service
+## Phase 3 — Check before service
 
 1. Check tmuxinator syntax: `tmuxinator doctor`
 2. Verify all paths exist
@@ -463,30 +462,30 @@ Read `references/permissions-template.md`.
 ## Phase 4 — Bon appétit
 
 Present to the user:
-1. La brigade (diagram)
-2. Le menu (PERT)
+1. The brigade (diagram)
+2. The menu (PERT)
 3. Files generated
 4. How to launch: `tmuxinator start {session}`
 5. Gotchas to watch for
 
-## Phase 5 — Lancer le Sous-Chef automatique
+## Phase 5 — Launch the automatic Sous-Chef
 
-Apres que l'utilisateur lance `tmuxinator start`, **lancer automatiquement** le Sous-Chef via `/loop` :
+After the user runs `tmuxinator start`, **automatically launch** the Sous-Chef via `/loop`:
 
 ```
-/loop 2m Sous-Chef check. Regarde le pane boss {session}:0.0 avec tmux capture-pane. Si permission en attente ("Do you want to make this edit"), lis le diff. Zones sensibles : parse le bloc BOSS_SENSITIVE_PATHS de {project}/.claude/shared-state.md (extrait entre <!-- BOSS_SENSITIVE_PATHS:START --> et :END, dans le fence ```sensitive-paths```, ignore les lignes # et vides, garde la 1re colonne). Si le diff touche un fichier matchant un de ces globs → SKIP (NE PAS approuver). Zones normales : tout le reste → approuve avec tmux send-keys -t {session}:0.0 Enter. PUIS recheck immediatement (sleep 5 + capture-pane) — tant qu'il y a des permissions en file, continue a approuver. Arrete quand le boss est libre. Log chaque action.
+/loop 2m Sous-Chef check. Look at the boss pane {session}:0.0 with tmux capture-pane. If a permission is waiting ("Do you want to make this edit"), read the diff. Sensitive zones: parse the BOSS_SENSITIVE_PATHS block of {project}/.claude/shared-state.md (between <!-- BOSS_SENSITIVE_PATHS:START --> and :END, inside the ```sensitive-paths``` fence, ignore # and empty lines, keep the 1st column). If the diff touches a file matching one of these globs → SKIP (DO NOT approve). Normal zones: everything else → approve with tmux send-keys -t {session}:0.0 Enter. THEN recheck immediately (sleep 5 + capture-pane) — as long as there are queued permissions, keep approving. Stop when the boss is free. Log every action.
 ```
 
-**Pourquoi ce parsing structure** : avant, les zones sensibles etaient injectees comme texte opaque dans le prompt `/loop`. Resultat : le boss ne pouvait pas les mettre a jour entre deux loops (le prompt etait fige a la creation). Maintenant, le `/loop` re-lit le bloc a chaque tick, donc le Chef ou l'humain peut ajouter une zone sensible en plein sprint et la prochaine iteration la prend en compte.
+**Why the structured parsing**: previously, sensitive zones were injected as opaque text into the `/loop` prompt. Result: the boss couldn't update them between loops (the prompt was frozen at creation time). Now the `/loop` re-reads the block on every tick, so the Chef or the human can add a sensitive zone mid-sprint and the next iteration picks it up.
 
-Le Sous-Chef tourne dans la session de l'utilisateur (cette session, pas dans tmux). Il surveille le boss toutes les 2 minutes et :
-- **APPROVE** les edits en zone normale (src/, tests/, shared-state.md)
-- **SKIP** les edits en zone sensible (CI, deps, auth, security) — le boss reste bloque, l'utilisateur decidera a son retour
-- **Log** chaque decision pour tracabilite
+The Sous-Chef runs in the user's session (this session, not inside tmux). It watches the boss every 2 minutes and:
+- **APPROVES** edits in normal zones (src/, tests/, shared-state.md)
+- **SKIPS** edits in sensitive zones (CI, deps, auth, security) — the boss stays blocked, the user will decide when they return
+- **Logs** every decision for traceability
 
-L'utilisateur peut partir. Le Sous-Chef veille.
+The user can leave. The Sous-Chef keeps watch.
 
-Pour arreter : `CronDelete {job_id}`
+To stop: `CronDelete {job_id}`
 
 ## Reference files
 
@@ -494,30 +493,30 @@ Pour arreter : `CronDelete {job_id}`
 |------|---------|
 | `references/gotchas-boss.md` | 14 known pitfalls and fixes |
 | `references/templates.md` | Index of all templates |
-| `references/shared-state-template.md` | Le carnet de cuisine |
-| `references/conductor-prompt-template.md` | Consignes Chef + Sous-Chef + Commis |
+| `references/shared-state-template.md` | The carnet de cuisine |
+| `references/conductor-prompt-template.md` | Chef + Sous-Chef + Commis instructions |
 | `references/tmuxinator-template.md` | Tmuxinator YAML |
 | `references/permissions-template.md` | settings.local.json |
-| `references/quality-gates.md` | La carte des degustations (audit skills) |
-| `references/conflict-resolution.md` | Arbre de decision, matrice de couplage, file locking, escalade, stigmergie, patch bankruptcy, divergence, convergence, sprint health |
-| `references/anti-patterns-boss.md` | 10 anti-patterns nommes de la brigade (Ping-Pong, Ghost Commis, God Commis, etc.) |
-| `references/sprint-persistence.md` | Checkpoint, resume, rewind, fresh restart, sprint history (inspire de jj operation log) |
-| `references/simplified-model.md` | Modele stigmergie pour tiers S/M/L — Boids, quorum sensing, reparation ADN, reaction-diffusion, apoptose |
-| `references/parallel-exploration.md` | Hypotheses concurrentes, approches paralleles, grille de comparaison |
-| `references/raw-tmux-fallback.md` | Script bash POSIX equivalent au YAML tmuxinator (pour env sans Ruby) |
+| `references/quality-gates.md` | The tasting card (audit skills) |
+| `references/conflict-resolution.md` | Decision tree, coupling matrix, file locking, escalation, stigmergy, patch bankruptcy, divergence, convergence, sprint health |
+| `references/anti-patterns-boss.md` | 10 named brigade anti-patterns (Ping-Pong, Ghost Commis, God Commis, etc.) |
+| `references/sprint-persistence.md` | Checkpoint, resume, rewind, fresh restart, sprint history (inspired by jj operation log) |
+| `references/simplified-model.md` | Stigmergy model for tiers S/M/L — Boids, quorum sensing, DNA repair, reaction-diffusion, apoptosis |
+| `references/parallel-exploration.md` | Competing hypotheses, parallel approaches, comparison grid |
+| `references/raw-tmux-fallback.md` | POSIX bash script equivalent to the tmuxinator YAML (for Ruby-less environments) |
 
 ## Integration with other cli-* skills
 
 | Skill | Relation |
 |-------|----------|
-| `/cli-audit-tangle` | Phase 0 — identifier les couplages pour assigner les modules aux commis sans conflits |
-| `/cli-audit-code` | Quality gate par merge — le sous-chef l'execute avant chaque merge |
-| `/cli-audit-drift` | Quality gate par merge — verifie que le code respecte les contrats |
-| `/cli-audit-test` | Quality gate par merge — verifie la pyramide de tests |
-| `/cli-audit-sync` | Quality gate post-merge — verifie la coherence docs/code |
-| `/cli-cycle` | Fin de service — scorecard globale du sprint |
-| `/cli-forge-pipeline` | Optimiser le pipeline CI que les commis vont declencher |
-| `/cli-forge-tree` | Valider la structure du projet avant d'assigner les worktrees |
-| `/cli-git-conventional` | **TOUJOURS** — tous les commits des commis et du Sous-Chef Merge passent par ghostwriter. Zero AI markers |
-| `/cli-forge-doc` | Si quality gate detecte doc manquante — le Sous-Chef Merge declenche la generation |
-| `/cli-forge-schema` | Si quality gate detecte diagramme manquant — generation Mermaid |
+| `/cli-audit-tangle` | Phase 0 — identify couplings to assign modules to commis without conflicts |
+| `/cli-audit-code` | Quality gate per merge — the sous-chef runs it before each merge |
+| `/cli-audit-drift` | Quality gate per merge — checks that code honours the contracts |
+| `/cli-audit-test` | Quality gate per merge — checks the test pyramid |
+| `/cli-audit-sync` | Post-merge quality gate — checks doc/code coherence |
+| `/cli-cycle` | End of service — global sprint scorecard |
+| `/cli-forge-pipeline` | Optimize the CI pipeline the commis will trigger |
+| `/cli-forge-tree` | Validate the project structure before assigning worktrees |
+| `/cli-git-conventional` | **ALWAYS** — every commit from the commis and Sous-Chef Merge goes through ghostwriter. Zero AI markers |
+| `/cli-forge-doc` | If a quality gate detects missing docs — the Sous-Chef Merge triggers generation |
+| `/cli-forge-schema` | If a quality gate detects a missing diagram — Mermaid generation |

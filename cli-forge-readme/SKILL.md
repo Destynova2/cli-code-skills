@@ -8,7 +8,7 @@ agent: general-purpose
 
 > **Optimization:** This skill uses on-demand loading. Heavy content lives in `references/` and is loaded only when needed.
 
-> **Language rule:** Detect the project's primary language (from README, comments, docs, commit messages). Output the README in that language. If the project is bilingual, ask the user which language to use before proceeding.
+> **Language rule:** Skill instructions are written in English. When generating user-facing output, detect the project's primary language (from README, comments, docs, commit messages) and produce the README in that language. If the project is bilingual, ask the user which language to use before proceeding.
 
 # README Generator — Production First
 
@@ -119,9 +119,9 @@ RCI = Σ(wᵢ × sᵢ) / Σ(wᵢ) × 10
 
 | Skill | Relation |
 |-------|----------|
-| `/cli-forge-tree` | Generer la section "Project Structure" automatiquement |
-| `/cli-forge-schema` | Generer les diagrammes embarques dans le README |
-| `/cli-forge-doc` | Le README est le point d'entree de la doc complete |
-| `/cli-audit-doc` | Auditer la qualite du README genere |
-| `/cli-audit-sync` | Verifier que le README reste coherent avec le code |
-| `/cli-cycle` | Inclus dans l'audit documentaire du cycle |
+| `/cli-forge-tree` | Generate the "Project Structure" section automatically |
+| `/cli-forge-schema` | Generate the diagrams embedded in the README |
+| `/cli-forge-doc` | The README is the entry point for the full documentation |
+| `/cli-audit-doc` | Audit the quality of the generated README |
+| `/cli-audit-sync` | Verify that the README stays coherent with the code |
+| `/cli-cycle` | Included in the cycle's documentation audit |

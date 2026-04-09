@@ -1,59 +1,59 @@
-# Anti-Patterns Brigade — Detection et Resolution
+# Brigade Anti-Patterns — Detection and Resolution
 
-> **When to read:** Pendant l'execution (Phase 2+), pour identifier et corriger les dysfonctionnements de la brigade.
-
----
-
-## Anti-patterns nommes
-
-| # | Nom | Detection | Severite | Resolution |
-|---|-----|-----------|----------|------------|
-| B1 | **Ping-Pong Rejection** | Meme commis × meme sous-chef → reject le meme diff 3+ fois | Critique | Patch Bankruptcy : re-assigner ou redefinir la spec |
-| B2 | **Hot File Thrashing** | 3+ commis editent le meme fichier dans le meme sprint | Majeur | Sequencer les merges (G15) ; marquer le fichier en zone sensible (3/3) |
-| B3 | **Ghost Commis** | Commis assigne mais aucun commit/message depuis > 30min | Majeur | Timeout, re-assigner, diagnostiquer (NFD : peut-il communiquer ?) |
-| B4 | **Gate Consensus Flip** | Sous-chef approuve un diff puis le rejette au round suivant (ou inverse) | Majeur | Auditer le sous-chef — ses regles sont incoherentes |
-| B5 | **God Commis** | Commis touche > 50% des fichiers du sprint OU > 5 taches independantes | Majeur | Splitter, re-assigner, ajouter un commis |
-| B6 | **Speculative Task** | Commis commence avant que ses tokens de dependance soient deposes | Mineur | Rappeler la regle stigmergie ; si intentionnel, marquer comme EXPLORATION |
-| B7 | **Dead Branch** | Branche d'un commis existe depuis > 2 sprints sans merge | Mineur | Archiver, nettoyer, notifier |
-| B8 | **Feature Envy Inter-Commis** | Commis A depend de > 3 outputs de Commis B | Majeur | Co-assigner au meme commis OU pre-calculer la dependance partagee |
-| B9 | **Sous-Chef Bypass** | Commis merge directement sans passer par le vote | Critique | Bloquer les permissions ; le commis ne doit JAMAIS avoir push sur la branche principale |
-| B10 | **Over-Staffing** | 5+ commis pour < 3 taches independantes | Mineur | Reduire la brigade (mitosis tier S/M) |
+> **When to read:** During execution (Phase 2+), to identify and fix brigade dysfunctions.
 
 ---
 
-## Detection heuristique
+## Named anti-patterns
+
+| # | Name | Detection | Severity | Resolution |
+|---|------|-----------|----------|------------|
+| B1 | **Ping-Pong Rejection** | Same commis × same sous-chef → rejects the same diff 3+ times | Critical | Patch Bankruptcy: reassign or redefine the spec |
+| B2 | **Hot File Thrashing** | 3+ commis edit the same file during the same sprint | Major | Sequence the merges (G15); mark the file as a sensitive zone (3/3) |
+| B3 | **Ghost Commis** | Commis assigned but no commit/message for > 30min | Major | Timeout, reassign, diagnose (NFD: can it communicate?) |
+| B4 | **Gate Consensus Flip** | Sous-chef approves a diff then rejects it in the next round (or vice versa) | Major | Audit the sous-chef — its rules are inconsistent |
+| B5 | **God Commis** | Commis touches > 50% of sprint files OR > 5 independent tasks | Major | Split, reassign, add another commis |
+| B6 | **Speculative Task** | Commis starts before its dependency tokens are dropped | Minor | Remind the stigmergy rule; if intentional, mark as EXPLORATION |
+| B7 | **Dead Branch** | A commis's branch has existed > 2 sprints without merge | Minor | Archive, clean up, notify |
+| B8 | **Inter-Commis Feature Envy** | Commis A depends on > 3 outputs from Commis B | Major | Co-assign to the same commis OR precompute the shared dependency |
+| B9 | **Sous-Chef Bypass** | Commis merges directly without going through the vote | Critical | Block the permissions; a commis must NEVER push to the main branch |
+| B10 | **Over-Staffing** | 5+ commis for < 3 independent tasks | Minor | Shrink the brigade (mitosis tier S/M) |
+
+---
+
+## Detection heuristics
 
 ### B1 — Ping-Pong Rejection
 ```
-Pour chaque paire (commis, sous-chef) :
-  count = nombre de rejets consecutifs sur le meme fichier/diff
+For each (commis, sous-chef) pair:
+  count = number of consecutive rejections on the same file/diff
   IF count >= 3 → PATCH BANKRUPTCY
 ```
 
 ### B3 — Ghost Commis
 ```
-Pour chaque commis actif :
-  last_activity = max(dernier commit, dernier SendMessage, dernier edit shared-state)
+For each active commis:
+  last_activity = max(last commit, last SendMessage, last shared-state edit)
   IF now - last_activity > 30min → GHOST
-  Diagnostic NFD :
-    1. Le commis peut-il lire shared-state.md ? (test read)
-    2. Le commis peut-il ecrire dans son worktree ? (test write)
-    3. Le commis peut-il envoyer un SendMessage ? (test comm)
-    SI echec → probleme de communication, pas de performance
+  NFD diagnosis:
+    1. Can the commis read shared-state.md? (read test)
+    2. Can the commis write to its worktree? (write test)
+    3. Can the commis send a SendMessage? (comm test)
+    IF any fails → communication problem, not performance
 ```
 
 ### B5 — God Commis
 ```
-Pour chaque commis :
+For each commis:
   files_ratio = files_touched(commis) / total_files_sprint
-  task_count = nombre de taches assignees
+  task_count = number of assigned tasks
   IF files_ratio > 0.5 OR task_count > 5 → GOD COMMIS
 ```
 
-### B8 — Feature Envy Inter-Commis
+### B8 — Inter-Commis Feature Envy
 ```
-Pour chaque paire (commis_A, commis_B) :
-  deps = nombre de tokens de A consommes par B
+For each (commis_A, commis_B) pair:
+  deps = number of tokens from A consumed by B
   IF deps > 3 → FEATURE ENVY
-  → Co-assigner ou pre-calculer
+  → Co-assign or precompute
 ```

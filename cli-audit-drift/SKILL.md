@@ -22,21 +22,21 @@ allowed-tools:
 
 > **Optimization:** This skill uses on-demand loading. Heavy content lives in `references/` and is loaded only when needed.
 
-> **Language rule:** Detect the project's primary language (from README, comments, docs, commit messages). Output your report in that language. If the project is bilingual, ask the user which language to use before proceeding.
+> **Language rule:** Skill instructions are written in English. When generating user-facing output (reports, files, documentation), detect the project's primary language (from README, comments, docs, commit messages) and produce the output in that language. If the project is bilingual, ask the user which language to use before proceeding.
 
 # Audit Drift — Semantic Conformity Scanner
 
 Detect silent behavioral drift between what code **was supposed to do** (intention) and what it **actually does** (implementation). The most dangerous bugs are not crashes — they are functions that still run, still return values, but no longer honor their original contract.
 
-> "Le corbeau de Nouvelle-Calédonie ne subit pas son environnement — il identifie l'inadéquation entre ce qu'il voulait faire et ce qui s'est passé. Pas une erreur bruyante. Un résultat qui ne correspond pas à l'intention."
+> "The New Caledonian crow does not merely endure its environment — it identifies the mismatch between what it intended to do and what actually happened. Not a noisy error. A result that does not match the intention."
 
 ## Core Principle — Three biological mechanisms
 
 | Organism / mechanism | What it does in nature | What it does in this skill |
 |----------------------|------------------------|----------------------------|
-| **Corbeau de Nouvelle-Calédonie** | Detects the gap between intention and result | Compares CONTRACTS.md (intention) against code (behavior). Names the gap precisely. Asks if intentional or accidental |
-| **Autophagie cellulaire** | Continuous surveillance, isolates damaged components | Scans all contracted functions, isolates non-conforming code, proposes minimal correction or contract update |
-| **Repliement protéique + chaperones** | A 1D amino-acid sequence folds into a 3D functional structure; chaperones (HSP60/70) detect misfolds and force a clean re-fold from scratch | Contract (intent, 1D) "folds" into code (behavior, 3D); detected drift triggers a *minimal re-derivation from the contract*, never a patch on top of the drifted state. Removed contracts trigger explicit code deletion (ubiquitin tag) |
+| **New Caledonian crow** | Detects the gap between intention and result | Compares CONTRACTS.md (intention) against code (behavior). Names the gap precisely. Asks if intentional or accidental |
+| **Cellular autophagy** | Continuous surveillance, isolates damaged components | Scans all contracted functions, isolates non-conforming code, proposes minimal correction or contract update |
+| **Protein folding + chaperones** | A 1D amino-acid sequence folds into a 3D functional structure; chaperones (HSP60/70) detect misfolds and force a clean re-fold from scratch | Contract (intent, 1D) "folds" into code (behavior, 3D); detected drift triggers a *minimal re-derivation from the contract*, never a patch on top of the drifted state. Removed contracts trigger explicit code deletion (ubiquitin tag) |
 
 ### Why folding is the unifying frame
 
@@ -101,7 +101,7 @@ For each contracted function:
 2. Read the full implementation
 3. If the function calls other contracted functions, note the chain
 
-### Step 3 — Scan for drift (Corbeau)
+### Step 3 — Scan for drift (Crow)
 
 For each contracted function, check:
 
@@ -121,13 +121,13 @@ For each contracted function, check:
 
 Read `references/drift-detection-rules.md` for detailed detection heuristics.
 
-### Step 4 — Classify findings (Autophagie)
+### Step 4 — Classify findings (Autophagy)
 
 For each detected drift:
 
 | Classification | Meaning | Action |
 |---------------|---------|--------|
-| **Louper** | Unintentional deviation from contract | Propose minimal fix (re-fold from contract, do not patch) |
+| **Miss** | Unintentional deviation from contract | Propose minimal fix (re-fold from contract, do not patch) |
 | **Evolution** | Intentional change, contract not updated | Propose contract update + alert stakeholders |
 | **Ambiguity** | Contract is vague, implementation chose one interpretation | Propose contract clarification |
 | **Stale contract** | Contract references code that no longer exists | Propose contract cleanup |
@@ -139,7 +139,7 @@ Use the output format below.
 
 ### Step 6 — Update drift history
 
-If drifts were found, propose additions to the "Historique des dérives connues" section of each affected contract.
+If drifts were found, propose additions to the "Known drift history" section of each affected contract.
 
 ## Bootstrap Mode
 
@@ -171,7 +171,7 @@ When no CONTRACTS.md exists, the skill switches from audit to generation:
 **Date:** {date}
 **Scope:** {what was scanned}
 **Contracts loaded:** {N} functions from CONTRACTS.md
-**Drifts detected:** {N} ({loupers} loupers, {evolutions} evolutions, {ambiguities} ambiguities)
+**Drifts detected:** {N} ({misses} misses, {evolutions} evolutions, {ambiguities} ambiguities)
 
 ## Drift Report
 
@@ -185,7 +185,7 @@ When no CONTRACTS.md exists, the skill switches from audit to generation:
 
 **Recommendation:**
 - {action: fix / update contract / clarify / ask PO}
-- {minimal code change if louper}
+- {minimal code change if miss}
 
 ---
 (repeat for each drift)
@@ -194,7 +194,7 @@ When no CONTRACTS.md exists, the skill switches from audit to generation:
 
 | Function | Status | Last verified | Drifts found |
 |----------|--------|--------------|-------------|
-| mask(data, fields) | DRIFT | {date} | 1 louper |
+| mask(data, fields) | DRIFT | {date} | 1 miss |
 | calculate_price() | CLEAN | {date} | 0 |
 | ... | | | |
 
@@ -224,7 +224,7 @@ When no CONTRACTS.md exists, the skill switches from audit to generation:
 
 ## Rules for the Scanner
 
-1. **Never auto-fix silently.** Name the gap, classify it, propose the fix — but always ask. The corbeau identifies inadequacy before acting.
+1. **Never auto-fix silently.** Name the gap, classify it, propose the fix — but always ask. The crow identifies inadequacy before acting.
 2. **Contract is truth until proven intentionally outdated.** If code disagrees with the contract, the code is suspect — not the contract. Only the human decides to update the contract.
 3. **Minimal fixes only.** Don't refactor. Don't improve. Fix the exact drift, nothing more.
 4. **Check recent changes first.** `git diff` and `git log` on contracted functions are the first place drift appears.

@@ -8,14 +8,14 @@
 
 | # | Anti-Pattern | Biology/Physics | Detection | Severity |
 |---|-------------|----------------|-----------|----------|
-| 1 | **God Function** | Fourmi de feu agrippant 12 voisines | god_score > threshold, in° + out° + betweenness all high | Critical |
-| 2 | **Circular Dependency** | Nœud d'ADN — topoisomérase needed | SCC with > 1 node across module boundaries | Critical |
-| 3 | **Shotgun Surgery** | Couper un brin casse 10 autres | One change requires modifying > 3 files/modules | High |
-| 4 | **Feature Envy** | Fonction qui appelle plus l'extérieur que son module | out-degree to other modules > out-degree within module | High |
-| 5 | **Dead Weight** | Cellule morte non éliminée (pas d'apoptose) | in_degree = 0, not entry point, last modified > 3 months | Warning |
-| 6 | **Hub and Spoke** | Étoile de mer sans redondance — hub tombe, tout tombe | One module has > 50% of all inter-module edges | High |
-| 7 | **Layering Violation** | Courant qui remonte (court-circuit) | Lower layer calls upper layer (e.g., data layer calls API layer) | Critical |
-| 8 | **Copy-Paste Cluster** | Clones cellulaires — même code, divergence silencieuse | Multiple functions with near-identical call patterns (same out-edges) | Warning |
+| 1 | **God Function** | Fire ant gripping 12 neighbors | god_score > threshold, in° + out° + betweenness all high | Critical |
+| 2 | **Circular Dependency** | DNA knot — topoisomerase needed | SCC with > 1 node across module boundaries | Critical |
+| 3 | **Shotgun Surgery** | Cutting one strand breaks 10 others | One change requires modifying > 3 files/modules | High |
+| 4 | **Feature Envy** | Function that calls outside more than its own module | out-degree to other modules > out-degree within module | High |
+| 5 | **Dead Weight** | Dead cell not eliminated (no apoptosis) | in_degree = 0, not entry point, last modified > 3 months | Warning |
+| 6 | **Hub and Spoke** | Starfish without redundancy — hub falls, everything falls | One module has > 50% of all inter-module edges | High |
+| 7 | **Layering Violation** | Current flowing upward (short circuit) | Lower layer calls upper layer (e.g., data layer calls API layer) | Critical |
+| 8 | **Copy-Paste Cluster** | Cellular clones — same code, silent divergence | Multiple functions with near-identical call patterns (same out-edges) | Warning |
 
 ---
 

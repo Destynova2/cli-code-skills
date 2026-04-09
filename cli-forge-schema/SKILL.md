@@ -14,7 +14,7 @@ allowed-tools:
 
 > **Optimization:** This skill uses on-demand loading. Heavy content lives in `references/` and is loaded only when needed.
 
-> **Language rule:** Detect the project's primary language (from README, comments, docs, commit messages). Output labels, titles, and annotations in that language. If the project is bilingual, ask the user which language to use before proceeding.
+> **Language rule:** Skill instructions are written in English. When generating user-facing output, detect the project's primary language (from README, comments, docs, commit messages) and produce labels, titles, and annotations in that language. If the project is bilingual, ask the user which language to use before proceeding.
 
 # Schema Forge — Clear Diagrams, Zero Syntax Errors
 
@@ -229,9 +229,9 @@ Read `references/diagram-types.md` for detailed syntax and GitHub-tested example
 
 | Skill | Relation |
 |-------|----------|
-| `/cli-forge-hld` | Generer les diagrammes C4 L1-L2 d'un HLD |
-| `/cli-forge-lld` | Generer les diagrammes C4 L3-L4, sequence, classe d'un LLD |
-| `/cli-forge-readme` | Generer les diagrammes embarques dans un README |
-| `/cli-audit-tangle` | Visualiser le graphe d'appels et les cycles detectes |
-| `/cli-forge-pipeline` | Visualiser le DAG du pipeline CI/CD |
-| `/cli-forge-tree` | Representer la structure de projet en diagramme |
+| `/cli-forge-hld` | Generate the C4 L1-L2 diagrams of an HLD |
+| `/cli-forge-lld` | Generate the C4 L3-L4, sequence, and class diagrams of an LLD |
+| `/cli-forge-readme` | Generate the diagrams embedded in a README |
+| `/cli-audit-tangle` | Visualize the call graph and detected cycles |
+| `/cli-forge-pipeline` | Visualize the CI/CD pipeline DAG |
+| `/cli-forge-tree` | Render the project structure as a diagram |

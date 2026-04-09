@@ -8,7 +8,7 @@ agent: general-purpose
 
 > **Optimization:** This skill uses on-demand loading. Heavy content lives in `references/` and is loaded only when needed.
 
-> **Language rule:** Detect the project's primary language (from README, comments, docs, commit messages). Output your report in that language. If the project is bilingual, ask the user which language to use before proceeding.
+> **Language rule:** Skill instructions are written in English. When generating user-facing output, detect the project's primary language (from README, comments, docs, commit messages) and produce the output in that language. If the project is bilingual, ask the user which language to use before proceeding.
 
 # Project Tree — Structure & Scaffold
 
@@ -139,9 +139,9 @@ Output the SHS table at the end of the tree analysis.
 
 | Skill | Relation |
 |-------|----------|
-| `/cli-forge-readme` | Alimenter la section "Project Structure" du README |
-| `/cli-forge-doc` | Structure de reference pour generer la doc |
-| `/cli-audit-tangle` | Comparer la structure physique aux couplages logiques |
-| `/cli-audit-code` | Verifier les conventions de nommage alignees avec la structure |
-| `/cli-forge-boss` | Assigner les worktrees en fonction de la structure |
-| `/cli-cycle` | Inclus dans l'audit structurel du cycle |
+| `/cli-forge-readme` | Feed the "Project Structure" section of the README |
+| `/cli-forge-doc` | Reference structure for generating the docs |
+| `/cli-audit-tangle` | Compare the physical structure against the logical couplings |
+| `/cli-audit-code` | Verify naming conventions aligned with the structure |
+| `/cli-forge-boss` | Assign worktrees based on the structure |
+| `/cli-cycle` | Included in the cycle's structural audit |

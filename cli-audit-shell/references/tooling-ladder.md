@@ -6,9 +6,9 @@
 
 ## Core Principle
 
-> **L'outil doit correspondre a la complexite du probleme, pas l'inverse.**
-> Un sed suffit pour remplacer un port. Un kustomize est necessaire pour gerer 15 overlays.
-> Utiliser kustomize pour un port, c'est de l'over-engineering. Utiliser sed pour 15 overlays, c'est du sabotage.
+> **The tool must match the complexity of the problem, not the other way around.**
+> sed is enough to replace a port. kustomize is needed to manage 15 overlays.
+> Using kustomize for one port is over-engineering. Using sed for 15 overlays is sabotage.
 
 ## The Tooling Ladder
 

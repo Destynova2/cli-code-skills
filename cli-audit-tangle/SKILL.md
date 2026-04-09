@@ -26,24 +26,24 @@ allowed-tools:
 
 > **Optimization:** This skill uses on-demand loading. Heavy content lives in `references/` and is loaded only when needed.
 
-> **Language rule:** Detect the project's primary language (from README, comments, docs, commit messages). Output your report in that language. If the project is bilingual, ask the user which language to use before proceeding.
+> **Language rule:** Skill instructions are written in English. When generating user-facing output (reports, files, documentation), detect the project's primary language (from README, comments, docs, commit messages) and produce the output in that language. If the project is bilingual, ask the user which language to use before proceeding.
 
 # Audit Tangle — Code Topology Untangler
 
 Detect structural spaghetti using call graph analysis, spectral graph theory, and network physics. Goes beyond line-level linters to find **topological** problems: god functions, circular dependencies, dead nodes, and suboptimal module cuts.
 
-> "La Topoisomérase ne voit pas le contenu de l'ADN — elle voit sa **forme**.
-> Un nœud est un nœud, quel que soit le gène qu'il porte."
+> "Topoisomerase does not see the content of DNA — it sees its **shape**.
+> A knot is a knot, whatever gene it carries."
 
 ## Biological & physical mechanisms
 
 | Source | Mechanism | What it does in code analysis |
 |--------|-----------|------------------------------|
-| **Topoisomérase** (enzyme) | Cuts DNA strands at knot points, passes strands through, re-ligates | Finds the **optimal cut points** in tangled call graphs. Type I = minor refactor (extract function). Type II = major restructuring (split module) |
-| **Fourmis de feu** (Solenopsis) | Form living rafts by linking bodies — each ant grips exactly 2 neighbors. If one ant grips 12, the raft collapses | Detects **god functions** — nodes that grip too many neighbors. The raft (codebase) is fragile at those points |
-| **Impasse ferroviaire** | Two trains on a single track facing each other — neither can advance | Detects **CI/CD deadlocks** — job A needs B, job B needs A |
-| **Polymère emmêlé** | Longer polymer chains = higher viscosity = slower system | Measures **codebase viscosity** — deep dependency chains = every change touches 10 files |
-| **Méduse** | Tentacles don't tangle thanks to mucus (reduced friction) | **Interfaces** are the mucus — reduce coupling friction between modules |
+| **Topoisomerase** (enzyme) | Cuts DNA strands at knot points, passes strands through, re-ligates | Finds the **optimal cut points** in tangled call graphs. Type I = minor refactor (extract function). Type II = major restructuring (split module) |
+| **Fire ants** (Solenopsis) | Form living rafts by linking bodies — each ant grips exactly 2 neighbors. If one ant grips 12, the raft collapses | Detects **god functions** — nodes that grip too many neighbors. The raft (codebase) is fragile at those points |
+| **Railway deadlock** | Two trains on a single track facing each other — neither can advance | Detects **CI/CD deadlocks** — job A needs B, job B needs A |
+| **Tangled polymer** | Longer polymer chains = higher viscosity = slower system | Measures **codebase viscosity** — deep dependency chains = every change touches 10 files |
+| **Jellyfish** | Tentacles don't tangle thanks to mucus (reduced friction) | **Interfaces** are the mucus — reduce coupling friction between modules |
 
 > Read `references/analogies.md` for extended analogies and mental models.
 
@@ -120,7 +120,7 @@ Read `references/analysis-methods.md` for threshold calibration.
 
 ### Step 3 — Topological analysis
 
-**3a — God function detection (Fourmis de feu)**
+**3a — God function detection (Fire ants)**
 
 A god function = high in-degree + high out-degree + high betweenness centrality.
 
@@ -132,7 +132,7 @@ god_score = normalize(in_degree) × 0.3
 
 Flag functions with `god_score > 0.7`.
 
-**3b — Cycle detection (Topoisomérase — cut sites)**
+**3b — Cycle detection (Topoisomerase — cut sites)**
 
 Find all strongly connected components (Tarjan's algorithm).
 Each SCC with > 1 node = a circular dependency.
@@ -209,9 +209,9 @@ grep -A5 "needs:\|dependencies:" .gitlab-ci.yml | grep -v "^--$"
 
 | Type | Biology | Trigger | Recommendation |
 |------|---------|---------|---------------|
-| **Type I** (minor) | Topoisomérase I — cut one strand | God function, high complexity | Extract sub-functions, reduce responsibility |
-| **Type II** (major) | Topoisomérase II — cut both strands | Module coupling > cohesion, cycles between modules | Split module, reorganize architecture |
-| **Cleanup** | Apoptose — programmed cell death | Dead functions (in-degree = 0) | Remove after confirmation |
+| **Type I** (minor) | Topoisomerase I — cut one strand | God function, high complexity | Extract sub-functions, reduce responsibility |
+| **Type II** (major) | Topoisomerase II — cut both strands | Module coupling > cohesion, cycles between modules | Split module, reorganize architecture |
+| **Cleanup** | Apoptosis — programmed cell death | Dead functions (in-degree = 0) | Remove after confirmation |
 | **Decouple** | Break ant raft overload | Circular dependencies | Introduce trait/interface, dependency inversion |
 | **Unblock** | Railway switch | CI/CD deadlock, bottleneck job | Extract common upstream job, flatten `needs` graph |
 
@@ -251,14 +251,14 @@ Read `references/fix-patterns.md` for concrete remediation patterns by language 
 | Module coupling ratio | X:Y (coupling:cohesion) | {OK / Warning / Critical} |
 | Max call chain depth | N | {OK / Warning / Critical} |
 
-## God Functions (Fourmis de feu)
+## God Functions (Fire ants)
 
 | Function | In° | Out° | Betweenness | LOC | God Score | Action |
 |----------|-----|------|-------------|-----|-----------|--------|
 | `process_request()` | 23 | 15 | 0.82 | 340 | 0.91 | Type II: split |
 | `validate()` | 12 | 8 | 0.71 | 180 | 0.74 | Type I: extract |
 
-## Circular Dependencies (Topoisomérase cut sites)
+## Circular Dependencies (Topoisomerase cut sites)
 
 | Cycle | Functions involved | Cut recommendation |
 |-------|-------------------|-------------------|
@@ -272,7 +272,7 @@ Read `references/fix-patterns.md` for concrete remediation patterns by language 
 | `auth` | 45 calls | 12 calls | 3.8:1 | OK |
 | `core` | 20 calls | 35 calls | 0.6:1 | Type II: split |
 
-## Dead Functions (Apoptose candidates)
+## Dead Functions (Apoptosis candidates)
 
 | Function | File | Last modified | Confidence |
 |----------|------|---------------|-----------|

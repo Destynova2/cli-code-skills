@@ -16,7 +16,7 @@ allowed-tools:
 
 > **Optimization:** This skill uses on-demand loading. Heavy content lives in `references/` and is loaded only when needed.
 
-> **Language rule:** Detect the project's primary language (from README, comments, docs, commit messages). Output your document in that language. If the project is bilingual, ask the user which language to use before proceeding.
+> **Language rule:** Skill instructions are written in English. When generating user-facing output, detect the project's primary language (from README, comments, docs, commit messages) and produce the document in that language. If the project is bilingual, ask the user which language to use before proceeding.
 
 # Forge LLD — Low-Level / Detailed Design
 

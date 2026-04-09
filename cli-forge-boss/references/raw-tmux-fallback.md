@@ -1,17 +1,17 @@
 # Fallback — Raw tmux script (no tmuxinator)
 
-Generer ce script quand `tmuxinator` est absent (env air-gapped, immutable OS sans Ruby, etc.).
-Il reproduit le comportement du YAML tmuxinator avec uniquement `tmux` (POSIX shell).
+Generate this script when `tmuxinator` is absent (air-gapped env, immutable OS without Ruby, etc.).
+It reproduces the behavior of the tmuxinator YAML using only `tmux` (POSIX shell).
 
-## Quand l'utiliser
+## When to use it
 
-- `which tmuxinator` echoue **ET** l'utilisateur n'a pas Ruby disponible
-- Env air-gapped sans acces a `gem install`
-- L'utilisateur a explicitement demande "no ruby" ou "raw tmux"
+- `which tmuxinator` fails **AND** the user does not have Ruby available
+- Air-gapped env with no access to `gem install`
+- The user explicitly asked for "no ruby" or "raw tmux"
 
 ## Generation
 
-Generer dans `{project}/.claude/scripts/boss-{session}.sh` (chmod +x).
+Generate at `{project}/.claude/scripts/boss-{session}.sh` (chmod +x).
 
 ```bash
 #!/usr/bin/env bash
@@ -32,7 +32,7 @@ command -v claude >/dev/null || { echo "FATAL: claude not installed" >&2; exit 1
 
 # --- Worktrees (idempotent — G13) ---
 {worktree_setup_commands}
-# ex: (cd "$ROOT" && git worktree add ../project-wt-feature -b feat/feature 2>/dev/null) || true
+# e.g.: (cd "$ROOT" && git worktree add ../project-wt-feature -b feat/feature 2>/dev/null) || true
 
 # --- Kill any stale session ---
 tmux kill-session -t "$SESSION" 2>/dev/null || true
@@ -43,14 +43,14 @@ tmux send-keys -t "${SESSION}:chef" \
   "claude --dangerously-skip-permissions --permission-mode bypassPermissions --teammate-mode tmux --append-system-prompt \"\$(cat $PROMPT)\"" \
   Enter
 
-# --- Window 2: gate (raw shell — Sous-Chef Merge sends commands here) ---
+# --- Window 2: gate (raw shell — the Sous-Chef Merge sends commands here) ---
 tmux new-window -t "$SESSION" -n gate -c "$ROOT"
 tmux send-keys -t "${SESSION}:gate" \
   'echo "=== GATE — merge, rebase, test, build, push, CI ==="' \
   Enter
 
 # --- Auto-kick after 12s (G20) ---
-( sleep 12 && tmux send-keys -t "${SESSION}:chef" "Demarre le sprint." Enter ) &
+( sleep 12 && tmux send-keys -t "${SESSION}:chef" "Start the sprint." Enter ) &
 
 # --- Attach ---
 tmux select-window -t "${SESSION}:chef"
@@ -58,36 +58,36 @@ tmux attach-session -t "$SESSION"
 
 # --- Cleanup on detach ---
 {worktree_cleanup_commands}
-# ex: (cd "$ROOT" && git worktree remove ../project-wt-feature 2>/dev/null) || true
+# e.g.: (cd "$ROOT" && git worktree remove ../project-wt-feature 2>/dev/null) || true
 ```
 
-## Lancement
+## Launch
 
 ```bash
 bash {project}/.claude/scripts/boss-{session}.sh
 ```
 
-## Differences avec tmuxinator
+## Differences from tmuxinator
 
 | Aspect | tmuxinator YAML | Raw script |
-|---|---|---|
-| Dependance | Ruby + gem tmuxinator | Aucune (POSIX) |
-| Reload config | `tmuxinator start {session}` | Re-run script |
-| Doctor check | `tmuxinator doctor` | Pre-flight inline |
-| Worktree cleanup | `on_project_stop` | Trap on exit (non gere — manuel) |
-| Lisibilite | YAML declaratif | Bash imperatif |
+|--------|-----------------|------------|
+| Dependency | Ruby + gem tmuxinator | None (POSIX) |
+| Reload config | `tmuxinator start {session}` | Re-run the script |
+| Doctor check | `tmuxinator doctor` | Inline pre-flight |
+| Worktree cleanup | `on_project_stop` | Trap on exit (not handled — manual) |
+| Readability | Declarative YAML | Imperative Bash |
 
 ## Limitations
 
-- Pas de reload a chaud : modifier le script = kill-session + relancer
-- Pas de hooks `on_project_stop` : le cleanup worktree doit etre fait a la main si l'utilisateur tue tmux brutalement
-- Garder le script versionne dans le projet (`.claude/scripts/`) pour reproductibilite
+- No hot reload: editing the script = kill-session + restart
+- No `on_project_stop` hooks: worktree cleanup has to be done manually if the user kills tmux abruptly
+- Keep the script versioned inside the project (`.claude/scripts/`) for reproducibility
 
-## Integration SKILL.md
+## SKILL.md integration
 
-Phase 0.3 prereq check : si `tmuxinator` manque, NE PAS bloquer. Generer le fallback script et le mentionner explicitement dans le rapport de Phase 4 :
+Phase 0.3 prereq check: if `tmuxinator` is missing, DO NOT block. Generate the fallback script and explicitly mention it in the Phase 4 report:
 
 ```
-tmuxinator absent → fallback raw-tmux genere : {project}/.claude/scripts/boss-{session}.sh
-Lance avec : bash {project}/.claude/scripts/boss-{session}.sh
+tmuxinator missing → raw-tmux fallback generated: {project}/.claude/scripts/boss-{session}.sh
+Launch with: bash {project}/.claude/scripts/boss-{session}.sh
 ```

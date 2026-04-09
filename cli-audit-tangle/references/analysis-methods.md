@@ -4,7 +4,7 @@
 
 ---
 
-## God Function Detection — Fourmis de feu
+## God Function Detection — Fire ants
 
 ### Algorithm
 
@@ -43,7 +43,7 @@ Do NOT flag as god functions:
 
 ---
 
-## Cycle Detection — Topoisomérase cut sites
+## Cycle Detection — Topoisomerase cut sites
 
 ### Algorithm
 
@@ -61,7 +61,7 @@ Use Tarjan's algorithm to find Strongly Connected Components (SCCs):
 | **Inter-module cycle** | Functions in DIFFERENT modules call each other cyclically | Critical | Type II refactor: dependency inversion |
 | **Transitive cycle** | A→B→C→...→A across > 5 nodes | Critical | Find the weakest link and cut |
 
-### Cut point selection (Topoisomérase)
+### Cut point selection (Topoisomerase)
 
 For each cycle, recommend WHERE to cut:
 1. Find the edge with the **lowest call frequency** (fewest actual calls) — cutting there disrupts the least

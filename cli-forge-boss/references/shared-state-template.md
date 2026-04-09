@@ -1,86 +1,86 @@
 # Template — Shared State
 
-Generer ce fichier dans `{project}/.claude/shared-state.md`.
-Remplacer les `{variables}` par les valeurs du projet.
+Generate this file at `{project}/.claude/shared-state.md`.
+Replace `{variables}` with the project values.
 
 ---
 
 ```markdown
 # {Project Name} Shared State — Session {session_name}
 
-> Memoire partagee entre toutes les sessions Claude Code paralleles.
-> **BOSS** : seul a ecrire dans "Merges valides" et "Feu vert".
-> **WORKERS** : lisent ce fichier AVANT de coder. Ecrivent dans "En cours" et "Fait".
-> **TOUS** : relisent ce fichier apres chaque merge pour voir ce qui a change.
+> Shared memory between all parallel Claude Code sessions.
+> **BOSS**: only agent allowed to write in "Valid merges" and "Green light".
+> **WORKERS**: read this file BEFORE coding. Write in "In progress" and "Done".
+> **EVERYONE**: re-read this file after every merge to see what changed.
 
-## Feu vert — Dependances resolues
+## Green light — Resolved dependencies
 
-> Le boss ecrit ici quand un merge est valide et que les dependants peuvent continuer.
-> Workers : si ta tache depend d'une autre, attends qu'elle apparaisse ici.
+> The boss writes here when a merge is validated and dependents can continue.
+> Workers: if your task depends on another, wait until it appears here.
 
-| Branche mergee | Tests | CI | Date | Debloque |
-|----------------|-------|----|------|----------|
+| Merged branch | Tests | CI | Date | Unblocks |
+|---------------|-------|----|------|----------|
 
-## En cours
+## In progress
 
-| Worktree | Branche | Tache | Fichiers touches | Debut |
-|----------|---------|-------|------------------|-------|
+| Worktree | Branch | Task | Files touched | Started |
+|----------|--------|------|----------------|---------|
 
-## Fait (en attente de merge)
+## Done (awaiting merge)
 
-| Worktree | Branche | Tache | Resultat | Tests | Fichiers modifies | Date |
-|----------|---------|-------|----------|-------|-------------------|------|
+| Worktree | Branch | Task | Result | Tests | Files modified | Date |
+|----------|--------|------|--------|-------|-----------------|------|
 
-## Merges valides
+## Valid merges
 
-| Branche | Merge commit | CI run | Statut | Date |
-|---------|-------------|--------|--------|------|
+| Branch | Merge commit | CI run | Status | Date |
+|--------|-------------|--------|--------|------|
 
-## Conflits potentiels
+## Potential conflicts
 
-> Si tu modifies un fichier present dans "En cours" d'un autre worktree, note-le ici.
+> If you edit a file already listed in another worktree's "In progress", note it here.
 
-| Fichier | Worktrees concernes | Risque | Resolution |
-|---------|---------------------|--------|------------|
+| File | Affected worktrees | Risk | Resolution |
+|------|--------------------|------|------------|
 
-## Decisions prises
+## Decisions made
 
-> Choix techniques faits pendant le sprint qui impactent les autres sessions.
-> Workers : lisez cette section AVANT de coder, un choix fait par un autre worker peut changer votre approche.
+> Technical choices made during the sprint that affect other sessions.
+> Workers: read this section BEFORE coding, a choice made by another worker may change your approach.
 
-| Decision | Raison | Impact sur | Par | Date |
-|----------|--------|-----------|-----|------|
+| Decision | Reason | Impacts | By | Date |
+|----------|--------|---------|----|------|
 
-## Quality Gates — Metriques (rempli par le boss)
+## Quality Gates — Metrics (filled by the boss)
 
-> Le boss remplit cette section apres chaque audit. Workers : si un gate echoue, corrigez avant de re-soumettre.
+> The boss fills this section after every audit. Workers: if a gate fails, fix before resubmitting.
 
-| Gate | Scope | Score | Seuil | Statut | Date |
-|------|-------|-------|-------|--------|------|
+| Gate | Scope | Score | Threshold | Status | Date |
+|------|-------|-------|-----------|--------|------|
 {quality_gates_rows}
 
-### Couplages forts (de /cli-audit-tangle)
+### Strong couplings (from /cli-audit-tangle)
 
-> Boss remplit avant d'assigner les taches. Workers : ne touchez PAS aux fichiers couples assignes a un autre worker.
+> Boss fills this before assigning tasks. Workers: do NOT touch coupled files assigned to another worker.
 
-| Module/Fonction | Couplage | Assigne a |
-|-----------------|----------|-----------|
+| Module/Function | Coupling | Assigned to |
+|------------------|----------|-------------|
 
-## Zones sensibles (quorum 3/3 unanimite)
+## Sensitive zones (3/3 unanimity quorum)
 
-> Revue a chaque fin de sprint. Si un fichier cause des problemes, le passer ici.
-> Si un fichier est ici depuis 3 sprints sans incident, le repasser en zone normale.
+> Reviewed at the end of every sprint. If a file causes problems, move it here.
+> If a file stays here for 3 sprints with no incident, demote it back to the normal zone.
 >
-> **Format machine-parseable** : la liste authoritative est le bloc `BOSS_SENSITIVE_PATHS`
-> ci-dessous. Le tableau humain est genere depuis ce bloc et sert a la documentation.
-> Le `/loop` Sous-Chef parse uniquement le bloc — toujours le tenir a jour.
+> **Machine-parseable format**: the authoritative list is the `BOSS_SENSITIVE_PATHS`
+> block below. The human table is generated from that block and serves as documentation.
+> The Sous-Chef `/loop` parses only the block — always keep it up to date.
 
 <!-- BOSS_SENSITIVE_PATHS:START -->
 ```sensitive-paths
 # One glob pattern per line. Lines starting with # are comments.
 # Parsed by /loop Sous-Chef and the Chef shutdown protocol.
 # Format: <glob>    # <reason>
-.github/workflows/**          # CI = impact global
+.github/workflows/**          # CI = global impact
 **/Cargo.toml                 # Supply chain risk (Rust deps)
 **/package.json               # Supply chain risk (npm deps)
 **/go.mod                     # Supply chain risk (Go deps)
@@ -89,29 +89,29 @@ Remplacer les `{variables}` par les valeurs du projet.
 .env                          # Secrets
 **/*.secret                   # Secrets
 **/credentials*               # Secrets
-src/auth/**                   # Authentification critique
-src/security/**               # Securite critique
-CONTRACTS.md                  # Regles du projet
-CONTRIBUTING.md               # Instructions du projet
+src/auth/**                   # Critical authentication
+src/security/**               # Critical security
+CONTRACTS.md                  # Project rules
+CONTRIBUTING.md               # Project instructions
 ```
 <!-- BOSS_SENSITIVE_PATHS:END -->
 
-### Tableau humain (genere depuis le bloc ci-dessus)
+### Human table (generated from the block above)
 
-| Pattern | Raison | Depuis | Incidents |
-|---------|--------|--------|-----------|
-| .github/workflows/** | CI = impact global | initial | - |
+| Pattern | Reason | Since | Incidents |
+|---------|--------|-------|-----------|
+| .github/workflows/** | CI = global impact | initial | - |
 | **/Cargo.toml | Supply chain risk (Rust) | initial | - |
 | **/package.json | Supply chain risk (npm) | initial | - |
 | .env, **/*.secret, **/credentials* | Secrets | initial | - |
-| src/auth/** | Module authentification critique | initial | - |
-| src/security/** | Module securite critique | initial | - |
-| CONTRACTS.md, CONTRIBUTING.md | Regles du projet | initial | - |
+| src/auth/** | Critical authentication module | initial | - |
+| src/security/** | Critical security module | initial | - |
+| CONTRACTS.md, CONTRIBUTING.md | Project rules | initial | - |
 
-### Comment parser le bloc (pour /loop ou scripts)
+### How to parse the block (for /loop or scripts)
 
 ```bash
-# Extraire les patterns purs (sans commentaires, sans markers)
+# Extract pure patterns (no comments, no markers)
 sed -n '/<!-- BOSS_SENSITIVE_PATHS:START -->/,/<!-- BOSS_SENSITIVE_PATHS:END -->/p' \
   {project}/.claude/shared-state.md \
   | sed -n '/```sensitive-paths/,/```/p' \
@@ -121,17 +121,17 @@ sed -n '/<!-- BOSS_SENSITIVE_PATHS:START -->/,/<!-- BOSS_SENSITIVE_PATHS:END -->
   | awk '{print $1}'
 ```
 
-### Historique des hallucinations
+### Hallucination history
 
-> Si un Sous-Chef a APPROVE un diff qui a cause un probleme, le noter ici.
-> Sert a ameliorer les regles des Sous-Chefs au prochain sprint.
+> If a Sous-Chef APPROVEd a diff that caused a problem, record it here.
+> Used to improve the Sous-Chefs' rules in the next sprint.
 
-| Sprint | Sous-Chef | Fichier | Ce qui s'est passe | Fix applique |
-|--------|-----------|---------|---------------------|--------------|
+| Sprint | Sous-Chef | File | What happened | Fix applied |
+|--------|-----------|------|----------------|-------------|
 
-## Contexte partage
+## Shared context
 
-> Infos que tous les workers doivent connaitre.
+> Information every worker must know.
 
 {context_items}
 ```

@@ -4,214 +4,214 @@
 
 ---
 
-## Concept (inspire de jj operation log)
+## Concept (inspired by the jj operation log)
 
-Chaque sprint laisse des **checkpoints** — des snapshots de l'etat complet du projet a des moments cles. Le Chef peut naviguer entre ces checkpoints comme `jj undo` ou `git reset`.
+Every sprint leaves **checkpoints** — snapshots of the complete project state at key moments. The Chef can navigate between these checkpoints like `jj undo` or `git reset`.
 
 ```
 Sprint S1          Sprint S2          Sprint S3
   │                  │                  │
   ├─ checkpoint-0    ├─ checkpoint-0    ├─ checkpoint-0
-  │  (avant sprint)  │  (avant sprint)  │  (avant sprint)
+  │  (before sprint) │  (before sprint) │  (before sprint)
   │                  │                  │
-  ├─ checkpoint-1    ├─ checkpoint-1    │  ← on est ici
-  │  (apres Wave 1)  │  (apres 2 plats) │
+  ├─ checkpoint-1    ├─ checkpoint-1    │  ← you are here
+  │  (after Wave 1)  │  (after 2 plats) │
   │                  │                  │
   ├─ checkpoint-2    ├─ checkpoint-2    │
-  │  (apres Wave 2)  │  (fin sprint)    │
+  │  (after Wave 2)  │  (end of sprint) │
   │                  │                  │
-  └─ rapport-S1      └─ rapport-S2      │
+  └─ report-S1       └─ report-S2       │
 ```
 
-Le user peut :
-- **Pause** : arreter le sprint, sauver l'etat, reprendre plus tard
-- **Resume** : relancer depuis le dernier checkpoint
-- **Rewind** : revenir a un checkpoint precedent (comme `jj undo`)
-- **Fresh** : repartir de zero mais garder les gotchas et anti-patterns appris
+The user can:
+- **Pause**: stop the sprint, save state, resume later
+- **Resume**: relaunch from the last checkpoint
+- **Rewind**: go back to a previous checkpoint (like `jj undo`)
+- **Fresh**: start from scratch but keep the learned gotchas and anti-patterns
 
 ---
 
-## Checkpoints (sauvegardes automatiques)
+## Checkpoints (automatic saves)
 
-### Quand sauver un checkpoint
+### When to save a checkpoint
 
-| Evenement | Tag git | Contenu sauve |
-|-----------|---------|---------------|
-| Debut du sprint (Phase 0 complete) | `sprint/{id}/start` | shared-state.md, PERT, matrice couplage |
-| Apres chaque plat merge | `sprint/{id}/plat-{n}` | shared-state.md, diff cumule, scores |
-| Avant shutdown | `sprint/{id}/pre-shutdown` | etat complet avant rapport |
-| Fin du sprint | `sprint/{id}/done` | rapport final, backlog, zones sensibles |
-| Pause utilisateur | `sprint/{id}/pause` | etat au moment de la pause |
+| Event | Git tag | Saved content |
+|-------|---------|---------------|
+| Sprint start (Phase 0 complete) | `sprint/{id}/start` | shared-state.md, PERT, coupling matrix |
+| After every merged plat | `sprint/{id}/plat-{n}` | shared-state.md, cumulative diff, scores |
+| Before shutdown | `sprint/{id}/pre-shutdown` | full state before the report |
+| End of sprint | `sprint/{id}/done` | final report, backlog, sensitive zones |
+| User pause | `sprint/{id}/pause` | state at the pause moment |
 
-### Comment sauver
+### How to save
 
 ```bash
-# Le Sous-Chef Merge execute apres chaque plat merge :
+# The Sous-Chef Merge runs after each merged plat:
 git tag "sprint/${SPRINT_ID}/plat-${PLAT_NUMBER}" HEAD
 cp .claude/shared-state.md .claude/sprint-history/${SPRINT_ID}/checkpoint-${PLAT_NUMBER}.md
 echo "$(date -Is) checkpoint-${PLAT_NUMBER} score=${SCORE}" >> .claude/sprint-history/${SPRINT_ID}/log.txt
 ```
 
-### Structure sur disque
+### On-disk layout
 
 ```
 {project}/.claude/sprint-history/
 ├── S1/
-│   ├── checkpoint-0.md     (shared-state au debut)
-│   ├── checkpoint-1.md     (apres plat 1)
-│   ├── checkpoint-2.md     (apres plat 2)
-│   ├── rapport.md          (rapport final)
-│   ├── log.txt             (chronologie : timestamps, scores, events)
-│   └── gotchas-learned.md  (anti-patterns decouverts pendant S1)
+│   ├── checkpoint-0.md     (shared-state at the start)
+│   ├── checkpoint-1.md     (after plat 1)
+│   ├── checkpoint-2.md     (after plat 2)
+│   ├── report.md           (final report)
+│   ├── log.txt             (timeline: timestamps, scores, events)
+│   └── gotchas-learned.md  (anti-patterns discovered during S1)
 ├── S2/
 │   ├── ...
-└── current -> S3           (symlink vers le sprint en cours)
+└── current -> S3           (symlink to the sprint in progress)
 ```
 
 ---
 
-## Pause (arreter proprement)
+## Pause (clean stop)
 
-L'utilisateur tape `pause` ou `Ctrl+C` ou ferme tmux.
+The user types `pause`, `Ctrl+C`, or closes tmux.
 
-Le Chef detecte l'arret et sauve :
+The Chef detects the stop and saves:
 
 ```
-1. Tag git : sprint/{id}/pause
-2. Copie shared-state.md → sprint-history/{id}/checkpoint-pause.md
-3. Log : "PAUSED at plat {n}/{total}, score {x}/10"
-4. Ecrire dans shared-state.md section "Statut" : "PAUSED"
-5. Lister les taches restantes dans section "Backlog"
+1. Git tag: sprint/{id}/pause
+2. Copy shared-state.md → sprint-history/{id}/checkpoint-pause.md
+3. Log: "PAUSED at plat {n}/{total}, score {x}/10"
+4. Write to shared-state.md "Status" section: "PAUSED"
+5. List the remaining tasks in the "Backlog" section
 ```
 
-**Le tmuxinator peut etre arrete proprement :** `tmuxinator stop {session}`
+**tmuxinator can be stopped cleanly:** `tmuxinator stop {session}`
 
 ---
 
-## Resume (reprendre la ou on s'est arrete)
+## Resume (pick up where you left off)
 
-L'utilisateur relance `/cli-forge-boss` sur le meme projet.
+The user re-runs `/cli-forge-boss` on the same project.
 
-Le Chef detecte un sprint en pause :
+The Chef detects a paused sprint:
 
 ```
-1. Lire .claude/sprint-history/current/checkpoint-pause.md
-2. Lire le log.txt pour connaitre la progression
-3. Reconstruire le PERT avec uniquement les plats restants
-4. Verifier l'etat git : branches des commis encore presentes ?
-   - OUI → re-assigner les commis a leurs branches existantes
-   - NON → re-creer les worktrees
-5. Reprendre le sprint au plat suivant
+1. Read .claude/sprint-history/current/checkpoint-pause.md
+2. Read the log.txt to learn the progress
+3. Rebuild the PERT with only the remaining plats
+4. Check git state: are the commis branches still there?
+   - YES → reassign commis to their existing branches
+   - NO → recreate the worktrees
+5. Resume the sprint at the next plat
 ```
 
-**Presentation au user :**
+**Presentation to the user:**
 ```
-Sprint S3 detecte en pause.
-  Plats termines : 2/5 (auth-refactor, api-endpoints)
-  Plats restants : 3 (db-migration, tests-e2e, docs-update)
-  Score actuel : 7.2/10
-  Derniere activite : il y a 3h
+Sprint S3 detected in pause.
+  Plats done: 2/5 (auth-refactor, api-endpoints)
+  Plats remaining: 3 (db-migration, tests-e2e, docs-update)
+  Current score: 7.2/10
+  Last activity: 3h ago
 
-  [1] Reprendre (3 plats restants)
-  [2] Rewind au checkpoint precedent
-  [3] Repartir de zero (garder les gotchas)
-  [4] Abandonner le sprint
+  [1] Resume (3 plats remaining)
+  [2] Rewind to the previous checkpoint
+  [3] Start fresh (keep the gotchas)
+  [4] Abandon the sprint
 ```
 
 ---
 
-## Rewind (revenir en arriere)
+## Rewind (go back)
 
-Comme `jj undo` — revenir a un etat precedent.
+Like `jj undo` — return to a previous state.
 
 ```
-1. Lister les checkpoints disponibles :
-   sprint/S3/start          (il y a 4h, score 6.8)
-   sprint/S3/plat-1         (il y a 3h, score 7.1) ← auth-refactor
-   sprint/S3/plat-2         (il y a 2h, score 7.2) ← api-endpoints
-   sprint/S3/pause          (il y a 1h, score 7.2)
+1. List the available checkpoints:
+   sprint/S3/start          (4h ago, score 6.8)
+   sprint/S3/plat-1         (3h ago, score 7.1) ← auth-refactor
+   sprint/S3/plat-2         (2h ago, score 7.2) ← api-endpoints
+   sprint/S3/pause          (1h ago, score 7.2)
 
-2. L'utilisateur choisit un checkpoint
+2. The user picks a checkpoint
 
-3. Restaurer :
+3. Restore:
    git reset --hard sprint/S3/plat-1
    cp .claude/sprint-history/S3/checkpoint-1.md .claude/shared-state.md
-   # Les plats 2+ sont annules — les branches des commis existent encore
-   # mais leurs merges sont revert
+   # Plats 2+ are cancelled — the commis branches still exist
+   # but their merges are reverted
 
-4. Reprendre depuis ce point (les taches 2+ sont re-ajoutees au PERT)
+4. Resume from that point (tasks 2+ are re-added to the PERT)
 ```
 
-**Cas d'usage :**
-- Un plat merge a casse la CI → rewind avant ce plat, re-assigner a un autre commis
-- Le Chef a fait un mauvais decoupage → rewind au debut, re-planifier
+**Use cases:**
+- A merged plat broke CI → rewind before that plat, reassign to another commis
+- The Chef made a bad split → rewind to the start, replan
 
 ---
 
-## Fresh restart (repartir de zero)
+## Fresh restart (start from zero)
 
-Quand le sprint est trop casse pour etre repare.
+When the sprint is too broken to repair.
 
 ```
-1. Sauver les learnings :
-   - Copier gotchas-learned.md vers le prochain sprint
-   - Copier la liste des zones sensibles (mises a jour pendant le sprint)
-   - Copier les anti-patterns detectes (B1-B10)
+1. Save the learnings:
+   - Copy gotchas-learned.md to the next sprint
+   - Copy the sensitive-zone list (updated during the sprint)
+   - Copy the detected anti-patterns (B1-B10)
 
-2. Reset :
-   git reset --hard sprint/S3/start  (ou main)
-   Supprimer les branches des commis
-   Supprimer les worktrees
+2. Reset:
+   git reset --hard sprint/S3/start  (or main)
+   Delete the commis branches
+   Delete the worktrees
 
-3. Lancer un nouveau sprint S4 :
-   - Le Chef lit gotchas-learned de S3
-   - Les zones sensibles sont deja mises a jour
-   - Le PERT est reconstruit from scratch
+3. Launch a new sprint S4:
+   - The Chef reads gotchas-learned from S3
+   - The sensitive zones are already up to date
+   - The PERT is rebuilt from scratch
 ```
 
 ---
 
 ## Sprint history (navigation)
 
-Le Chef peut consulter l'historique des sprints :
+The Chef can browse the sprint history:
 
 ```
 /cli-forge-boss --history
 
 Sprint History — {project}
 
-| Sprint | Date | Plats | Score | Status | Duree |
-|--------|------|-------|-------|--------|-------|
+| Sprint | Date | Plats | Score | Status | Duration |
+|--------|------|-------|-------|--------|----------|
 | S1 | 2026-03-15 | 3/3 | 7.5 | DONE | 45min |
 | S2 | 2026-03-22 | 4/5 | 8.1 | DONE | 1h20 |
 | S3 | 2026-04-07 | 2/5 | 7.2 | PAUSED | 2h |
 
-Checkpoints S3 : start, plat-1, plat-2, pause
-Gotchas appris : 2 (Hot File Thrashing on ci.yml, Ghost Commis timeout)
+Checkpoints S3: start, plat-1, plat-2, pause
+Gotchas learned: 2 (Hot File Thrashing on ci.yml, Ghost Commis timeout)
 ```
 
 ---
 
-## Integration avec jj et git
+## Integration with jj and git
 
-Le systeme fonctionne avec les deux :
+The system works with both:
 
 | Operation | git | jj |
 |-----------|-----|-----|
 | Checkpoint | `git tag sprint/{id}/...` | `jj bookmark set sprint-{id}-...` |
 | Rewind | `git reset --hard {tag}` | `jj undo --to {operation}` |
-| Resume | Lire tag + restaurer shared-state | `jj restore --from {bookmark}` |
-| Branches commis | `git worktree add` | `jj workspace add` |
+| Resume | Read tag + restore shared-state | `jj restore --from {bookmark}` |
+| Commis branches | `git worktree add` | `jj workspace add` |
 | History | `git tag -l "sprint/*"` | `jj op log` |
 
-jj est natif pour ce type d'operations (operation log, undo, workspace). git necessite des tags et des worktrees manuels.
+jj is native for this kind of operation (operation log, undo, workspace). git requires manual tags and worktrees.
 
 ---
 
-## Regles de securite
+## Safety rules
 
-1. **Jamais de force push** sur les tags de checkpoint — ils sont immutables
-2. **Rewind = reset local uniquement** — ne touche pas le remote tant que le user n'approuve pas
-3. **Fresh restart garde les learnings** — les gotchas et zones sensibles survivent
-4. **Checkpoint automatique = pas d'opt-in** — sauve apres chaque plat merge, toujours
-5. **Max 10 sprints en historique** — les plus anciens sont archives (tag reste, fichiers supprimes)
+1. **Never force-push** the checkpoint tags — they are immutable
+2. **Rewind = local reset only** — does not touch the remote until the user approves
+3. **Fresh restart keeps the learnings** — gotchas and sensitive zones survive
+4. **Automatic checkpoints = no opt-in** — saved after every merged plat, always
+5. **Max 10 sprints in history** — older ones are archived (tag stays, files removed)

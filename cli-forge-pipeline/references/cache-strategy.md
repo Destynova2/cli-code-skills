@@ -1,20 +1,20 @@
-# Cache Strategy — Blob + Mycélium Combinés
+# Cache Strategy — Slime Mold + Mycelium Combined
 
-## Principe : le cache est le système nerveux de la colonie
+## Principle: the cache is the colony's nervous system
 
-Sans mémoire partagée, chaque fourmi repart de zéro.
-Le cache CI = les phéromones et le mycélium combinés.
+Without shared memory, every ant starts from zero.
+The CI cache = pheromones and mycelium combined.
 
 ---
 
-## Niveaux de cache (waterfall mycélium)
+## Cache levels (mycelium waterfall)
 
 ```
-Job sur feature/xyz
-  └─ Cherche cache key: deps-feature-xyz         → MISS
-      └─ Cherche cache key: deps-main             → HIT ✓ (partial restore)
-          └─ Sinon image Docker pré-buildée       → MISS
-              └─ Sinon reconstruction complète    → SLOW PATH
+Job on feature/xyz
+  └─ Look up cache key: deps-feature-xyz         → MISS
+      └─ Look up cache key: deps-main             → HIT ✓ (partial restore)
+          └─ Otherwise pre-built Docker image     → MISS
+              └─ Otherwise full rebuild           → SLOW PATH
 ```
 
 ### GitLab CI — Cache waterfall
@@ -25,22 +25,22 @@ cache:
       files: [package-lock.json]
       prefix: node-$CI_COMMIT_REF_SLUG
     paths: [node_modules/]
-    policy: pull-push          # Branche courante : lit + écrit
+    policy: pull-push          # Current branch: reads + writes
 
   - key:
       files: [package-lock.json]
       prefix: node-main
     paths: [node_modules/]
-    policy: pull               # Fallback main : lit seulement
+    policy: pull               # Main fallback: reads only
 
   - key: node-base-image
     paths: [node_modules/]
-    policy: pull               # Fallback ultime : lit seulement
+    policy: pull               # Ultimate fallback: reads only
 ```
 
 ---
 
-## Cache key strategies par écosystème
+## Cache key strategies per ecosystem
 
 ### Rust / Cargo
 ```yaml
@@ -84,7 +84,7 @@ cache:
     GOCACHE: $CI_PROJECT_DIR/.go-build-cache
 ```
 
-### Docker layers (Physarum : renforcer les tubes utilisés)
+### Docker layers (Physarum: reinforce the tubes that are used)
 ```yaml
 build-image:
   script:
@@ -97,12 +97,12 @@ build-image:
 
 ---
 
-## Stratégie Physarum : cache adaptatif par profil de changement
+## Physarum strategy: adaptive cache by change profile
 
-Le blob renforce les tubes qui servent, prune les autres.
+The slime mold reinforces tubes that are used and prunes the others.
 
 ```yaml
-# Jobs touchés par le frontend seulement
+# Jobs touched by frontend only
 .frontend-cache:
   cache:
     key:
@@ -110,7 +110,7 @@ Le blob renforce les tubes qui servent, prune les autres.
       prefix: frontend
     paths: [frontend/node_modules/]
 
-# Jobs touchés par le backend seulement
+# Jobs touched by backend only
 .backend-cache:
   cache:
     key:
@@ -131,39 +131,39 @@ test-backend:
 
 ---
 
-## Pièges courants
+## Common pitfalls
 
-### ❌ Cache key trop large → cache inutile
+### ❌ Cache key too broad → cache useless
 ```yaml
-# MAUVAIS : invalide à chaque commit
+# BAD: invalidated on every commit
 cache:
-  key: "$CI_COMMIT_SHA"   # Jamais de hit
+  key: "$CI_COMMIT_SHA"   # Never a hit
 
-# MAUVAIS : invalide à chaque branche
+# BAD: invalidated on every branch
 cache:
-  key: "$CI_COMMIT_REF_NAME"  # Branches éphémères = cache éphémère
+  key: "$CI_COMMIT_REF_NAME"  # Ephemeral branches = ephemeral cache
 ```
 
-### ❌ Cache non-scoped → pollution entre projets
+### ❌ Non-scoped cache → cross-project pollution
 ```yaml
-# MAUVAIS sur runner partagé
+# BAD on a shared runner
 cache:
   paths: [node_modules/]
-  # Clé par défaut = $CI_JOB_NAME, OK mais risque de collision
+  # Default key = $CI_JOB_NAME, OK but risks collision
 ```
 
-### ✅ Cache scoped et content-based
+### ✅ Scoped and content-based cache
 ```yaml
 cache:
   key:
     files: [package-lock.json]
-    prefix: $CI_PROJECT_PATH_SLUG  # Isole par projet sur runner partagé
+    prefix: $CI_PROJECT_PATH_SLUG  # Isolate per project on a shared runner
   paths: [node_modules/]
 ```
 
 ---
 
-## Mesurer l'efficacité du cache
+## Measuring cache effectiveness
 
 ```yaml
 .cache-metrics:
@@ -173,5 +173,5 @@ cache:
       echo "NODE_MODULES_SIZE: $(du -sh node_modules/ 2>/dev/null | cut -f1)"
 ```
 
-Exposer via GitLab metrics → dashboard Grafana.
-Target : > 80% hit rate sur `main`, > 60% sur les branches feature.
+Expose via GitLab metrics → Grafana dashboard.
+Target: > 80% hit rate on `main`, > 60% on feature branches.

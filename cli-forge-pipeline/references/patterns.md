@@ -1,25 +1,25 @@
-# Les 9 modèles biologiques — Détails et exemples
+# The 9 biological models — Details and examples
 
 > **When to read:** During analysis workflow steps 1-9. Each section maps to one audit step. All examples show both GitLab CI and GitHub Actions side by side.
 
 ---
 
-## 1. FOURMIS COUPERUSES (Atta / Acromyrmex) — Task Partitioning
+## 1. LEAFCUTTER ANTS (Atta / Acromyrmex) — Task Partitioning
 
-**Biologie** : Les ouvrières ne font PAS tout du début à la fin. Elles sont spécialisées :
-- **Coupeuses** (en hauteur dans l'arbre) → coupent et *lâchent* les feuilles
-- **Ramasseuses** (au sol) → récupèrent ce qui tombe dans le cache
-- **Porteuses** → transportent vers le nid
-- **Transformatrices** → cultivent le champignon
+**Biology**: Workers do NOT do everything from start to finish. They are specialized:
+- **Cutters** (high in the tree) → cut the leaves and *drop* them
+- **Gatherers** (on the ground) → pick up what falls into the cache
+- **Carriers** → transport back to the nest
+- **Processors** → cultivate the fungus
 
-La coordination se fait par **stigmergie** : le cache de feuilles au sol EST le signal.
-Pas de communication directe. Pas de chef.
+Coordination happens through **stigmergy**: the cache of leaves on the ground IS the signal.
+No direct communication. No boss.
 
-**Pattern CI : Stage Specialization + Artifact Cache as Coordinator**
+**CI Pattern: Stage Specialization + Artifact Cache as Coordinator**
 
-**GitLab CI :**
+**GitLab CI:**
 ```yaml
-# ❌ Anti-pattern : généraliste (fait tout, du début à la fin)
+# ❌ Anti-pattern: generalist job (does everything, start to finish)
 build-and-test-and-push:
   script:
     - cargo build
@@ -27,36 +27,36 @@ build-and-test-and-push:
     - docker build
     - docker push
 
-# ✅ Pattern fourmis : spécialisation + cache comme coordinateur
+# ✅ Leafcutter pattern: specialization + cache as coordinator
 stages: [compile, test, package, deploy]
 
-compile:        # Coupeuse — produit des artefacts binaires
+compile:        # Cutter — produces binary artifacts
   stage: compile
   script: cargo build --release
   artifacts:
     paths: [target/release/myapp]
-    expire_in: 1h   # Le cache de feuilles est éphémère
+    expire_in: 1h   # The leaf cache is ephemeral
 
-test-unit:      # Ramasseuse — consomme les artefacts, travaille en parallèle
+test-unit:      # Gatherer — consumes artifacts, works in parallel
   stage: test
-  needs: [compile]   # Dépendance directe, pas d'attente de stage complet
-  parallel: 4        # 4 ouvrières identiques, remplaçables
+  needs: [compile]   # Direct dependency, no full-stage wait
+  parallel: 4        # 4 identical, replaceable workers
   script: cargo test --shard $CI_NODE_INDEX/$CI_NODE_TOTAL
 
 test-integration:
   stage: test
-  needs: [compile]   # Parallèle à test-unit, pas séquentiel
+  needs: [compile]   # Parallel to test-unit, not sequential
   script: cargo test --test integration
 
-package:        # Porteuse — assemble l'artifact final
+package:        # Carrier — assembles the final artifact
   stage: package
   needs: [test-unit, test-integration]
   script: docker build -t myapp:$CI_COMMIT_SHA .
 ```
 
-**GitHub Actions :**
+**GitHub Actions:**
 ```yaml
-# ❌ Anti-pattern : tout dans un seul job
+# ❌ Anti-pattern: everything in one job
 jobs:
   build-and-test-and-push:
     runs-on: ubuntu-latest
@@ -66,9 +66,9 @@ jobs:
       - run: docker build
       - run: docker push
 
-# ✅ Pattern fourmis : jobs séparés + artifacts comme coordinateur
+# ✅ Leafcutter pattern: separate jobs + artifacts as coordinator
 jobs:
-  compile:        # Coupeuse — produit des artefacts binaires
+  compile:        # Cutter — produces binary artifacts
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -77,14 +77,14 @@ jobs:
         with:
           name: binary
           path: target/release/myapp
-          retention-days: 1   # Le cache de feuilles est éphémère
+          retention-days: 1   # The leaf cache is ephemeral
 
-  test-unit:      # Ramasseuse — consomme les artefacts
+  test-unit:      # Gatherer — consumes artifacts
     needs: [compile]
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        shard: [1, 2, 3, 4]   # 4 ouvrières identiques, remplaçables
+        shard: [1, 2, 3, 4]   # 4 identical, replaceable workers
     steps:
       - uses: actions/checkout@v4
       - uses: actions/download-artifact@v4
@@ -92,43 +92,43 @@ jobs:
       - run: cargo nextest run --partition count:${{ matrix.shard }}/4
 
   test-integration:
-    needs: [compile]   # Parallèle à test-unit, pas séquentiel
+    needs: [compile]   # Parallel to test-unit, not sequential
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - run: cargo test --test integration
 
-  package:        # Porteuse — assemble l'artifact final
+  package:        # Carrier — assembles the final artifact
     needs: [test-unit, test-integration]
     runs-on: ubuntu-latest
     steps:
       - run: docker build -t myapp:${{ github.sha }} .
 ```
 
-**Règles dérivées :**
-- Chaque job = un rôle, une responsabilité
-- GitLab: `needs:` au lieu de `stages:` → DAG réel, pas cascade séquentielle
-- GitHub: `needs:` entre jobs → même principe de DAG
-- Les artifacts SONT la communication entre jobs (stigmergie)
-- Workers identiques et remplaçables (pas de state local)
+**Derived rules:**
+- Each job = one role, one responsibility
+- GitLab: `needs:` instead of `stages:` → real DAG, not sequential cascade
+- GitHub: `needs:` between jobs → same DAG principle
+- Artifacts ARE the communication between jobs (stigmergy)
+- Identical, replaceable workers (no local state)
 
 ---
 
-## 2. MYXOMYCÈTE (Physarum polycephalum) — Adaptive Path Pruning
+## 2. SLIME MOLD (Physarum polycephalum) — Adaptive Path Pruning
 
-**Biologie** : Le blob explore toutes les directions en parallèle.
-Les tubes qui trouvent de la nourriture **grossissent** (reinforcement).
-Les tubes infructueux **rétrécissent** et disparaissent.
-Résultat : réseau optimal entre toutes les sources de nourriture, fault-tolerant, sans cerveau central.
+**Biology**: The slime mold explores all directions in parallel.
+Tubes that find food **grow** (reinforcement).
+Unsuccessful tubes **shrink** and vanish.
+Result: an optimal network between all food sources, fault-tolerant, with no central brain.
 
-L'expérience Tokyo (2010) : le blob a recréé le réseau ferroviaire de Tokyo avec la même efficacité, la même tolérance aux pannes, au même coût.
+The Tokyo experiment (2010): the slime mold recreated the Tokyo rail network with the same efficiency, the same fault tolerance, at the same cost.
 
-**Pattern CI : Change-Driven Path Selection + Cache Reinforcement**
+**CI Pattern: Change-Driven Path Selection + Cache Reinforcement**
 
-**GitLab CI :**
+**GitLab CI:**
 ```yaml
-# Le blob ne retrace pas les chemins déjà explorés
-# → Ne relancer que ce qui a changé
+# The slime mold does not retrace paths it has already explored
+# → Only rerun what has changed
 
 .only-if-changed: &only-if-changed
   rules:
@@ -140,29 +140,29 @@ test-auth:
   <<: *only-if-changed
   script: pytest tests/auth/
 
-# Cache comme "mémoire du blob" — les tubes qui ont servi restent larges
+# Cache as "slime mold memory" — tubes that were used stay wide
 cache:
   key:
     files:
-      - Cargo.lock        # Clé basée sur le contenu, pas la date
+      - Cargo.lock        # Key based on content, not date
   paths:
     - target/
-  policy: pull-push       # Lit ET écrit → renforce le chemin
+  policy: pull-push       # Reads AND writes → reinforces the path
 
-# Fallback automatique si le noeud primaire tombe (fault tolerance)
+# Automatic fallback if the primary node fails (fault tolerance)
 test-e2e:
   retry:
     max: 2
     when: [runner_system_failure, stuck_or_timeout_failure]
-  # Ne retry PAS sur script_failure (vrai bug) → le blob ne retrace pas les mauvais chemins
+  # Do NOT retry on script_failure (real bug) → the slime mold does not retrace wrong paths
 ```
 
-**GitHub Actions :**
+**GitHub Actions:**
 ```yaml
-# Le blob ne retrace pas les chemins déjà explorés
+# The slime mold does not retrace paths it has already explored
 on:
   push:
-    paths:            # Ne déclenche que si changement pertinent
+    paths:            # Only fires on relevant changes
       - 'src/auth/**'
       - 'tests/auth/**'
 
@@ -177,14 +177,14 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      # Cache comme "mémoire du blob" — les tubes qui ont servi restent larges
+      # Cache as "slime mold memory" — tubes that were used stay wide
       - uses: actions/cache@v4
         with:
           path: |
             ~/.cargo/registry
             target/
-          key: rust-${{ hashFiles('Cargo.lock') }}           # Clé = contenu
-          restore-keys: rust-                                 # Fallback progressif
+          key: rust-${{ hashFiles('Cargo.lock') }}           # Key = content
+          restore-keys: rust-                                 # Progressive fallback
 
   test-e2e:
     runs-on: ubuntu-latest
@@ -193,37 +193,37 @@ jobs:
       - uses: nick-fields/retry@v3
         with:
           max_attempts: 2
-          retry_on: error              # Retry infra, pas logique
+          retry_on: error              # Retry infra, not logic
           command: cargo test --test e2e
 ```
 
-**Règles dérivées :**
-- Cache key = hash du contenu (Cargo.lock, package-lock.json, go.sum), jamais la branche
-- GitLab: `rules: changes:` / GitHub: `on.push.paths` ou `dorny/paths-filter` pour ne tester que les chemins touchés
-- Retry sélectif : infra failure ≠ test failure
-- DAG avec `needs:` = topologie Physarum : chaque job ouvre les chemins disponibles
+**Derived rules:**
+- Cache key = hash of content (Cargo.lock, package-lock.json, go.sum), never the branch
+- GitLab: `rules: changes:` / GitHub: `on.push.paths` or `dorny/paths-filter` to only test paths that were touched
+- Selective retry: infra failure ≠ test failure
+- DAG with `needs:` = Physarum topology: each job opens the available paths
 
 ---
 
-## 3. FOURMIS LÉGIONNAIRES (Eciton burchellii) — Self-Organizing Parallelism
+## 3. ARMY ANTS (Eciton burchellii) — Self-Organizing Parallelism
 
-**Biologie** : Pas de queen qui commande les raids.
-Les colonnes se forment spontanément selon le trafic :
-- Les **flancs** avancent en éventail (exploration parallèle)
-- Le **centre** transporte le butin (retour, haute densité)
-- Les fourmis construisent des **ponts vivants** avec leurs propres corps pour optimiser le débit
+**Biology**: No queen commands the raids.
+Columns self-assemble based on traffic:
+- The **flanks** fan out (parallel exploration)
+- The **center** carries the spoils (return, high density)
+- The ants build **living bridges** from their own bodies to optimize throughput
 
-Remplaçabilité totale : une fourmi morte est enjambée, le flux continue.
+Total replaceability: a dead ant is stepped over, the flow continues.
 
-**Pattern CI : Fan-out / Fan-in + Ephemeral Runners**
+**CI Pattern: Fan-out / Fan-in + Ephemeral Runners**
 
-**GitLab CI :**
+**GitLab CI:**
 ```yaml
-# Fan-out : exploration parallèle (flancs du raid)
+# Fan-out: parallel exploration (raid flanks)
 test-browser-chrome:
   stage: test
   needs: [build]
-  tags: [ephemeral, linux]   # Runner jetable = fourmi remplaçable
+  tags: [ephemeral, linux]   # Disposable runner = replaceable ant
 
 test-browser-firefox:
   stage: test
@@ -235,7 +235,7 @@ test-browser-safari:
   needs: [build]
   tags: [ephemeral, macos]
 
-# Fan-in : consolidation du butin (centre du raid)
+# Fan-in: consolidation of spoils (raid center)
 report-merge:
   stage: report
   needs:
@@ -247,14 +247,14 @@ report-merge:
       artifacts: true
   script: merge-junit-reports coverage/
 
-# Pont vivant : job intermédiaire qui maintient le flux
+# Living bridge: intermediate job that keeps the flow going
 build-assets:
   stage: prebuild
-  needs: []   # Démarre immédiatement, en parallèle du compile
+  needs: []   # Starts immediately, in parallel with compile
   script: npm run build:assets
 ```
 
-**GitHub Actions :**
+**GitHub Actions:**
 ```yaml
 jobs:
   build:
@@ -265,17 +265,17 @@ jobs:
       - uses: actions/upload-artifact@v4
         with: { name: build, path: target/release/ }
 
-  # Fan-out : exploration parallèle (flancs du raid)
+  # Fan-out: parallel exploration (raid flanks)
   test-browser:
     needs: [build]
     runs-on: ${{ matrix.os }}
     strategy:
-      fail-fast: false          # Une fourmi morte est enjambée, le flux continue
+      fail-fast: false          # A dead ant is stepped over, the flow continues
       matrix:
         browser: [chrome, firefox, safari]
         include:
           - browser: chrome
-            os: ubuntu-latest   # Runner jetable = fourmi remplaçable
+            os: ubuntu-latest   # Disposable runner = replaceable ant
           - browser: firefox
             os: ubuntu-latest
           - browser: safari
@@ -290,7 +290,7 @@ jobs:
           name: results-${{ matrix.browser }}
           path: test-results/
 
-  # Fan-in : consolidation du butin (centre du raid)
+  # Fan-in: consolidation of spoils (raid center)
   report-merge:
     needs: [test-browser]
     runs-on: ubuntu-latest
@@ -299,9 +299,9 @@ jobs:
         with: { pattern: results-*, merge-multiple: true }
       - run: merge-junit-reports coverage/
 
-  # Pont vivant : job qui démarre immédiatement en parallèle
+  # Living bridge: job that starts immediately in parallel
   build-assets:
-    runs-on: ubuntu-latest    # Démarre immédiatement, en parallèle du build
+    runs-on: ubuntu-latest    # Starts immediately, in parallel with build
     steps:
       - uses: actions/checkout@v4
       - run: npm run build:assets
@@ -309,57 +309,57 @@ jobs:
         with: { name: assets, path: frontend/dist/ }
 ```
 
-**Règles dérivées :**
-- GitLab: `tags: [ephemeral]` / GitHub: runners éphémères (ubuntu-latest, self-hosted éphéméraux)
-- Fan-out maximal sur les jobs lents (tests navigateurs, tests multi-arch)
-- Fan-in sur un seul job de consolidation
-- Tout job qui peut démarrer SANS dépendance doit démarrer immédiatement
+**Derived rules:**
+- GitLab: `tags: [ephemeral]` / GitHub: ephemeral runners (ubuntu-latest, ephemeral self-hosted)
+- Maximum fan-out on slow jobs (browser tests, multi-arch tests)
+- Fan-in on a single consolidation job
+- Any job that CAN start with no dependency must start immediately
 
 ---
 
-## 4. ABEILLES (Apis mellifera) — Dynamic Resource Allocation
+## 4. HONEYBEES (Apis mellifera) — Dynamic Resource Allocation
 
-**Biologie** : Les abeilles éclaireuses trouvent une source → danse frétillante.
-L'intensité de la danse = qualité/distance de la source.
-Les butineuses s'allouent **proportionnellement** à la qualité du signal.
-Si une source tarit : plus de danse → les butineuses se redistribuent.
+**Biology**: Scout bees find a source → waggle dance.
+Dance intensity = quality/distance of the source.
+Foragers allocate themselves **proportionally** to signal quality.
+If a source dries up: no more dance → foragers redistribute.
 
-Pas de plan central. Le signal dans l'environnement pilote l'allocation.
+No central plan. The environmental signal drives allocation.
 
-**Pattern CI : Autoscaling + Priority-based Runner Tagging**
+**CI Pattern: Autoscaling + Priority-based Runner Tagging**
 
-**GitLab CI :**
+**GitLab CI:**
 ```yaml
-# Signal d'allocation : tags par coût de calcul
+# Allocation signal: tags by compute cost
 compile-release:
-  tags: [fat-runner, 8cpu, 32gb]  # Butineuse vers la fleur productive
+  tags: [fat-runner, 8cpu, 32gb]  # Forager to the productive flower
   script: cargo build --release
 
 lint:
-  tags: [shared, 2cpu]            # Butineuse vers fleur ordinaire
+  tags: [shared, 2cpu]            # Forager to an ordinary flower
   script: cargo clippy
 
 security-scan:
   tags: [fat-runner, 16gb]
   script: trivy image myapp:$CI_COMMIT_SHA
 
-# Autoscaling GitLab Runner (configuration runner, pas YAML) :
+# GitLab Runner autoscaling (runner config, not YAML):
 # runners.autoscaler.max_instances = 20
-# runners.autoscaler.min_instances = 0  ← retour à 0 quand pas de danse
+# runners.autoscaler.min_instances = 0  ← scale back to 0 when no dance is happening
 # runners.autoscaler.scale_down_idle_time = 5m
 ```
 
-**GitHub Actions :**
+**GitHub Actions:**
 ```yaml
 jobs:
   compile-release:
-    runs-on: ubuntu-latest-16-cores  # Butineuse vers la fleur productive
+    runs-on: ubuntu-latest-16-cores  # Forager to the productive flower
     steps:
       - uses: actions/checkout@v4
       - run: cargo build --release
 
   lint:
-    runs-on: ubuntu-latest           # Butineuse vers fleur ordinaire (2 CPU)
+    runs-on: ubuntu-latest           # Forager to an ordinary flower (2 CPU)
     steps:
       - uses: actions/checkout@v4
       - run: cargo clippy
@@ -370,63 +370,63 @@ jobs:
       - uses: actions/checkout@v4
       - run: trivy image myapp:${{ github.sha }}
 
-# Concurrency groups : une seule danse à la fois par branche
-# Annule les runs précédents (butineuses rappelées de la source tarie)
+# Concurrency groups: only one dance at a time per branch
+# Cancels previous runs (foragers recalled from a dried-up source)
 concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
 ```
 
-**Règles dérivées :**
-- GitLab: tags runners / GitHub: runner labels (ubuntu-latest-16-cores, self-hosted labels)
-- Scale-to-zero entre les pipelines (zéro gaspillage hors activité)
-- Jobs critiques (release, sécurité) → runners dédiés non-préemptibles
-- GitLab: monitoring queue depth + HPA / GitHub: `concurrency` groups + `cancel-in-progress`
+**Derived rules:**
+- GitLab: runner tags / GitHub: runner labels (ubuntu-latest-16-cores, self-hosted labels)
+- Scale-to-zero between pipelines (zero waste outside activity)
+- Critical jobs (release, security) → dedicated non-preemptible runners
+- GitLab: queue depth monitoring + HPA / GitHub: `concurrency` groups + `cancel-in-progress`
 
 ---
 
 ## 5. MYCELIUM — Fault-Tolerant Routing + Nutrient Sharing
 
-**Biologie** : Le mycélium relie les arbres d'une forêt via un réseau souterrain.
-Il transporte nutriments et signaux chimiques.
-Si un noeud meurt : le réseau reroute autour.
-Il n'y a pas de tuyau central — la redondance EST la structure.
+**Biology**: Mycelium connects the trees of a forest via an underground network.
+It transports nutrients and chemical signals.
+If a node dies: the network reroutes around it.
+There is no central pipe — redundancy IS the structure.
 
-**Pattern CI : Multi-Registry Fallback + Distributed Caching**
+**CI Pattern: Multi-Registry Fallback + Distributed Caching**
 
-**GitLab CI :**
+**GitLab CI:**
 ```yaml
-# Noeud primaire mort → reroute vers secondaire (pas de SPOF)
+# Primary node dead → reroute to secondary (no SPOF)
 pull-image:
   script: |
     docker pull harbor.internal/myapp:base || \
     docker pull registry.fallback.io/myapp:base || \
     docker pull ghcr.io/myapp:base
-  # Trois chemins mycélium, le premier vivant est utilisé
+  # Three mycelium paths, the first live one is used
 
-# Cache distribué : chaque runner contribue au réseau
+# Distributed cache: every runner contributes to the network
 cache:
   - key: deps-$CI_COMMIT_REF_SLUG
     paths: [.npm/]
-    policy: pull-push     # Noeud actif → contribue au réseau
-  - key: deps-main        # Fallback sur main si branche pas encore cachée
+    policy: pull-push     # Active node → contributes to the network
+  - key: deps-main        # Fallback on main if the branch isn't cached yet
     paths: [.npm/]
-    policy: pull          # Noeud secondaire → consomme seulement
+    policy: pull          # Secondary node → consumes only
 
-# Artifact sharing entre pipelines (mycélium inter-arbres)
+# Artifact sharing across pipelines (inter-tree mycelium)
 download-base-artifacts:
   script: |
     curl -L "$BASE_PIPELINE_ARTIFACTS_URL" -o base-artifacts.zip
-  # Réutilise les artifacts d'un pipeline upstream (partage de nutriments)
+  # Reuses artifacts from an upstream pipeline (nutrient sharing)
 ```
 
-**GitHub Actions :**
+**GitHub Actions:**
 ```yaml
 jobs:
   pull-image:
     runs-on: ubuntu-latest
     steps:
-      # Trois chemins mycélium, le premier vivant est utilisé
+      # Three mycelium paths, the first live one is used
       - run: |
           docker pull harbor.internal/myapp:base || \
           docker pull registry.fallback.io/myapp:base || \
@@ -436,7 +436,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      # Cache distribué : waterfall branche → main → base
+      # Distributed cache: waterfall branch → main → base
       - uses: actions/cache@v4
         with:
           path: ~/.npm
@@ -445,9 +445,9 @@ jobs:
             npm-${{ github.ref_name }}-
             npm-main-
             npm-
-          # Fallback progressif = mycélium qui cherche le chemin vivant
+          # Progressive fallback = mycelium searching for a live path
 
-  # Artifact sharing entre workflows (mycélium inter-arbres)
+  # Artifact sharing across workflows (inter-tree mycelium)
   use-upstream-artifacts:
     runs-on: ubuntu-latest
     steps:
@@ -459,98 +459,93 @@ jobs:
           run-id: ${{ inputs.upstream_run_id }}
 ```
 
-**Règles dérivées :**
-- Jamais de SPOF sur registry, cache, ou runner
-- Cache waterfall : branche → main → image de base
+**Derived rules:**
+- Never a SPOF on registry, cache, or runner
+- Cache waterfall: branch → main → base image
 - GitLab: multi-project pipelines / GitHub: `workflow_call` + cross-repo artifact download
 
 ---
 
-## 6. MITOSE (Division cellulaire) — Pipeline Splitting
+## 6. MITOSIS (Cell division) — Pipeline Splitting
 
-**Biologie** : Quand une cellule devient trop grosse, elle se divise en deux cellules
-filles indépendantes. Chaque fille a l'ADN complet mais se spécialise ensuite.
-La division est déclenchée par un **seuil de taille** (checkpoint G1/S).
+**Biology**: When a cell grows too big, it divides into two independent daughter cells.
+Each daughter has the full DNA but then specializes.
+Division is triggered by a **size threshold** (G1/S checkpoint).
 
-**Pattern CI : Workflow Fission**
+**CI Pattern: Workflow Fission**
 
-Quand un pipeline dépasse ~15 jobs ou ~20 minutes, il doit se diviser en workflows
-indépendants qui communiquent par artifacts/events, pas par dépendances directes.
+When a pipeline exceeds ~15 jobs or ~20 minutes, it should split into independent workflows that communicate via artifacts/events, not direct dependencies.
 
-**Signaux de mitose** (quand diviser) :
-- Pipeline > 15 min de chemin critique
-- Plus de 3 `needs:` chaînés en série
-- Des jobs qui ne partagent aucun artifact mais sont dans le même workflow
-- Équipes différentes qui modifient les mêmes jobs
+**Mitosis signals** (when to split):
+- Pipeline > 15 min critical path
+- More than 3 `needs:` chained serially
+- Jobs that share no artifacts but are in the same workflow
+- Different teams modifying the same jobs
 
-**Exemples de division :**
+**Split examples:**
 
 ```
-AVANT (monolithique) :
+BEFORE (monolithic):
   build → test → lint → e2e → security → release → deploy → notify
 
-APRÈS (mitose) :
-  Workflow 1 (CI) : build → test → lint → e2e
-  Workflow 2 (Release) : build-release → push-registry → github-release → homebrew
-  Workflow 3 (Security) : codeql → semgrep → audit → dependabot
+AFTER (mitosis):
+  Workflow 1 (CI): build → test → lint → e2e
+  Workflow 2 (Release): build-release → push-registry → github-release → homebrew
+  Workflow 3 (Security): codeql → semgrep → audit → dependabot
 
-  Communication : workflow_run events, artifacts, GHCR images
+  Communication: workflow_run events, artifacts, GHCR images
 ```
 
-**GitLab** : `trigger:` pour pipelines enfants, `include:` pour templates partagés.
-**GitHub Actions** : `workflow_run:` events, `workflow_call:` pour réutilisation.
+**GitLab**: `trigger:` for child pipelines, `include:` for shared templates.
+**GitHub Actions**: `workflow_run:` events, `workflow_call:` for reuse.
 
-**Règles de mitose :**
-- Chaque workflow fille doit être exécutable indépendamment
-- L'ADN partagé (config, secrets, cache keys) va dans des templates/composites
-- La communication entre workflows = artifacts ou registries (stigmergie), jamais state partagé
-- Le seuil de re-mitose est récursif : si une fille grossit trop, elle se divise aussi
+**Mitosis rules:**
+- Each daughter workflow must be independently executable
+- Shared DNA (config, secrets, cache keys) goes into templates/composites
+- Communication between workflows = artifacts or registries (stigmergy), never shared state
+- The re-mitosis threshold is recursive: if a daughter grows too big, it splits again
 
 ---
 
-## 7. SYSTÈME IMMUNITAIRE (Recombinaison VDJ) — Combinatorial Fuzzing
+## 7. IMMUNE SYSTEM (VDJ Recombination) — Combinatorial Fuzzing
 
-**Biologie** : Le système immunitaire ne réagit pas aux menaces — il génère à l'avance
-~10¹⁸ combinaisons d'anticorps différents par recombinaison aléatoire de segments géniques
-(V, D, J), **avant** d'avoir jamais rencontré l'antigène. Il explore l'espace de toutes les
-menaces possibles de manière combinatoire, puis maintient en vie les cellules B capables de
-reconnaître quelque chose d'utile (sélection clonale).
+**Biology**: The immune system does not react to threats — it generates ~10¹⁸ different antibody combinations ahead of time by random recombination of gene segments (V, D, J), **before** it has ever encountered the antigen. It explores the space of all possible threats combinatorially, then keeps the B cells capable of recognizing anything useful alive (clonal selection).
 
-Le système ne devine pas quelles menaces vont survenir. Il couvre tout l'espace possible.
+The system does not guess which threats will occur. It covers the entire possible space.
 
-**Pattern CI : Fuzzing / Property-Based Testing**
+**CI Pattern: Fuzzing / Property-Based Testing**
 
-**GitLab CI :**
+**GitLab CI:**
 ```yaml
-# ❌ Anti-pattern : tests uniquement sur des cas écrits à la main
+# ❌ Anti-pattern: tests only on hand-written cases
 test-unit:
-  script: cargo test   # Teste ce que le dev a imaginé
+  script: cargo test   # Tests what the dev imagined
 
-# ✅ Pattern immunitaire : génération combinatoire de l'espace d'inputs
+# ✅ Immune pattern: combinatorial generation of the input space
 fuzz-parser:
   stage: test
   needs: [compile]
   script:
     - cargo fuzz run parser -- -max_total_time=300
-    # Génère 10^N inputs aléatoires, cherche les crashs
-    # Comme le VDJ : explore l'espace AVANT de rencontrer la menace
+    # Generates 10^N random inputs, looks for crashes
+    # Like VDJ: explores the space BEFORE encountering the threat
   artifacts:
-    paths: [fuzz/artifacts/]   # Corpus de crashs = mémoire immunitaire
+    paths: [fuzz/artifacts/]   # Crash corpus = immune memory
     when: on_failure
   rules:
     - changes:
-        - src/parser/**/*      # Ne fuzz que ce qui a changé (économie)
+        - src/parser/**/*      # Only fuzz what has changed (economy)
 
 property-test:
   stage: test
   needs: [compile]
   script:
     - cargo test --features proptest
-    # proptest/quickcheck = version structurée du VDJ
-    # Génère des inputs selon des propriétés, pas des exemples
+    # proptest/quickcheck = structured version of VDJ
+    # Generates inputs from properties, not examples
 ```
 
-**GitHub Actions :**
+**GitHub Actions:**
 ```yaml
 jobs:
   fuzz-parser:
@@ -564,7 +559,7 @@ jobs:
         if: failure()
         with:
           name: fuzz-crashes
-          path: fuzz/artifacts/   # Corpus = mémoire immunitaire
+          path: fuzz/artifacts/   # Corpus = immune memory
 
   property-test:
     needs: [compile]
@@ -574,36 +569,33 @@ jobs:
       - run: cargo test --features proptest
 ```
 
-**Règles dérivées :**
-- Le fuzzing explore l'espace des inputs, pas les cas connus → complète les tests unitaires
-- Le corpus de crashs persiste entre runs (mémoire immunitaire acquise)
-- Property-based testing = version structurée : tu définis les invariants, le framework génère les cas
-- Fuzzer sur le chemin critique (parsers, sérialisation, auth) → là où les inputs viennent de l'extérieur
-- Outils : `cargo-fuzz`, `proptest`, `quickcheck` (Rust) / `Hypothesis` (Python) / `go-fuzz` (Go)
+**Derived rules:**
+- Fuzzing explores the input space, not known cases → complements unit tests
+- The crash corpus persists across runs (acquired immune memory)
+- Property-based testing = structured version: you define invariants, the framework generates cases
+- Fuzz on the critical path (parsers, serialization, auth) → where inputs come from outside
+- Tools: `cargo-fuzz`, `proptest`, `quickcheck` (Rust) / `Hypothesis` (Python) / `go-fuzz` (Go)
 
 ---
 
-## 8. SPORES FONGIQUES (Diversité + Dispersion) — Combinatorial Matrix Testing
+## 8. FUNGAL SPORES (Diversity + Dispersal) — Combinatorial Matrix Testing
 
-**Biologie** : Un champignon sous stress produit des millions de spores génétiquement
-diversifiées et les disperse dans **toutes les directions** — tous les substrats, tous les
-microclimats. Aucune sélection préalable. Dispersion maximale.
-Ce qui germera, c'est ce qui est compatible avec ce contexte précis.
-Les autres meurent — sans regret, sans overhead.
+**Biology**: A fungus under stress produces millions of genetically diverse spores and disperses them in **every direction** — all substrates, all microclimates. No prior selection. Maximum dispersal.
+What germinates is what is compatible with that specific context.
+The others die — no regret, no overhead.
 
-Différence avec les fourmis légionnaires : les légionnaires parallélisent la **même tâche**
-(fan-out). Les spores testent des **combinaisons différentes** d'environnements.
+Difference from army ants: army ants parallelize the **same task** (fan-out). Spores test **different combinations** of environments.
 
-**Pattern CI : Full Combinatorial Matrix**
+**CI Pattern: Full Combinatorial Matrix**
 
-**GitLab CI :**
+**GitLab CI:**
 ```yaml
-# ❌ Anti-pattern : tester une seule combinaison
+# ❌ Anti-pattern: test one combination
 test:
   image: ubuntu:22.04
-  script: cargo test   # Marche chez moi™
+  script: cargo test   # Works on my machine™
 
-# ✅ Pattern spores : dispersion sur toutes les combinaisons
+# ✅ Spore pattern: dispersal over all combinations
 test-matrix:
   stage: test
   needs: [compile]
@@ -616,29 +608,29 @@ test-matrix:
   script:
     - rustup default $RUST_VERSION
     - cargo test
-  # 3 × 2 × 4 = 24 spores lancées simultanément
+  # 3 × 2 × 4 = 24 spores launched simultaneously
   allow_failure:
-    - RUST_VERSION: nightly   # Spores sur terrain hostile → échec accepté
+    - RUST_VERSION: nightly   # Spores on hostile terrain → failure allowed
 ```
 
-**GitHub Actions :**
+**GitHub Actions:**
 ```yaml
 jobs:
   test-matrix:
     needs: [compile]
     runs-on: ${{ matrix.os }}
     strategy:
-      fail-fast: false   # Pas de rappel des spores : laisser tout germer
+      fail-fast: false   # No recalling the spores: let everything germinate
       matrix:
         os: [ubuntu-22.04, ubuntu-24.04, macos-latest, windows-latest]
         rust: ["1.75", "1.76", stable, nightly]
         exclude:
           - os: windows-latest
-            rust: nightly   # Combinaison connue pour être stérile
+            rust: nightly   # Known sterile combination
         include:
           - os: ubuntu-22.04
             rust: stable
-            coverage: true   # Spore marquée pour récolte spéciale
+            coverage: true   # Spore marked for special harvesting
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@master
@@ -649,48 +641,46 @@ jobs:
     continue-on-error: ${{ matrix.rust == 'nightly' }}
 ```
 
-**Règles dérivées :**
-- Tester TOUTES les combinaisons supportées, pas juste "chez moi"
-- `fail-fast: false` (GitHub) / pas de `dependencies:` bloquant (GitLab) → laisser toutes les spores germer
-- `allow_failure` / `continue-on-error` pour les combinaisons expérimentales (nightly, beta)
-- `exclude:` pour les combinaisons connues impossibles (économie de spores)
-- La matrice couvre : OS × architecture × version runtime × feature flags
+**Derived rules:**
+- Test ALL supported combinations, not just "on my machine"
+- `fail-fast: false` (GitHub) / no blocking `dependencies:` (GitLab) → let all spores germinate
+- `allow_failure` / `continue-on-error` for experimental combinations (nightly, beta)
+- `exclude:` for known impossible combinations (save on spores)
+- The matrix covers: OS × architecture × runtime version × feature flags
 
 ---
 
 ## 9. TARDIGRADE (Ramazzottius varieornatus) — Chaos Engineering
 
-**Biologie** : Le tardigrade ("ourson d'eau") survit à :
-- **-272°C** et **+150°C** (cryptobiose)
-- **Radiation** 1000× la dose létale humaine
-- **Vide spatial** (mission Foton-M3, 2007)
-- **Pression** 6000 atm (6× le fond océanique)
-- **Dessiccation** complète pendant 30 ans (anhydrobiose)
+**Biology**: The tardigrade ("water bear") survives:
+- **-272°C** and **+150°C** (cryptobiosis)
+- **Radiation** at 1000× the lethal human dose
+- **Vacuum of space** (Foton-M3 mission, 2007)
+- **Pressure** of 6000 atm (6× the ocean floor)
+- **Complete desiccation** for 30 years (anhydrobiosis)
 
-Il ne choisit pas ses conditions. Il est **constitutionnellement prêt** pour toutes,
-y compris celles qui n'existent pas naturellement sur Terre.
+It does not choose its conditions. It is **constitutionally ready** for all of them, including some that do not exist naturally on Earth.
 
-Différence avec le mycélium : le mycélium **route autour** des pannes (résilience passive).
-Le tardigrade **injecte les pannes** pour prouver qu'on y survit (résilience proactive).
+Difference from mycelium: mycelium **routes around** failures (passive resilience). The tardigrade **injects failures** to prove it can survive them (proactive resilience).
 
-**Pattern CI : Chaos Engineering / Fault Injection**
+**CI Pattern: Chaos Engineering / Fault Injection**
 
-**GitLab CI :**
+**GitLab CI:**
 ```yaml
-# ❌ Anti-pattern : tester uniquement en conditions idéales
+# ❌ Anti-pattern: test only under ideal conditions
 test-integration:
-  script: cargo test --test integration   # Tout va bien quand tout va bien
+  script: cargo test --test integration   # Everything fine when everything is fine
 
-# ✅ Pattern tardigrade : injecter les conditions extrêmes
+# ✅ Tardigrade pattern: inject extreme conditions
 chaos-network:
   stage: chaos
-  needs: [test-integration]   # Après les tests normaux
+  needs: [test-integration]   # After normal tests
   script:
-    # Réseau dégradé (latence 5s)
+    # Degraded network (5s latency)
     - toxiproxy-cli toxic add -t latency -a latency=5000 postgres
     - cargo test --test integration
     - toxiproxy-cli toxic reset postgres
-    # Réseau coupé (timeout)
+    # Cut network (timeout)
     - toxiproxy-cli toxic add -t timeout -a timeout=1 postgres
     - cargo test --test integration_timeout_handling
     - toxiproxy-cli toxic reset postgres
@@ -701,11 +691,11 @@ chaos-resources:
   stage: chaos
   needs: [test-integration]
   script:
-    # Disque plein
+    # Disk full
     - fallocate -l 95% /tmp/fill
     - cargo test --test storage_full_handling || true
     - rm /tmp/fill
-    # Mémoire sous pression
+    # Memory under pressure
     - stress-ng --vm 1 --vm-bytes 90% --timeout 60s &
     - cargo test --test memory_pressure
     - kill %1
@@ -714,13 +704,13 @@ chaos-time:
   stage: chaos
   needs: [test-integration]
   script:
-    # Clock skew (NTP mort → certificats expirés, tokens invalides)
+    # Clock skew (dead NTP → expired certs, invalid tokens)
     - faketime '2099-01-01' cargo test --test auth_token_handling
-    # Heure dans le passé (Y2K-like)
+    # Time in the past (Y2K-like)
     - faketime '1970-01-01' cargo test --test timestamp_handling
 ```
 
-**GitHub Actions :**
+**GitHub Actions:**
 ```yaml
 jobs:
   chaos-network:
@@ -732,12 +722,12 @@ jobs:
         ports: [8474:8474]
     steps:
       - uses: actions/checkout@v4
-      # Latence réseau 5s
+      # 5s network latency
       - run: |
           toxiproxy-cli toxic add -t latency -a latency=5000 postgres
           cargo test --test integration
           toxiproxy-cli toxic reset postgres
-      # Coupure réseau
+      # Network cut
       - run: |
           toxiproxy-cli toxic add -t timeout -a timeout=1 postgres
           cargo test --test integration_timeout_handling
@@ -747,7 +737,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      # Disque plein
+      # Disk full
       - run: |
           fallocate -l 10G /tmp/fill
           cargo test --test storage_full_handling || true
@@ -768,10 +758,10 @@ jobs:
       - run: faketime '1970-01-01' cargo test --test timestamp_handling
 ```
 
-**Règles dérivées :**
-- Le chaos testing vient APRÈS les tests fonctionnels (on ne teste pas le chaos sur du code cassé)
-- Chaque injection = une condition extrême isolée (réseau, disque, mémoire, temps)
-- Les tests doivent vérifier la **dégradation gracieuse**, pas juste "ça ne crash pas"
-- Outils : Toxiproxy (réseau), stress-ng (CPU/RAM), fallocate (disque), faketime (horloge)
-- En production : Chaos Monkey (Netflix), Litmus (K8s), Gremlin (SaaS)
-- Ne jamais injecter du chaos sans **observabilité** en place (sinon on ne sait pas ce qui s'est passé)
+**Derived rules:**
+- Chaos testing comes AFTER functional tests (don't test chaos on broken code)
+- Each injection = one isolated extreme condition (network, disk, memory, time)
+- Tests must verify **graceful degradation**, not just "it doesn't crash"
+- Tools: Toxiproxy (network), stress-ng (CPU/RAM), fallocate (disk), faketime (clock)
+- In production: Chaos Monkey (Netflix), Litmus (K8s), Gremlin (SaaS)
+- Never inject chaos without **observability** in place (otherwise you don't know what happened)

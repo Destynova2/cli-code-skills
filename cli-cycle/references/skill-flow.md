@@ -66,7 +66,7 @@ The skill ecosystem is a **directed graph**. Each edge represents a trigger cond
 
 ---
 
-## Trigger edges (qui déclenche qui)
+## Trigger edges (who triggers whom)
 
 ### Wave 1 → Wave 2 (Handoff edges)
 

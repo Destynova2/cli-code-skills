@@ -1,4 +1,4 @@
-# Phoenix Convergence Autonome — Dry-Run Multi-Pass
+# Phoenix Autonomous Convergence — Dry-Run Multi-Pass
 
 > **When to read:** When the user chooses option `[6]` in the Phoenix Choice, or invokes `/cli-cycle --converge [target-score]`.
 
@@ -6,10 +6,10 @@
 
 ## Concept
 
-Instead of the interactive loop (audit → user chooses → fix → re-audit → repeat), the Convergence Autonome mode runs the entire correction cycle **autonomously in an isolated worktree**, accumulating ALL findings and fixes across N passes, then presents a **single unified plan** with the complete diff.
+Instead of the interactive loop (audit → user chooses → fix → re-audit → repeat), Autonomous Convergence mode runs the entire correction cycle **autonomously in an isolated worktree**, accumulating ALL findings and fixes across N passes, then presents a **single unified plan** with the complete diff.
 
 ```
-Normal mode:                          Convergence Autonome:
+Normal mode:                          Autonomous Convergence:
 
   Audit → Show → User picks            Audit ──┐
     ↓                                    Fix    │ Worktree
@@ -68,7 +68,7 @@ cat > .claude/cycle-progress/current.md <<'EOF'
 - [ ] #N+1 description
 ...
 
-## Tier 1 effort=Faible (K items)
+## Tier 1 effort=Low (K items)
 - [ ] #N+M+1 description
 ...
 EOF
@@ -95,7 +95,7 @@ WHILE (has_tier3 OR has_tier2) AND pass <= max_passes:
 
   2. FOR EACH item in tier2 (same protocol)
 
-  3. FOR EACH item in tier1 IF effort == "Faible" (same protocol)
+  3. FOR EACH item in tier1 IF effort == "Low" (same protocol)
 
   4. Verify all items are [x] or [!] in current.md before continuing
      If any [ ] remains → ERROR, you skipped items, restart the loop
@@ -126,7 +126,7 @@ Classify each item:
 |----------|---------|----------|
 | RESOLVED | Fixed during convergence | YES (included in diff) |
 | CASCADED | Only appeared after earlier fix | YES (included in diff, marked as cascade) |
-| SKIPPED  | Tier 1 with Effort > Faible, or decision-level items | NO (listed as remaining) |
+| SKIPPED  | Tier 1 with Effort > Low, or decision-level items | NO (listed as remaining) |
 | DEFERRED | Items that require user decision (architecture, licensing) | NO (listed for user) |
 ```
 
@@ -141,77 +141,77 @@ git diff main..phoenix/convergence  # total diff from original
 
 ### Step C6 — Present unified plan to user
 
-The output has 4 sections:
+The output has 4 sections (translate into the project's detected language; this is the English template):
 
 ```markdown
-# Phoenix Convergence Autonome -- {project-name}
+# Phoenix Autonomous Convergence -- {project-name}
 
-**Score initial**: X.X/10
-**Score final**: Y.Y/10
-**Passes effectuees**: N
-**Fichiers modifies**: M
-**Items resolus**: A / B total (C cascades detectees)
+**Initial score**: X.X/10
+**Final score**: Y.Y/10
+**Passes performed**: N
+**Files modified**: M
+**Items resolved**: A / B total (C cascades detected)
 
-## Chronologie des passes
+## Pass timeline
 
-| Passe | Score | Tier 3 | Tier 2 | Tier 1 | Items resolus | Cascades |
-|-------|-------|--------|--------|--------|---------------|----------|
+| Pass | Score | Tier 3 | Tier 2 | Tier 1 | Items resolved | Cascades |
+|------|-------|--------|--------|--------|----------------|----------|
 | 0 (baseline) | 6.8 | 4 | 7 | 6 | -- | -- |
-| 1 | 7.5 | 0 | 4 | 5 | 8 | 2 nouveaux |
-| 2 | 8.3 | 0 | 1 | 4 | 5 | 1 nouveau |
+| 1 | 7.5 | 0 | 4 | 5 | 8 | 2 new |
+| 2 | 8.3 | 0 | 1 | 4 | 5 | 1 new |
 | 3 | 8.7 | 0 | 0 | 3 | 2 | 0 |
-| **Convergence** | **8.7** | **0** | **0** | **3** | **15 total** | **3 total** |
+| **Converged** | **8.7** | **0** | **0** | **3** | **15 total** | **3 total** |
 
-## Corrections appliquees (A items)
+## Applied corrections (A items)
 
-### Passe 1 (corrections directes)
-| # | Correction | Tier | Source | Fichiers |
-|---|-----------|------|--------|----------|
-| 1 | HEALTHCHECK_PASSWORD externalise | Tier 3 | cli-audit-code | Containerfile, entrypoint.sh |
-| 2 | sed temp file -> pipe direct | Tier 3 | cli-audit-code | entrypoint.sh |
+### Pass 1 (direct corrections)
+| # | Correction | Tier | Source | Files |
+|---|-----------|------|--------|-------|
+| 1 | HEALTHCHECK_PASSWORD externalized | Tier 3 | cli-audit-code | Containerfile, entrypoint.sh |
+| 2 | sed temp file -> direct pipe | Tier 3 | cli-audit-code | entrypoint.sh |
 | ... |
 
-### Passe 2 (cascades = issues apparues apres passe 1)
-| # | Correction | Tier | Source | Cause | Fichiers |
-|---|-----------|------|--------|-------|----------|
-| 9 | HEALTHCHECK_PASSWORD manquant dans Makefile test | Tier 2 | cli-audit-sync | Cascade de #1 | Makefile |
-| 10 | HEALTHCHECK CMD expose le mdp via podman inspect | Tier 3 | cli-audit-code | Cascade de #1 | Containerfile |
+### Pass 2 (cascades = issues surfaced after pass 1)
+| # | Correction | Tier | Source | Cause | Files |
+|---|-----------|------|--------|-------|-------|
+| 9 | HEALTHCHECK_PASSWORD missing in Makefile test | Tier 2 | cli-audit-sync | Cascade of #1 | Makefile |
+| 10 | HEALTHCHECK CMD exposes password via podman inspect | Tier 3 | cli-audit-code | Cascade of #1 | Containerfile |
 | ... |
 
-### Passe 3 (stabilisation)
+### Pass 3 (stabilization)
 | ... |
 
-## Items restants (non corriges)
+## Remaining items (not fixed)
 
-| # | Item | Tier | Raison |
+| # | Item | Tier | Reason |
 |---|------|------|--------|
-| 16 | Pas de CHANGELOG.md | Tier 1 | Decision metier |
-| 17 | Pas de LICENSE | Tier 1 | Decision metier |
-| 18 | Overlay prod manquant | Tier 2 | Decision architecture |
+| 16 | No CHANGELOG.md | Tier 1 | Business decision |
+| 17 | No LICENSE | Tier 1 | Business decision |
+| 18 | Missing prod overlay | Tier 2 | Architecture decision |
 
-## Diff complet
+## Full diff
 
-[Le diff git complet est disponible dans la branche phoenix/convergence]
-Fichiers modifies: {list}
+[The complete git diff is available on branch phoenix/convergence]
+Modified files: {list}
 
 ---
 
-**Phoenix -- Appliquer le plan ?**
+**Phoenix -- Apply the plan?**
 
-| Choix | Action |
-|-------|--------|
-| `oui` | Merge la branche phoenix/convergence dans la branche courante |
-| `partiel` | Afficher le diff fichier par fichier pour selection |
-| `non` | Supprimer la branche et le worktree, aucune modification |
+| Choice | Action |
+|--------|--------|
+| `yes` | Merge the phoenix/convergence branch into the current branch |
+| `partial` | Show the diff file-by-file for cherry-picking |
+| `no` | Delete the branch and worktree, no modifications |
 ```
 
 ### Step C7 — Apply or discard
 
 | User choice | Action |
 |-------------|--------|
-| `oui` | `git merge phoenix/convergence` in the main working directory |
-| `partiel` | Show diff per file, user cherry-picks |
-| `non` | `git worktree remove /tmp/phoenix-*; git branch -D phoenix/convergence` |
+| `yes` | `git merge phoenix/convergence` in the main working directory |
+| `partial` | Show diff per file, user cherry-picks |
+| `no` | `git worktree remove /tmp/phoenix-*; git branch -D phoenix/convergence` |
 
 ---
 
@@ -238,7 +238,7 @@ The primary stop mechanism is **early-stop** (Step C3.9), not the max pass count
 2. **Commit after each pass** in the worktree with message `phoenix: pass N — X items resolved`
 3. **Stop if diverging**: if a pass introduces more Tier 3 items than it resolves, stop and present what you have
 4. **Max passes is a safety net, not the exit condition**: early-stop (converged/stable/plateau/diverging) is the primary mechanism. Default max is 10 but configurable via `--max-passes`. In practice, convergence happens in 2-4 passes
-5. **No architecture decisions**: items marked as "decision metier" or "decision architecture" are DEFERRED, never auto-fixed
+5. **No architecture decisions**: items marked as "business decision" or "architecture decision" are DEFERRED, never auto-fixed
 6. **Track cascades explicitly**: when a fix in pass N causes a new finding in pass N+1, record the causal link
 
 ---
@@ -273,7 +273,7 @@ Cascades are **expected and valuable** — they're the whole reason this mode ex
 | Conventions | Rename variables across multi-team project | Coordination needed |
 | Features | Add startupProbe, add --dry-run flag | Scope decision |
 
-These items appear in the "Items restants" section with their reason.
+These items appear in the "Remaining items" section with their reason.
 
 ---
 
@@ -292,5 +292,5 @@ These items appear in the "Items restants" section with their reason.
 
 Or via the Phoenix Choice menu:
 ```
-[6] Convergence autonome (dry-run, corrige tout, propose un plan unifie)
+[6] Autonomous convergence (dry-run, fix everything, propose a unified plan)
 ```
