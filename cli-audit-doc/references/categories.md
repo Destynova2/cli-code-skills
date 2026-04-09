@@ -40,6 +40,25 @@ Check for:
 - Inconsistent terminology (same concept called different names)
 - Outdated examples using old API patterns
 - **Doc-code drift**: time delta between last code change and last doc change for the same module
+- **Duplicated Truth**: the same fact (version number, install command, port, env var, deprecation notice) stated by hand in 3+ different files with no single-source mechanism. Detect by grepping a known fact (e.g., a port number, an API endpoint) and counting how many doc files mention it. If > 2 places assert the same fact and none are generated from the others, it is Duplicated Truth.
+
+### SSOT principle — biological splicing analog
+
+> **Biomimetic frame — alternative splicing.** A eukaryotic gene is transcribed once into pre-mRNA, then the spliceosome cuts out the introns and joins the exons. Different cellular contexts produce **different alternative splicings of the same gene**, yielding distinct proteins from one source. The cell never maintains parallel copies of the same DNA — it maintains one source and selects from it. Documentation should work the same way: one canonical source of truth for each fact, multiple "splicings" (README, CONTRIBUTING, internal wiki, slide deck, marketing page) that each select the relevant exons.
+
+**The rule:** every fact has exactly one home. Other documents that need to mention the fact must either link to that home, transclude from it via tooling, or be generated from it. Manual duplication is forbidden because it always drifts.
+
+**Detection (score down on C3 if any of these is true):**
+- A version number, port, env var, install command, or deprecation notice appears verbatim in 3+ files with no generator producing them
+- Two files describe the same architectural component in their own words, and the descriptions contradict each other
+- Release notes are written in CHANGELOG.md *and* in README.md *and* in a blog post, by hand
+- Configuration defaults are documented in `docs/config.md` *and* in source code comments *and* in `--help` output, all maintained separately
+
+**Healthy patterns (score up):**
+- A single `docs/data/facts.yml` (or similar) feeds README, docs, and `--help`
+- `--help` output is generated from the same struct that the docs reference
+- README sections are stitched from `docs/` files via `cat`, `m4`, `mdbook`, or include directives
+- One file owns each fact; others link to it
 
 ## C4: READABILITY & PROSE QUALITY (10%)
 

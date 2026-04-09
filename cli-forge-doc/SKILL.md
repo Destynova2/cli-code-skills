@@ -16,12 +16,13 @@ Generate production-grade documentation for any Git project, optimized for both 
 
 ## Philosophy
 
-Three principles stolen from the best:
+Four principles stolen from the best, plus one operational rule:
 
 1. **OpenBSD doctrine**: "Developers making a change to the system are expected to update the man pages along with their change." Docs ship with code. Man pages are authoritative. If it's not documented, it doesn't exist.
 2. **Diátaxis framework**: Documentation has four modes — tutorials, how-to guides, reference, explanation. Never mix them.
 3. **One doc, two readers**: Good documentation serves both humans and AI agents. Standard files (architecture.md, CONTRIBUTING.md, TROUBLESHOOTING.md) are naturally consumable by both — no special AI format needed.
-4. **Gotchas** — read `../../gotchas.md` before producing output to avoid known mistakes
+4. **Single source of truth (the spliceosome principle)**: each fact has exactly one canonical home. Other documents that need to mention the fact must link to it, transclude from it, or be generated from it — never duplicate it by hand. A eukaryotic gene is transcribed once and the spliceosome cuts the relevant exons for each context; documentation should work the same way. One source, many splicings (README, CONTRIBUTING, --help, slide deck), zero hand-maintained copies. Duplicated Truth is the #1 cause of doc rot — every parallel copy drifts.
+5. **Gotchas** — read `../../gotchas.md` before producing output to avoid known mistakes
 
 ## Input
 
@@ -136,6 +137,7 @@ All project context is placed in standard files. An AI agent reads these files n
 - Include package manager explicitly if non-default
 - Never dump style guides — let the linter do the linter's job
 - Use progressive disclosure: point to `docs/` for details, don't inline everything
+- **Each fact has exactly one home (SSOT, the spliceosome rule):** if two generated files would describe the same configuration option, port number, version, install command, or architectural component, one must link to the other instead of restating it. When in doubt, the canonical home is the file most likely to be read first by the relevant audience (README for users, CONTRIBUTING for contributors, ARCHITECTURE for designers). Never generate Duplicated Truth — every parallel copy is a future drift.
 
 ### Cleanup of existing AI markers
 

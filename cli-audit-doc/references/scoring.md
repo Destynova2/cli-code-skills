@@ -83,7 +83,8 @@ Thresholds:
 | **Jargon Soup** | C4 | Undefined acronyms and domain terms |
 | **Treasure Hunt** | C5 | Critical info buried deep, no navigation |
 | **Time Capsule** | C3 | Docs last updated years ago, code changed since |
-| **Copy-Paste Graveyard** | C3 | Duplicated content that drifts out of sync |
+| **Copy-Paste Graveyard** | C3 | Duplicated content that drifts out of sync — symptom of Duplicated Truth (no SSOT mechanism) |
+| **Duplicated Truth** | C3 | Same fact (version, port, env var, install command) maintained by hand in 3+ files with no single-source-of-truth generator. Structural cause of Copy-Paste Graveyard. Cure: spliceosome pattern — one canonical home per fact, others transclude or link |
 | **The Assumption** | C4 | Skipping prerequisites ("obviously you've already...") |
 | **Condescension** | C4 | "Simply", "just", "easy", "obviously" |
 | **Happy Path Only** | C6 | No error handling, no troubleshooting |
