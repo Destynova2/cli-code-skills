@@ -454,7 +454,7 @@ The ccheck is a dedicated Claude instance in its own tmux window that watches th
 The ccheck:
 - **APPROVES** edits in normal zones (src/, tests/, shared-state.md, docs/)
 - **SKIPS** edits in sensitive zones (CI, deps, auth, secrets) — the Chef stays blocked, the user decides later
-- **LOGS** every decision to `{project}/.claude/ccheck.log`
+- **LOGS** every decision to `/tmp/{session}-ccheck.log`
 - **Re-reads** the sensitive zone list every iteration (so the Chef can add zones mid-sprint)
 
 **This replaces the Phase 5 `/loop` approach** which was fragile (depended on the user's session staying open) and optional (it should never have been optional).
@@ -496,7 +496,7 @@ The ccheck (contre-chef) window is part of the tmuxinator config — it starts a
 The ccheck watches the Chef pane every 30 seconds and:
 - **APPROVES** edits in normal zones (src/, tests/, shared-state.md, docs/)
 - **SKIPS** edits in sensitive zones (CI, deps, auth, security) — the Chef stays blocked, the user decides when they return
-- **LOGS** every decision to `{project}/.claude/ccheck.log` for traceability
+- **LOGS** every decision to `/tmp/{session}-ccheck.log` for traceability
 - **Re-reads** the sensitive zone list from shared-state.md on every iteration — so the Chef or the user can add zones mid-sprint
 
 The user can leave. The ccheck keeps watch.

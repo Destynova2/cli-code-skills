@@ -75,7 +75,7 @@ Every missing permission = an agent blocks (G1, G24).
       // on every shared-state edit, sprint-history write, and log append.
       "Edit(//{project_path}/.claude/shared-state.md)",
       "Read(//{project_path}/.claude/**)",
-      "Write(//{project_path}/.claude/ccheck.log)",
+      // ccheck.log now lives in /tmp/ to avoid .claude/ trust guard (G25)
       "Write(//{project_path}/.claude/sprint-history/**)",
       "Bash(mkdir -p //{project_path}/.claude/sprint-history/*)",
       "Bash(ln -sfn * //{project_path}/.claude/sprint-history/current)",
