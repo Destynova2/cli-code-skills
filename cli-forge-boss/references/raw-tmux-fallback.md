@@ -11,7 +11,7 @@ It reproduces the behavior of the tmuxinator YAML using only `tmux` (POSIX shell
 
 ## Generation
 
-Generate at `{project}/.claude/scripts/boss-{session}.sh` (chmod +x).
+Generate at `{project}/.claude/scripts/chef-{session}.sh` (chmod +x).
 
 ```bash
 #!/usr/bin/env bash
@@ -43,7 +43,7 @@ tmux send-keys -t "${SESSION}:chef" \
   "claude --dangerously-skip-permissions --permission-mode bypassPermissions --teammate-mode tmux --append-system-prompt \"\$(cat $PROMPT)\"" \
   Enter
 
-# --- Window 2: gate (raw shell — the Sous-Chef Merge sends commands here) ---
+# --- Window 2: gate (raw shell — the Sous-Chef sends commands here) ---
 tmux new-window -t "$SESSION" -n gate -c "$ROOT"
 tmux send-keys -t "${SESSION}:gate" \
   'echo "=== GATE — merge, rebase, test, build, push, CI ==="' \
@@ -64,7 +64,7 @@ tmux attach-session -t "$SESSION"
 ## Launch
 
 ```bash
-bash {project}/.claude/scripts/boss-{session}.sh
+bash {project}/.claude/scripts/chef-{session}.sh
 ```
 
 ## Differences from tmuxinator
@@ -88,6 +88,6 @@ bash {project}/.claude/scripts/boss-{session}.sh
 Phase 0.3 prereq check: if `tmuxinator` is missing, DO NOT block. Generate the fallback script and explicitly mention it in the Phase 4 report:
 
 ```
-tmuxinator missing → raw-tmux fallback generated: {project}/.claude/scripts/boss-{session}.sh
-Launch with: bash {project}/.claude/scripts/boss-{session}.sh
+tmuxinator missing → raw-tmux fallback generated: {project}/.claude/scripts/chef-{session}.sh
+Launch with: bash {project}/.claude/scripts/chef-{session}.sh
 ```

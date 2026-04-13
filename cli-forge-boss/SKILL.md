@@ -8,7 +8,7 @@ description: >
   Uses Claude Code Agent Teams (TeamCreate + SendMessage) with visible tmux panes.
   Use when the user wants to parallelize work across multiple Claude Code agents, orchestrate
   a multi-agent sprint, or says 'boss', 'multi-agent', 'orchestrate', 'parallelize agents',
-  'team of claudes', 'sprint multi-agent', 'brigade', 'conductor', 'chef'.
+  'team of claudes', 'sprint multi-agent', 'brigade', 'chef'.
   Also triggers on 'swarm', 'agent team', 'parallel workers', 'PERT multi-agent'.
 argument-hint: "[project-path-or-name]"
 context: fork
@@ -84,7 +84,7 @@ allowed-tools:
 │                                                      │
 │  - Each has their own station (worktree / project)   │
 │  - Prepare their plat (code, test, commit)           │
-│  - Announce "Pret !" to the sous-chef-merge          │
+│  - Announce "Pret !" to the sous-chef          │
 │  - DO NOT DECIDE when to send out                    │
 └─────────────────────────────────────────────────────┘
 ```
@@ -137,11 +137,11 @@ Commis edits a file
   → 1 ESCALATE → Chef notifies the patron (human)
 
 Commis finishes cooking
-  → "Pret !" to the Sous-Chef Merge (SendMessage)
-  → Sous-Chef Merge tastes (quality gates)
+  → "Pret !" to the Sous-Chef (SendMessage)
+  → Sous-Chef tastes (quality gates)
   → IF good:
-      → Sous-Chef Merge plates up and sends (merge + CI)
-      → Sous-Chef Merge to Chef: "Plat sent, table served"
+      → Sous-Chef plates up and sends (merge + CI)
+      → Sous-Chef to Chef: "Plat sent, table served"
       → Chef to dependent commis: "Envoyez the next one!"
   → IF not good:
       → Sous-Chef to Commis: "Renvoi! Too much salt in fn X"
@@ -299,7 +299,7 @@ Before spawning the XL brigade, **always** display and ask for confirmation:
 ```
 === TIER XL DETECTED ===
 Reason: {detection_reason}  # e.g., "CONTRACTS.md present" or "--tier XL flag"
-Brigade: Chef + 9 Sous-Chefs (3 clusters) + 1 Sous-Chef Merge + N Commis
+Brigade: Chef + 9 Sous-Chefs (3 clusters) + 1 Sous-Chef + N Commis
 Estimated cost: ~5-8x tier L (each diff voted on by 9 agents instead of 3)
 Estimated duration: ~2-3x tier L (inter-cluster resolution rounds)
 
@@ -338,7 +338,7 @@ EXPLORATION tasks use 2-3 commis on the same problem with different approaches. 
 
 **LANGUAGE RULE: run `git log --oneline -10` + `head -20 README.md`. If the project is in French → ALL generated files (prompts, shared-state, tmuxinator comments, reports) are in French. If English → English. The Brigade vocabulary (Menu, Commis, Sous-Chef) stays in French regardless of the project language.**
 
-**COMMITS RULE: commis and the Sous-Chef Merge use `cli-git-conventional` for ALL commits. Ghostwriter style, zero AI marker, project language.**
+**COMMITS RULE: commis and the Sous-Chef use `cli-git-conventional` for ALL commits. Ghostwriter style, zero AI marker, project language.**
 
 **RULE: do NOT ask any question if the answer is in the project.**
 Read EVERYTHING before asking anything:
@@ -392,14 +392,14 @@ Read `references/shared-state-template.md` and customize.
 
 ### 2.2 — The Chef's instructions (`{project}/.claude/prompts/chef-{session}.md`)
 
-**ABSOLUTE REQUIREMENT: read `references/conductor-prompt-template.md` BEFORE generating the prompt.**
-**The generated prompt MUST contain the 3 voting Sous-Chefs + the Sous-Chef Merge.**
-**If the prompt does not contain "sous-chef-scope", "sous-chef-secu", "sous-chef-qualite", "sous-chef-merge" → the prompt is INVALID.**
+**ABSOLUTE REQUIREMENT: read `references/chef-prompt-template.md` BEFORE generating the prompt.**
+**The generated prompt MUST contain the 3 voting Sous-Chefs + the Sous-Chef.**
+**If the prompt does not contain "sous-chef-scope", "sous-chef-secu", "sous-chef-qualite", "sous-chef" → the prompt is INVALID.**
 
 The Chef prompt MUST include, in this order:
 1. TeamCreate
 2. **Spawn the 3 voting Sous-Chefs** (scope, secu, qualite) — copy VERBATIM from the template
-3. **Spawn the Sous-Chef Merge** — copy VERBATIM from the template
+3. **Spawn the Sous-Chef** — copy VERBATIM from the template
 4. **Voting protocol with resolution rounds** — copy VERBATIM from the template
 5. Spawn the N Commis
 6. PERT
@@ -407,21 +407,21 @@ The Chef prompt MUST include, in this order:
 
 The Chef:
 - Creates the team (TeamCreate)
-- Spawns 3 voting Sous-Chefs + 1 Sous-Chef Merge + N Commis
+- Spawns 3 voting Sous-Chefs + 1 Sous-Chef + N Commis
 - Commis permissions flow through the 3 Sous-Chefs (quorum 2/3 normal, 3/3 sensitive)
-- The Sous-Chef Merge handles quality gates, merges, CI
+- The Sous-Chef handles quality gates, merges, CI
 - Produces the service report
 
 ### 2.3 — The 3 voting Sous-Chefs (MANDATORY — embedded in the Chef prompt)
 
-**COPY the prompts of the 3 sous-chefs from `references/conductor-prompt-template.md` section "Spawn the 3 Sous-Chefs".**
+**COPY the prompts of the 3 sous-chefs from `references/chef-prompt-template.md` section "Spawn the 3 Sous-Chefs".**
 
 Each votes independently: APPROVE / DENY+solution / CONCERN+solution.
 Resolution rounds if no consensus. Human escalation < 2%.
 
-### 2.4 — The Sous-Chef Merge (MANDATORY — embedded in the Chef prompt)
+### 2.4 — The Sous-Chef (MANDATORY — embedded in the Chef prompt)
 
-**COPY the prompt from `references/conductor-prompt-template.md` section "Spawn the Sous-Chef Merge".**
+**COPY the prompt from `references/chef-prompt-template.md` section "Spawn the Sous-Chef".**
 
 Handles quality gates, merges, CI. Does not vote on permissions.
 
@@ -431,7 +431,7 @@ Each commis prompt includes:
 - Shared state path (absolute)
 - Mission (the plat to prepare)
 - Steps (the recipe)
-- SendMessage to the Sous-Chef Merge when ready (NOT to the Chef)
+- SendMessage to the Sous-Chef when ready (NOT to the Chef)
 - Permissions go through the quorum of the 3 Sous-Chefs (the commis does not know this)
 
 ### 2.5 — Tmuxinator (`~/.config/tmuxinator/{session}.yml`)
@@ -449,11 +449,11 @@ Read `references/tmuxinator-template.md`.
 
 Read `references/ccheck-prompt-template.md` and customize with the project paths.
 
-The ccheck is a dedicated Claude instance in its own tmux window that watches the conductor pane and auto-approves permissions in normal zones. **Without it, the conductor blocks on every worker edit and the brigade stalls.**
+The ccheck is a dedicated Claude instance in its own tmux window that watches the Chef pane and auto-approves permissions in normal zones. **Without it, the Chef blocks on every worker edit and the brigade stalls.**
 
 The ccheck:
 - **APPROVES** edits in normal zones (src/, tests/, shared-state.md, docs/)
-- **SKIPS** edits in sensitive zones (CI, deps, auth, secrets) — the conductor stays blocked, the user decides later
+- **SKIPS** edits in sensitive zones (CI, deps, auth, secrets) — the Chef stays blocked, the user decides later
 - **LOGS** every decision to `{project}/.claude/ccheck.log`
 - **Re-reads** the sensitive zone list every iteration (so the Chef can add zones mid-sprint)
 
@@ -488,9 +488,9 @@ Present to the user:
 
 The ccheck (contre-chef) window is part of the tmuxinator config — it starts automatically with `tmuxinator start {session}`. **No manual `/loop` setup needed.** The user does not need to do anything.
 
-The ccheck watches the conductor pane every 30 seconds and:
+The ccheck watches the Chef pane every 30 seconds and:
 - **APPROVES** edits in normal zones (src/, tests/, shared-state.md, docs/)
-- **SKIPS** edits in sensitive zones (CI, deps, auth, security) — the conductor stays blocked, the user decides when they return
+- **SKIPS** edits in sensitive zones (CI, deps, auth, security) — the Chef stays blocked, the user decides when they return
 - **LOGS** every decision to `{project}/.claude/ccheck.log` for traceability
 - **Re-reads** the sensitive zone list from shared-state.md on every iteration — so the Chef or the user can add zones mid-sprint
 
@@ -498,9 +498,9 @@ The user can leave. The ccheck keeps watch.
 
 **Why this replaced the old `/loop` approach:**
 - The `/loop` ran in the user's session, not in tmux → closing the terminal killed it
-- The `/loop` was described as optional ("Phase 5") → but without it the conductor blocks
+- The `/loop` was described as optional ("Phase 5") → but without it the Chef blocks
 - The `/loop` prompt was frozen at creation → zones added mid-sprint were ignored
-- The ccheck is a dedicated window that starts and stops with the boss (`tmuxinator start/stop`), reads fresh state every tick, and cannot be accidentally closed
+- The ccheck is a dedicated window that starts and stops with the tmux session (`tmuxinator start/stop`), reads fresh state every tick, and cannot be accidentally closed
 
 To stop: `CronDelete {job_id}`
 
@@ -511,7 +511,7 @@ To stop: `CronDelete {job_id}`
 | `references/gotchas-boss.md` | 15 known pitfalls and fixes (including G24 — mandatory ccheck) |
 | `references/templates.md` | Index of all templates |
 | `references/shared-state-template.md` | The carnet de cuisine |
-| `references/conductor-prompt-template.md` | Chef + Sous-Chef + Commis instructions |
+| `references/chef-prompt-template.md` | Chef + Sous-Chef + Commis instructions |
 | `references/tmuxinator-template.md` | Tmuxinator YAML |
 | `references/permissions-template.md` | settings.local.json |
 | `references/quality-gates.md` | The tasting card (audit skills) |
@@ -535,6 +535,6 @@ To stop: `CronDelete {job_id}`
 | `/cli-cycle` | End of service — global sprint scorecard |
 | `/cli-forge-pipeline` | Optimize the CI pipeline the commis will trigger |
 | `/cli-forge-tree` | Validate the project structure before assigning worktrees |
-| `/cli-git-conventional` | **ALWAYS** — every commit from the commis and Sous-Chef Merge goes through ghostwriter. Zero AI markers |
-| `/cli-forge-doc` | If a quality gate detects missing docs — the Sous-Chef Merge triggers generation |
+| `/cli-git-conventional` | **ALWAYS** — every commit from the commis and Sous-Chef goes through ghostwriter. Zero AI markers |
+| `/cli-forge-doc` | If a quality gate detects missing docs — the Sous-Chef triggers generation |
 | `/cli-forge-schema` | If a quality gate detects a missing diagram — Mermaid generation |

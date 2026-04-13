@@ -39,15 +39,15 @@ Post-merge docs: /cli-audit-sync
 End of cycle: /cli-cycle
 ```
 
-## Integration in the boss prompt
+## Integration in the Chef prompt
 
 ```markdown
 ## Quality Gates
 
 ### Protocol
 
-1. Worker sends "Task complete" via SendMessage
-2. Boss runs the gates in the gate window:
+1. Commis sends "Task complete" via SendMessage
+2. Sous-Chef runs the gates in the gate window:
    /cli-audit-code {scope}
    /cli-audit-drift {scope}
 3. If a gate fails:

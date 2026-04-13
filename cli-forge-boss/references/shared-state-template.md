@@ -9,14 +9,14 @@ Replace `{variables}` with the project values.
 # {Project Name} Shared State — Session {session_name}
 
 > Shared memory between all parallel Claude Code sessions.
-> **BOSS**: only agent allowed to write in "Valid merges" and "Green light".
-> **WORKERS**: read this file BEFORE coding. Write in "In progress" and "Done".
+> **CHEF**: only agent allowed to write in "Valid merges" and "Green light".
+> **COMMIS**: read this file BEFORE coding. Write in "In progress" and "Done".
 > **EVERYONE**: re-read this file after every merge to see what changed.
 
 ## Green light — Resolved dependencies
 
-> The boss writes here when a merge is validated and dependents can continue.
-> Workers: if your task depends on another, wait until it appears here.
+> The Chef writes here when a merge is validated and dependents can continue.
+> Commis: if your task depends on another, wait until it appears here.
 
 | Merged branch | Tests | CI | Date | Unblocks |
 |---------------|-------|----|------|----------|
@@ -46,14 +46,14 @@ Replace `{variables}` with the project values.
 ## Decisions made
 
 > Technical choices made during the sprint that affect other sessions.
-> Workers: read this section BEFORE coding, a choice made by another worker may change your approach.
+> Commis: read this section BEFORE coding, a choice made by another worker may change your approach.
 
 | Decision | Reason | Impacts | By | Date |
 |----------|--------|---------|----|------|
 
-## Quality Gates — Metrics (filled by the boss)
+## Quality Gates — Metrics (filled by the Chef)
 
-> The boss fills this section after every audit. Workers: if a gate fails, fix before resubmitting.
+> The Chef fills this section after every audit. Commis: if a gate fails, fix before resubmitting.
 
 | Gate | Scope | Score | Threshold | Status | Date |
 |------|-------|-------|-----------|--------|------|
@@ -61,7 +61,7 @@ Replace `{variables}` with the project values.
 
 ### Strong couplings (from /cli-audit-tangle)
 
-> Boss fills this before assigning tasks. Workers: do NOT touch coupled files assigned to another worker.
+> Chef fills this before assigning tasks. Commis: do NOT touch coupled files assigned to another worker.
 
 | Module/Function | Coupling | Assigned to |
 |------------------|----------|-------------|

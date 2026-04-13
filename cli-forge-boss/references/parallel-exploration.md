@@ -178,7 +178,7 @@ Phase 6 — Deliver
 
 **Advantage**: only costs one commis (no worktree duplication).
 
-## Integration with the boss
+## Integration with the Chef
 
 ### In the PERT
 

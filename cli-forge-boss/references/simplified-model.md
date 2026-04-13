@@ -12,7 +12,7 @@ The Brigade de Cuisine model (Chef + 3 Sous-Chefs + Merge + N Commis) is justifi
 Full brigade (XL):                  Stigmergy (S/M/L):
   Chef coordinates                   shared-state.md coordinates
   3 Sous-Chefs vote                  1 Sous-Chef (3 lenses) reviews
-  1 Sous-Chef Merge                  Commis merge themselves
+  1 Sous-Chef                  Commis merge themselves
   N Commis execute                   N Commis self-assign
 
   6+ agents                          2+ agents (1 sous-chef + N commis)

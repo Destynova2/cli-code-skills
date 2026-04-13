@@ -1,27 +1,29 @@
-# Gotchas — Multi-Agent Boss Orchestration
+# Gotchas — Multi-Agent Orchestration
 
-> **Rule:** The boss prompt MUST include this section verbatim. Every gotcha comes from a real failure.
+> **Rule:** The Chef prompt MUST include this section verbatim. Every gotcha comes from a real failure.
+>
+> **Terminology:** "Chef" = the planning agent (Brigade role). "conductor" = the tmux window/pane name. They are the same agent. Never use "boss" in prompts or configs — it's only the skill name (`cli-forge-boss`).
 
 ---
 
-## G1 — Permission UI blocks the boss (CRITICAL)
+## G1 — Permission UI blocks the Chef (CRITICAL)
 
-**Problem:** Even with `--dangerously-skip-permissions`, the boss (team leader) receives interactive UI prompts to approve worker edits. The boss gets stuck on "Do you want to make this edit?" and waits for a human Enter.
+**Problem:** Even with `--dangerously-skip-permissions`, the Chef (team leader) receives interactive UI prompts to approve commis edits. The Chef gets stuck on "Do you want to make this edit?" and waits for a human Enter.
 
-**Cause:** Agent Teams design — the team leader is the gatekeeper for teammate permissions. The `--dangerously-skip-permissions` flag bypasses the boss's own permissions, but NOT those of the workers that bubble up to the leader.
+**Cause:** Agent Teams design — the team leader is the gatekeeper for teammate permissions. The `--dangerously-skip-permissions` flag bypasses the Chef's own permissions, but NOT those of the commis that bubble up to the leader.
 
-**Fix:** Add `--permission-mode bypassPermissions` to the boss IN ADDITION to `--dangerously-skip-permissions`:
+**Fix:** Add `--permission-mode bypassPermissions` to the Chef IN ADDITION to `--dangerously-skip-permissions`:
 ```yaml
 claude --dangerously-skip-permissions --permission-mode bypassPermissions --teammate-mode tmux
 ```
 
-**If forgotten:** The boss will block on every worker edit. You'll have to approve manually with Enter in the boss pane.
+**If forgotten:** The Chef will block on every commis edit. You'll have to approve manually with Enter in the Chef pane.
 
 ---
 
 ## G2 — --system-prompt-file does not exist
 
-**Problem:** The `--system-prompt-file` flag does not exist in the Claude Code CLI. The boss will not launch.
+**Problem:** The `--system-prompt-file` flag does not exist in the Claude Code CLI. The Chef will not launch.
 
 **Fix:** Use `--append-system-prompt "$(cat path/to/prompt.md)"` to load a prompt file.
 
@@ -31,22 +33,22 @@ claude --dangerously-skip-permissions --permission-mode bypassPermissions --team
 
 ## G3 — Claude waits for a first message
 
-**Problem:** Claude Code in interactive mode always waits for a first user message. The boss is launched but does nothing.
+**Problem:** Claude Code in interactive mode always waits for a first user message. The Chef is launched but does nothing.
 
-**Fix:** Include in the boss prompt a clear instruction to start autonomously. If that is not enough, the user types into the boss pane or we send via tmux:
+**Fix:** Include in the Chef prompt a clear instruction to start autonomously. If that is not enough, the user types into the Chef pane or we send via tmux:
 ```bash
-tmux send-keys -t {session}:boss "Run the full plan." Enter
+tmux send-keys -t {session}:chef "Run the full plan." Enter
 ```
 
 **DO NOT use `-p` (print mode)** — it disables interactive mode and the teammates' tmux panes will not show up.
 
 ---
 
-## G4 — Invisible workers without --teammate-mode tmux
+## G4 — Invisible commis without --teammate-mode tmux
 
-**Problem:** By default, Agent Teams teammates are invisible subprocesses. The user sees nothing in tmux, just the boss.
+**Problem:** By default, Agent Teams teammates are invisible subprocesses. The user sees nothing in tmux, just the Chef.
 
-**Fix:** Always add `--teammate-mode tmux` to the boss:
+**Fix:** Always add `--teammate-mode tmux` to the Chef:
 ```yaml
 claude --teammate-mode tmux
 ```
@@ -57,14 +59,14 @@ claude --teammate-mode tmux
 
 ## G5 — shared-state.md outside the worktree = permission
 
-**Problem:** Workers in worktrees (`grob-wt-hit/`) want to edit `shared-state.md` which lives in the main repo (`grob/.claude/`). This triggers a permission request back to the boss.
+**Problem:** Commis in worktrees (`grob-wt-hit/`) want to edit `shared-state.md` which lives in the main repo (`grob/.claude/`). This triggers a permission request back to the Chef.
 
 **Fix:** Add to `settings.local.json`:
 ```json
 "Edit(//path/to/project/.claude/shared-state.md)"
 ```
 
-And give the absolute path in the worker prompts:
+And give the absolute path in the commis prompts:
 ```
 SHARED MEMORY: Read /absolute/path/project/.claude/shared-state.md
 ```
@@ -77,10 +79,10 @@ SHARED MEMORY: Read /absolute/path/project/.claude/shared-state.md
 
 **Fix:** If you must auto-approve, space them out by at least 3s:
 ```bash
-for i in $(seq 1 N); do tmux send-keys -t session:boss Enter; sleep 3; done
+for i in $(seq 1 N); do tmux send-keys -t session:chef Enter; sleep 3; done
 ```
 
-**Better:** Use G1 (`--permission-mode bypassPermissions`) so you never see prompts.
+**Better:** Use the ccheck window (G24) which handles this with proper delays.
 
 ---
 
@@ -92,22 +94,22 @@ for i in $(seq 1 N); do tmux send-keys -t session:boss Enter; sleep 3; done
 
 ---
 
-## G8 — Workers receive the wrong prompt
+## G8 — Commis receive the wrong prompt
 
-**Problem:** The auto-approve `Enter` keys sent to the boss can land in a worker's input prompt if the tmux focus changed, or the boss kick-off message ends up in a worker pane.
+**Problem:** The auto-approve `Enter` keys sent to the Chef can land in a worker's input prompt if the tmux focus changed, or the Chef kick-off message ends up in a worker pane.
 
 **Fix:** Always target the right pane:
 ```bash
-tmux send-keys -t {session}:0.0 Enter  # boss = always pane 0.0
+tmux send-keys -t {session}:chef.0 Enter  # chef = always pane 0.0
 ```
 
 ---
 
 ## G9 — Merge without CI = catastrophe
 
-**Problem:** The boss merges into develop without waiting for CI. The develop branch is broken.
+**Problem:** The Chef merges into develop without waiting for CI. The develop branch is broken.
 
-**Fix:** The boss prompt MUST contain:
+**Fix:** The Chef prompt MUST contain:
 ```
 CI green MANDATORY between every merge.
 Loop on: gh run watch
@@ -115,21 +117,21 @@ Loop on: gh run watch
 
 ---
 
-## G10 — Workers touching the same files
+## G10 — Commis touching the same files
 
-**Problem:** Two workers modify the same file (e.g., `mod.rs`, `Cargo.toml`) → merge conflict guaranteed.
+**Problem:** Two commis modify the same file (e.g., `mod.rs`, `Cargo.toml`) → merge conflict guaranteed.
 
 **Fix:**
 1. Phase 0: `/cli-audit-tangle` to identify couplings
 2. Assign coupled files to the SAME worker
 3. "Potential conflicts" section in shared-state.md
-4. Workers read "In progress" BEFORE coding
+4. Commis read "In progress" BEFORE coding
 
 ---
 
-## G11 — Too many workers = context window
+## G11 — Too many commis = context window
 
-**Problem:** > 5 workers in parallel. The boss spends too many tokens managing messages/permissions, and the workers step on each other.
+**Problem:** > 5 commis in parallel. The Chef spends too many tokens managing messages/permissions, and the commis step on each other.
 
 **Fix:** Maximum 5 workers. If more than 5 tasks, sequence them across phases.
 
@@ -154,13 +156,39 @@ git worktree add ../wt -b feat/x 2>/dev/null || true
 
 ---
 
-## G18 — brew upgrade kills workers mid-flight
+## G14 — Read access to external repos
 
-**Problem:** Agent Teams resolves the `claude` symlink to an absolute path at spawn time (e.g., `Caskroom/claude-code/2.1.84/claude`). If `brew upgrade claude-code` runs during the session, the path points to a deleted version. New workers crash with "No such file or directory".
+**Problem:** A worker needs to read another repo (e.g., sokolsky) but does not have the permissions.
 
-**Fix:** NEVER run `brew upgrade claude-code` during a multi-agent session. If an upgrade happened: restart the boss (`tmuxinator stop && tmuxinator start`).
+**Fix:** Add to `settings.local.json`:
+```json
+"Read(//path/to/other/repo/**)"
+```
 
-**Detection:** If a worker dies with `env: ... No such file or directory`, check `ls /home/linuxbrew/.linuxbrew/Caskroom/claude-code/` — if the spawn-time version is gone, that's it.
+---
+
+## G15 — Parallel PRs on the same file = conflict
+
+**Problem:** The Chef opens N parallel PRs that touch the same file (e.g., ci.yml). The first merges fine, the rest have conflicts.
+
+**Fix:** If several tasks touch the same file, sequence them in the PERT (not parallel). Or better: merge locally in order, test, then push a single PR.
+
+**Rule for the Sous-Chef:** Before merging a PR, check if another open PR touches the same file. If so, merge the first, rebase the second, then merge.
+
+---
+
+## G16 — Blind auto-approve = zero safety net
+
+**Problem:** To unblock the Chef waiting on worker permissions, people spam Enter in a loop. That approves everything without verification — a commis could edit a sensitive file, push malicious code, or touch files outside its scope.
+
+**Fix:** NEVER blind-auto-approve. The ccheck (G24) reads the diff before approving. Ccheck rules:
+- **APPROVE**: edit within the commis's scope (its assigned files + shared-state.md)
+- **DENY**: edit outside scope (another commis's file, .env, credentials, ci.yml without a request)
+- **DENY**: removal of tests or security checks
+- **DENY**: change to Cargo.toml deps without justification
+- **ESCALATE**: if in doubt, skip and let the user decide
+
+**If no ccheck** (minimal 2-tier session): the user IS the ccheck. They watch the Chef pane and approve/deny manually.
 
 ---
 
@@ -178,45 +206,19 @@ git worktree add ../wt -b feat/x 2>/dev/null || true
 
 ---
 
-## G16 — Blind auto-approve = zero safety net
+## G18 — brew upgrade kills commis mid-flight
 
-**Problem:** To unblock the boss waiting on worker permissions, people spam Enter in a loop. That approves everything without verification — a worker could edit a sensitive file, push malicious code, or touch files outside its scope.
+**Problem:** Agent Teams resolves the `claude` symlink to an absolute path at spawn time (e.g., `Caskroom/claude-code/2.1.84/claude`). If `brew upgrade claude-code` runs during the session, the path points to a deleted version. New commis crash with "No such file or directory".
 
-**Fix:** NEVER blind-auto-approve. The Sous-Chef must read the diff before approving. Sous-Chef rules:
-- **APPROVE**: edit within the worker's scope (its assigned files + shared-state.md)
-- **DENY**: edit outside scope (another worker's file, .env, credentials, ci.yml without a request)
-- **DENY**: removal of tests or security checks
-- **DENY**: change to Cargo.toml deps without justification
-- **ESCALATE**: if in doubt, ask the Chef
+**Fix:** NEVER run `brew upgrade claude-code` during a multi-agent session. If an upgrade happened: restart the session (`tmuxinator stop && tmuxinator start`).
 
-**If no Sous-Chef** (2-tier session): the user IS the Sous-Chef. They watch the boss pane and approve/deny manually.
-
----
-
-## G15 — Parallel PRs on the same file = conflict
-
-**Problem:** The chef opens N parallel PRs that touch the same file (e.g., ci.yml). The first merges fine, the rest have conflicts.
-
-**Fix:** If several tasks touch the same file, sequence them in the PERT (not parallel). Or better: merge locally in order, test, then push a single PR.
-
-**Rule for the sous-chef:** Before merging a PR, check if another open PR touches the same file. If so, merge the first, rebase the second, then merge.
-
----
-
-## G14 — Read access to external repos
-
-**Problem:** A worker needs to read another repo (e.g., sokolsky) but does not have the permissions.
-
-**Fix:** Add to `settings.local.json`:
-```json
-"Read(//path/to/other/repo/**)"
-```
+**Detection:** If a worker dies with `env: ... No such file or directory`, check `ls /home/linuxbrew/.linuxbrew/Caskroom/claude-code/` — if the spawn-time version is gone, that's it.
 
 ---
 
 ## G19 — Agent Teams not enabled = no TeamCreate/SendMessage
 
-**Problem:** The skill generates a prompt with TeamCreate but Agent Teams is not enabled. The boss does not have the tools.
+**Problem:** The skill generates a prompt with TeamCreate but Agent Teams is not enabled. The Chef does not have the tools.
 
 **Automatic fix in the skill (Phase 0.3):**
 1. Check `~/.claude/settings.json` for `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS`
@@ -247,17 +249,17 @@ json.dump(d, open(p, 'w'), indent=2)
 ```yaml
 on_project_start:
   # ... worktree setup ...
-  # Auto-kick the chef after 12s (Claude boot time)
-  - sleep 12 && tmux send-keys -t {session}:conductor "Run the full service. Autonomous pilot." Enter &
+  # Auto-kick the Chef after 12s (Claude boot time)
+  - sleep 12 && tmux send-keys -t {session}:chef "Run the full service. Autonomous pilot." Enter &
 ```
 
 The trailing `&` launches in the background — tmuxinator does not block on it.
 
 ---
 
-## G21 — Idle boss thinks workers are running
+## G21 — Idle Chef thinks commis are running
 
-**Problem:** The workers are dead (G18, crash, timeout) but the boss shows `Idle · teammates running`. It waits for reports that will never come.
+**Problem:** The commis are dead (G18, crash, timeout) but the Chef shows `Idle · teammates running`. It waits for reports that will never come.
 
 **Fix in the Chef prompt**: add a watchdog:
 
@@ -282,30 +284,30 @@ If no answer within 30s: the worker is dead. Do the work yourself or restart.
 
 ---
 
-## G23 — No fallback when workers crash
+## G23 — No fallback when commis crash
 
-**Problem:** If all workers are dead (G18) and you cannot restart tmuxinator, the sprint is stuck.
+**Problem:** If all commis are dead (G18) and you cannot restart tmuxinator, the sprint is stuck.
 
 **Fix in the Chef prompt**: an explicit Plan B:
 
 ```
-IF THE WORKERS ARE DEAD:
+IF THE COMMIS ARE DEAD:
 1. Do NOT try to re-spawn (same error)
 2. Do the work YOURSELF directly in this session
 3. Use the existing worktrees (cd /path/to/worktree)
 4. One job at a time (no parallelism) but keep moving
-5. Tell the user: "Workers dead, continuing solo"
+5. Tell the user: "Commis dead, continuing solo"
 ```
 
 ---
 
-## G24 — No ccheck window = conductor blocks on every permission (CRITICAL)
+## G24 — No ccheck window = Chef blocks on every permission (CRITICAL)
 
-**Problem:** The conductor receives permission prompts for every worker edit (shared-state.md, source files). Without a dedicated process watching and approving, the conductor sits idle waiting for a human Enter. In sprint grob-s2 this caused hour-long stalls.
+**Problem:** The Chef receives permission prompts for every commis edit (shared-state.md, source files). Without a dedicated process watching and approving, the Chef sits idle waiting for a human Enter. In sprint grob-s2 this caused hour-long stalls.
 
 **Cause:** The old design used a `/loop` in the user's terminal session. This was fragile (closing the terminal killed it), optional (Phase 5 said "launch" but didn't enforce it), and didn't survive terminal disconnects.
 
-**Fix:** The ccheck (contre-chef) is now a **mandatory third tmux window** in the tmuxinator config. It starts and stops with the boss (`tmuxinator start/stop`), reads sensitive zones from shared-state.md on every tick, and auto-approves normal zones.
+**Fix:** The ccheck (contre-chef) is now a **mandatory third tmux window** in the tmuxinator config. It starts and stops with the tmux session (`tmuxinator start/stop`), reads sensitive zones from shared-state.md on every tick, and auto-approves normal zones.
 
 ```yaml
 # In tmuxinator YAML — MANDATORY window
@@ -317,4 +319,4 @@ IF THE WORKERS ARE DEAD:
 
 **If the ccheck prompt is missing from the generated files → the skill output is INVALID.** Like the 3 voting Sous-Chefs, the ccheck is non-negotiable.
 
-**If the user closes the ccheck window accidentally:** the conductor will block on the next permission. Relaunch with `tmuxinator stop && tmuxinator start` or manually open a new window and run the ccheck command.
+**If the user closes the ccheck window accidentally:** the Chef will block on the next permission. Relaunch with `tmuxinator stop && tmuxinator start` or manually open a new window and run the ccheck command.

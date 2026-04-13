@@ -4,8 +4,8 @@ Generate at `{project}/.claude/settings.local.json`.
 
 ## Principle
 
-The boss and the workers must be able to work with ZERO permission prompts.
-Every missing permission = the boss blocks (G1).
+The Chef and the commis must be able to work with ZERO permission prompts.
+Every missing permission = the Chef blocks (G1).
 
 ---
 
@@ -99,6 +99,6 @@ Before generating, verify:
 
 - [ ] All the project's build tools (cargo, npm, python, make, etc.)
 - [ ] Absolute path to shared-state.md
-- [ ] Absolute paths to external repos the workers must read
-- [ ] Absolute paths to side projects the workers must write to
+- [ ] Absolute paths to external repos the commis must read
+- [ ] Absolute paths to side projects the commis must write to
 - [ ] CLI skills needed for the quality gates

@@ -46,7 +46,7 @@ The user can:
 ### How to save
 
 ```bash
-# The Sous-Chef Merge runs after each merged plat:
+# The Sous-Chef runs after each merged plat:
 git tag "sprint/${SPRINT_ID}/plat-${PLAT_NUMBER}" HEAD
 cp .claude/shared-state.md .claude/sprint-history/${SPRINT_ID}/checkpoint-${PLAT_NUMBER}.md
 echo "$(date -Is) checkpoint-${PLAT_NUMBER} score=${SCORE}" >> .claude/sprint-history/${SPRINT_ID}/log.txt
