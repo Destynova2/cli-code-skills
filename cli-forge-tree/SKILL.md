@@ -143,5 +143,5 @@ Output the SHS table at the end of the tree analysis.
 | `/cli-forge-doc` | Reference structure for generating the docs |
 | `/cli-audit-tangle` | Compare the physical structure against the logical couplings |
 | `/cli-audit-code` | Verify naming conventions aligned with the structure |
-| `/cli-forge-boss` | Assign worktrees based on the structure |
+| `/cli-forge-chef` | Assign worktrees based on the structure |
 | `/cli-cycle` | Included in the cycle's structural audit |

@@ -2,7 +2,7 @@
 
 > **Rule:** The Chef prompt MUST include this section verbatim. Every gotcha comes from a real failure.
 >
-> **Terminology:** "Chef" = the planning agent (Brigade role). "conductor" = the tmux window/pane name. They are the same agent. Never use "boss" in prompts or configs — it's only the skill name (`cli-forge-boss`).
+> **Terminology:** "Chef" = the planning agent (Brigade role). "conductor" = the tmux window/pane name. They are the same agent. Never use "boss" in prompts or configs — it's only the skill name (`cli-forge-chef`).
 
 ---
 

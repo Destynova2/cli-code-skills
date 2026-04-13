@@ -320,7 +320,7 @@ git push origin sync-main-v${VERSION} --force-with-lease
 | `/cli-git-conventional` | Handles commits/tags/branches. cli-forge-github handles the **repo config and PR lifecycle** |
 | `/cli-audit-sync` | Checks doc-code coherence. cli-forge-github checks **GitHub config-code coherence** (rulesets match CI) |
 | `/cli-cycle` | Should call cli-forge-github as part of the full project review |
-| `/cli-forge-boss` | Multi-agent sprints create many branches/PRs. cli-forge-github cleans up after |
+| `/cli-forge-chef` | Multi-agent sprints create many branches/PRs. cli-forge-github cleans up after |
 
 ## What this skill does NOT do
 

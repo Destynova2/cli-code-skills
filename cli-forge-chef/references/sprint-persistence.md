@@ -90,7 +90,7 @@ The Chef detects the stop and saves:
 
 ## Resume (pick up where you left off)
 
-The user re-runs `/cli-forge-boss` on the same project.
+The user re-runs `/cli-forge-chef` on the same project.
 
 The Chef detects a paused sprint:
 
@@ -176,7 +176,7 @@ When the sprint is too broken to repair.
 The Chef can browse the sprint history:
 
 ```
-/cli-forge-boss --history
+/cli-forge-chef --history
 
 Sprint History — {project}
 

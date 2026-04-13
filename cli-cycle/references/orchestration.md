@@ -26,7 +26,8 @@
 | `cli-audit-wizard` | Interactive setup/init commands exist (`setup.sh`, `init`, `doctor`, wizard UX) |
 | `cli-forge-infra` | Infra files exist (`Dockerfile`, `*.tf`, `helmfile.yaml`, `k8s/`) |
 | `cli-git-conventional` | **Always** — formats all commits during correction phase. Zero AI markers |
-| `cli-forge-boss` | Skip (multi-agent orchestration — triggered explicitly) |
+| `cli-forge-github` | GitHub repo exists (`.github/` or `gh repo view` succeeds). Audits rulesets, branches, PRs, CI health |
+| `cli-forge-chef` | Skip (multi-agent orchestration — triggered explicitly) |
 
 ---
 
@@ -60,6 +61,7 @@ These skills benefit from Wave 1 results or cross-reference multiple concerns.
 | `cli-forge-pipeline` | Audits CI — benefits from knowing test structure and quality | Test pyramid shape from audit-test, test techniques detected |
 | `cli-forge-schema` | Audits diagrams against code — needs to know module structure | Module structure from audit-code |
 | `cli-forge-infra` | Audits infra files — independent but lower priority | — |
+| `cli-forge-github` | Audits repo health — benefits from knowing CI structure and PR state | CI findings from forge-pipeline, test structure from audit-test |
 
 ### Wave execution rules
 

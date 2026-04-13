@@ -1,5 +1,5 @@
 ---
-name: cli-forge-boss
+name: cli-forge-chef
 description: >
   Generate a multi-agent orchestrator for any project using the Brigade de Cuisine pattern:
   Chef (plans, decides), Sous-Chef (validates, merges), Commis (execute).
@@ -27,7 +27,7 @@ allowed-tools:
 
 > **Language rule:** Skill instructions are written in English. When generating user-facing files (prompts, shared-state, tmuxinator comments, reports), detect the project's primary language (from README, comments, docs, commit messages) and produce those files in that language. If the project is bilingual, ask the user which language to use before proceeding. The Brigade vocabulary (Menu, Commis, Sous-Chef, Chef, Plat, Mise en place, etc.) stays in French regardless — it's the pattern's canonical terminology, not prose.
 
-> **Gotchas:** Read `../../gotchas.md` AND `references/gotchas-boss.md` before producing output.
+> **Gotchas:** Read `../../gotchas.md` AND `references/gotchas-chef.md` before producing output.
 
 # CLI Forge Boss — Brigade de Cuisine
 
@@ -287,7 +287,7 @@ The Chef detects the tier at startup:
   - Multi-repo → L minimum
   - CONTRACTS.md file or compliance/ → XL
   - Mention of "regulated", "defense", "finance" in README/CONTRIBUTING.md → XL
-  - User can force: /cli-forge-boss --tier XL
+  - User can force: /cli-forge-chef --tier XL
 ```
 
 **Cost confirmation for tier XL (MANDATORY — auto-detect or flag):**
@@ -465,7 +465,7 @@ Read `references/permissions-template.md`.
 
 ### 2.7 — Gotchas
 
-**ALWAYS** include gotchas from `references/gotchas-boss.md` in the chef prompt.
+**ALWAYS** include gotchas from `references/gotchas-chef.md` in the chef prompt.
 
 ## Phase 3 — Check before service
 
@@ -513,7 +513,7 @@ To stop: `CronDelete {job_id}`
 
 | File | Content |
 |------|---------|
-| `references/gotchas-boss.md` | 16 known pitfalls (G24 — mandatory ccheck, G25 — .claude/ trust guard) |
+| `references/gotchas-chef.md` | 16 known pitfalls (G24 — mandatory ccheck, G25 — .claude/ trust guard) |
 | `references/templates.md` | Index of all templates |
 | `references/shared-state-template.md` | The carnet de cuisine |
 | `references/chef-prompt-template.md` | Chef + Sous-Chef + Commis instructions |
@@ -521,7 +521,7 @@ To stop: `CronDelete {job_id}`
 | `references/permissions-template.md` | settings.local.json |
 | `references/quality-gates.md` | The tasting card (audit skills) |
 | `references/conflict-resolution.md` | Decision tree, coupling matrix, file locking, escalation, stigmergy, patch bankruptcy, divergence, convergence, sprint health |
-| `references/anti-patterns-boss.md` | 10 named brigade anti-patterns (Ping-Pong, Ghost Commis, God Commis, etc.) |
+| `references/anti-patterns-chef.md` | 10 named brigade anti-patterns (Ping-Pong, Ghost Commis, God Commis, etc.) |
 | `references/sprint-persistence.md` | Checkpoint, resume, rewind, fresh restart, sprint history (inspired by jj operation log) |
 | `references/simplified-model.md` | Stigmergy model for tiers S/M/L — Boids, quorum sensing, DNA repair, reaction-diffusion, apoptosis |
 | `references/parallel-exploration.md` | Competing hypotheses, parallel approaches, comparison grid |
@@ -543,3 +543,4 @@ To stop: `CronDelete {job_id}`
 | `/cli-git-conventional` | **ALWAYS** — every commit from the commis and Sous-Chef goes through ghostwriter. Zero AI markers |
 | `/cli-forge-doc` | If a quality gate detects missing docs — the Sous-Chef triggers generation |
 | `/cli-forge-schema` | If a quality gate detects a missing diagram — Mermaid generation |
+| `/cli-forge-github` | Post-sprint — clean orphan branches, check rulesets vs CI alignment, close stale PRs |
