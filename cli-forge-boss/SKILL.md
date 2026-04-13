@@ -474,6 +474,11 @@ Read `references/permissions-template.md`.
 3. Verify branches don't conflict
 4. Verify permissions cover all operations
 5. Count commis — warn if > 5
+6. **MANDATORY — ccheck validation (G24):**
+   - `grep -q 'ccheck' ~/.config/tmuxinator/{session}.yml` — if missing, **STOP and add the ccheck window**
+   - `test -f {project}/.claude/prompts/ccheck-{session}.md` — if missing, **STOP and generate the ccheck prompt**
+   - If either check fails, do NOT proceed to Phase 4. Fix the generation first.
+   - This is a hard gate, not a warning. The brigade WILL stall without the ccheck.
 
 ## Phase 4 — Bon appétit
 
