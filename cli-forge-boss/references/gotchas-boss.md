@@ -305,7 +305,7 @@ IF THE WORKERS ARE DEAD:
 
 **Cause:** The old design used a `/loop` in the user's terminal session. This was fragile (closing the terminal killed it), optional (Phase 5 said "launch" but didn't enforce it), and didn't survive terminal disconnects.
 
-**Fix:** The ccheck (contre-chef) is now a **mandatory third tmux window** in the tmuxinator config. It starts and stops with the brigade, reads sensitive zones from shared-state.md on every tick, and auto-approves normal zones.
+**Fix:** The ccheck (contre-chef) is now a **mandatory third tmux window** in the tmuxinator config. It starts and stops with the boss (`tmuxinator start/stop`), reads sensitive zones from shared-state.md on every tick, and auto-approves normal zones.
 
 ```yaml
 # In tmuxinator YAML — MANDATORY window

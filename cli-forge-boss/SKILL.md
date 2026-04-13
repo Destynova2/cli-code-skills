@@ -500,7 +500,7 @@ The user can leave. The ccheck keeps watch.
 - The `/loop` ran in the user's session, not in tmux → closing the terminal killed it
 - The `/loop` was described as optional ("Phase 5") → but without it the conductor blocks
 - The `/loop` prompt was frozen at creation → zones added mid-sprint were ignored
-- The ccheck is a dedicated window that starts and stops with the brigade, reads fresh state every tick, and cannot be accidentally closed
+- The ccheck is a dedicated window that starts and stops with the boss (`tmuxinator start/stop`), reads fresh state every tick, and cannot be accidentally closed
 
 To stop: `CronDelete {job_id}`
 
