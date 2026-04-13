@@ -1,7 +1,7 @@
 ---
 name: cli-cycle
 description: "Continuous improvement cycle — orchestrates all cli-* skills on the current project, synthesizes results, and proposes prioritized improvements. Use when the user wants a full project review, a health check, a weekly cycle, or says 'audit everything', 'review the project', 'health check', 'what should I improve', 'run all audits', 'cycle', 'improvement cycle'. Designed for recurring use with '/loop 7d /cli-cycle'."
-argument-hint: "[project-path]"
+argument-hint: "[project-path-or-scope-directory]"
 context: fork
 agent: general-purpose
 allowed-tools:
@@ -35,6 +35,39 @@ Run every applicable `cli-*` skill on the current project, collect results, deli
 **Gotchas** — read `../../gotchas.md` before producing output to avoid known mistakes.
 
 ## Workflow
+
+### Step 0.5 — Determine scope
+
+`$ARGUMENTS` can be:
+- **Empty or project root** → full project audit (all directories, all skills)
+- **A subdirectory** (e.g., `src/features/dlp/`) → **scoped audit** (vertical slice)
+
+**Scoped audit rules:**
+1. Only scan files within the scope directory (and its subdirectories)
+2. Pass the scope directory as `$ARGUMENTS` to every sub-agent: `/cli-audit-code {scope}`, `/cli-audit-test {scope}`, etc.
+3. Skills that don't accept a directory scope (e.g., `cli-forge-pipeline`, `cli-forge-github`) are **skipped** — they are project-wide by nature
+4. The scorecard, triage, and report are titled with the scope: `# Cycle — {project} / {scope}`
+5. Co-located tests are detected within the scope: `{scope}/**/test*`, `{scope}/**/*_test.*`, `{scope}/**/tests/`
+6. Co-located docs are detected within the scope: `{scope}/**/*.md`, `{scope}/**/README*`
+
+**Applicability in scoped mode:**
+
+| Skill | Scoped? | Why |
+|---|---|---|
+| `cli-audit-code` | ✅ | Scans only the slice's code |
+| `cli-audit-doc` | ✅ | Scans only the slice's docs |
+| `cli-audit-test` | ✅ | Scans only the slice's tests |
+| `cli-audit-tangle` | ✅ | Analyzes call graph within the slice |
+| `cli-audit-drift` | ✅ if scope has CONTRACTS.md entries | Checks contracts for functions in the slice |
+| `cli-audit-sync` | ✅ | Checks doc-code coherence within the slice |
+| `cli-audit-shell` | ✅ if scope has .sh files | Audits shell scripts in the slice |
+| `cli-forge-readme` | ❌ | README is project-wide |
+| `cli-forge-tree` | ✅ | Audits only the slice's structure |
+| `cli-forge-pipeline` | ❌ | CI is project-wide |
+| `cli-forge-schema` | ✅ | Audits diagrams referencing the slice |
+| `cli-forge-infra` | ❌ | Infra is project-wide |
+| `cli-forge-github` | ❌ | Repo config is project-wide |
+| `cli-audit-wizard` | ❌ | Wizard UX is project-wide |
 
 ### Step 1 — Discover available skills
 

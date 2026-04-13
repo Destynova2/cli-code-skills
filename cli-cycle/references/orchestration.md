@@ -164,6 +164,10 @@ Read ~/.claude/skills/gotchas.md for known mistakes to avoid.
 
 Then execute that skill on the project at {project-path}.
 
+SCOPE: {scope_directory OR "full project"}
+If a scope directory is specified, ONLY scan files within that directory
+and its subdirectories. Do NOT scan the rest of the project.
+
 MANDATORY: Output language is {detected_language} (detected from git log and README).
 Produce your report, findings, and recommendations in that exact language.
 NEVER mix or switch languages within the report.
@@ -178,7 +182,7 @@ Important:
   4. Full detailed report
 
 Target: {project-path}
-Arguments: {appropriate args for this skill}
+Arguments: {scope_directory OR project-path}
 ```
 
 For **Wave 2** skills, append Wave 1 context to the prompt:
