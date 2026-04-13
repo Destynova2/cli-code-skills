@@ -320,3 +320,36 @@ IF THE COMMIS ARE DEAD:
 **If the ccheck prompt is missing from the generated files → the skill output is INVALID.** Like the 3 voting Sous-Chefs, the ccheck is non-negotiable.
 
 **If the user closes the ccheck window accidentally:** the Chef will block on the next permission. Relaunch with `tmuxinator stop && tmuxinator start` or manually open a new window and run the ccheck command.
+
+---
+
+## G25 — .claude/ trust guard survives --dangerously-skip-permissions
+
+**Problem:** The `--dangerously-skip-permissions` flag bypasses tool permissions (Bash, Edit, Read, etc.). But the `.claude/` directory has a **separate trust guard** at a higher level. Bash commands that touch `.claude/` (e.g., `sed ... .claude/shared-state.md | awk`, `echo >> .claude/ccheck.log`) trigger a "Do you want to proceed?" prompt that is NOT covered by the bypass flags.
+
+**Cause:** The `.claude/` directory contains settings, prompts, and shared state. Claude Code protects it with a workspace-level trust check independent of the permission system.
+
+**Symptoms:** The ccheck blocks on commands like:
+```
+sed -n '...' .claude/shared-state.md | awk '{print $1}'
+echo "$(date -Is) | APPROVE | ..." >> .claude/ccheck.log
+```
+
+**Fix in the ccheck prompt:**
+1. Use **Read tool** (not `cat`/`sed`/`grep`) to read `.claude/` files
+2. Use **Write tool** (not `echo >>`) to write to `.claude/ccheck.log`
+3. Only use **Bash for tmux commands** (`tmux capture-pane`, `tmux send-keys`, `sleep`)
+4. **One Bash command per call** — no `&&`, no `|`, no `;`
+
+**Fix in settings.local.json** (belt AND suspenders):
+```json
+"Read(//{project_path}/.claude/**)",
+"Write(//{project_path}/.claude/ccheck.log)",
+"Write(//{project_path}/.claude/sprint-history/**)",
+"Bash(awk:*)",
+"Bash(date:*)"
+```
+
+Pre-authorizing these in settings.local.json covers the case where a commis (not just the ccheck) needs to read shared-state or write to sprint history.
+
+**If the user closes the ccheck window accidentally:** the Chef will block on the next permission. Relaunch with `tmuxinator stop && tmuxinator start` or manually open a new window and run the ccheck command.

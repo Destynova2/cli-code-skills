@@ -513,7 +513,7 @@ To stop: `CronDelete {job_id}`
 
 | File | Content |
 |------|---------|
-| `references/gotchas-boss.md` | 15 known pitfalls and fixes (including G24 — mandatory ccheck) |
+| `references/gotchas-boss.md` | 16 known pitfalls (G24 — mandatory ccheck, G25 — .claude/ trust guard) |
 | `references/templates.md` | Index of all templates |
 | `references/shared-state-template.md` | The carnet de cuisine |
 | `references/chef-prompt-template.md` | Chef + Sous-Chef + Commis instructions |

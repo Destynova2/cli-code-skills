@@ -4,8 +4,10 @@ Generate at `{project}/.claude/settings.local.json`.
 
 ## Principle
 
-The Chef and the commis must be able to work with ZERO permission prompts.
-Every missing permission = the Chef blocks (G1).
+The Chef, Sous-Chef, Contre-Chef (ccheck), and commis must ALL work with ZERO permission prompts.
+Every missing permission = an agent blocks (G1, G24).
+
+**The `.claude/` directory has a special trust guard** that is NOT bypassed by `--dangerously-skip-permissions`. Commands reading/writing inside `.claude/` (shared-state, sprint-history, ccheck.log, prompts) trigger a separate trust prompt the first time. Pre-authorize these paths explicitly.
 
 ---
 
@@ -48,8 +50,11 @@ Every missing permission = the Chef blocks (G1).
       "Bash(sort:*)",
       "Bash(wc:*)",
       "Bash(sed:*)",
+      "Bash(awk:*)",
+      "Bash(date:*)",
       "Bash(sleep:*)",
       "Bash(tmux:*)",
+      "Bash(ln:*)",
 
       // === File tools (cover every file in the project) ===
       "Read",
@@ -65,8 +70,15 @@ Every missing permission = the Chef blocks (G1).
       // === CLI skills (quality gates) ===
       "Skill(cli-*)",
 
-      // === Shared state (absolute path — G5) ===
+      // === .claude/ directory (G5 + G24 — trust guard bypass) ===
+      // These are MANDATORY. Without them the Chef and ccheck block
+      // on every shared-state edit, sprint-history write, and log append.
       "Edit(//{project_path}/.claude/shared-state.md)",
+      "Read(//{project_path}/.claude/**)",
+      "Write(//{project_path}/.claude/ccheck.log)",
+      "Write(//{project_path}/.claude/sprint-history/**)",
+      "Bash(mkdir -p //{project_path}/.claude/sprint-history/*)",
+      "Bash(ln -sfn * //{project_path}/.claude/sprint-history/current)",
 
       // === External repos (G14) ===
       // "Read(//{external_repo_path}/**)",
@@ -75,6 +87,10 @@ Every missing permission = the Chef blocks (G1).
       // "Write(//{side_project_path}/**)",
       // "Edit(//{side_project_path}/**)",
       // "Read(//{side_project_path}/**)",
+
+      // === Obsidian vault (G22) ===
+      // "Edit(//{obsidian_vault_path}/**)",
+      // "Read(//{obsidian_vault_path}/**)",
 
       // === Team tools ===
       "TeamCreate",
@@ -99,6 +115,11 @@ Before generating, verify:
 
 - [ ] All the project's build tools (cargo, npm, python, make, etc.)
 - [ ] Absolute path to shared-state.md
+- [ ] `.claude/` directory permissions (Read, Write, Edit — G5 + G24)
+- [ ] Sprint history paths (mkdir, ln, Write)
+- [ ] ccheck.log Write permission
+- [ ] `awk` and `date` in shell basics (used by ccheck for parsing + timestamps)
 - [ ] Absolute paths to external repos the commis must read
 - [ ] Absolute paths to side projects the commis must write to
+- [ ] Obsidian vault paths if applicable (G22)
 - [ ] CLI skills needed for the quality gates
