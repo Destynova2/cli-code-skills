@@ -296,3 +296,25 @@ IF THE WORKERS ARE DEAD:
 4. One job at a time (no parallelism) but keep moving
 5. Tell the user: "Workers dead, continuing solo"
 ```
+
+---
+
+## G24 — No ccheck window = conductor blocks on every permission (CRITICAL)
+
+**Problem:** The conductor receives permission prompts for every worker edit (shared-state.md, source files). Without a dedicated process watching and approving, the conductor sits idle waiting for a human Enter. In sprint grob-s2 this caused hour-long stalls.
+
+**Cause:** The old design used a `/loop` in the user's terminal session. This was fragile (closing the terminal killed it), optional (Phase 5 said "launch" but didn't enforce it), and didn't survive terminal disconnects.
+
+**Fix:** The ccheck (contre-chef) is now a **mandatory third tmux window** in the tmuxinator config. It starts and stops with the brigade, reads sensitive zones from shared-state.md on every tick, and auto-approves normal zones.
+
+```yaml
+# In tmuxinator YAML — MANDATORY window
+- ccheck:
+    root: {project_path}
+    panes:
+      - claude --dangerously-skip-permissions --permission-mode bypassPermissions --append-system-prompt "$(cat {project_path}/.claude/prompts/ccheck-{session_name}.md)"
+```
+
+**If the ccheck prompt is missing from the generated files → the skill output is INVALID.** Like the 3 voting Sous-Chefs, the ccheck is non-negotiable.
+
+**If the user closes the ccheck window accidentally:** the conductor will block on the next permission. Relaunch with `tmuxinator stop && tmuxinator start` or manually open a new window and run the ccheck command.

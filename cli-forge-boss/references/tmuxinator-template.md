@@ -10,6 +10,7 @@ Generate at `~/.config/tmuxinator/{session_name}.yml`.
 - G7: No `&` or background on claude
 - G12: `on_project_first_start` does NOT exist, use `on_project_start`
 - G13: `2>/dev/null || true` on git worktree add
+- G24: The ccheck window is MANDATORY — without it, the conductor blocks on every worker permission
 
 ---
 
@@ -40,6 +41,15 @@ windows:
       root: {project_path}
       panes:
         - echo "=== GATE — merge, rebase, test, build, push, CI ==="
+
+  # --- CCHECK: permission auto-approver (the "contre-chef") ---
+  # MANDATORY window. Runs a Claude instance that watches the conductor pane
+  # and auto-approves permissions in normal zones, skips sensitive zones.
+  # Without this window, the conductor blocks on every worker edit. (G24)
+  - ccheck:
+      root: {project_path}
+      panes:
+        - claude --dangerously-skip-permissions --permission-mode bypassPermissions --append-system-prompt "$(cat {project_path}/.claude/prompts/ccheck-{session_name}.md)"
 ```
 
 ## Architecture in tmux
@@ -60,12 +70,20 @@ Window 2: gate
   │ Pure shell — git commands sent by the Guardian                 │
   │ git merge, cargo test, git push, gh run watch                  │
   └────────────────────────────────────────────────────────────────┘
+
+Window 3: ccheck (MANDATORY — the contre-chef)
+  ┌────────────────────────────────────────────────────────────────┐
+  │ Claude instance watching the conductor pane                    │
+  │ Auto-approves normal zones, skips sensitive zones              │
+  │ Logs every decision for traceability                           │
+  └────────────────────────────────────────────────────────────────┘
 ```
 
 ## Notes
 
-- Only 2 tmuxinator windows: `conductor` and `gate`
+- **3 tmuxinator windows**: `conductor`, `gate`, and `ccheck`
 - The Guardian and Workers are spawned by the Conductor via Agent Teams
 - They appear in tmux panes thanks to `--teammate-mode tmux`
 - The Guardian uses `mode: "bypassPermissions"` — zero UI blocking (G1)
-- Maximum 5 workers + 1 guardian = 6 teammates + conductor = 7 panes
+- The ccheck watches the conductor pane and handles permissions (G24)
+- Maximum 5 workers + 1 guardian = 6 teammates + conductor = 7 panes in window 1

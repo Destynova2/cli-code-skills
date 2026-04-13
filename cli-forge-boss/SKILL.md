@@ -443,7 +443,23 @@ Read `references/tmuxinator-template.md`.
 - claude --dangerously-skip-permissions --permission-mode bypassPermissions --teammate-mode tmux --append-system-prompt "$(cat {project}/.claude/prompts/chef-{session}.md)"
 ```
 
-### 2.6 — Permissions (`{project}/.claude/settings.local.json`)
+### 2.6 — The contre-chef / ccheck (MANDATORY — G24)
+
+**Generate `{project}/.claude/prompts/ccheck-{session}.md`.**
+
+Read `references/ccheck-prompt-template.md` and customize with the project paths.
+
+The ccheck is a dedicated Claude instance in its own tmux window that watches the conductor pane and auto-approves permissions in normal zones. **Without it, the conductor blocks on every worker edit and the brigade stalls.**
+
+The ccheck:
+- **APPROVES** edits in normal zones (src/, tests/, shared-state.md, docs/)
+- **SKIPS** edits in sensitive zones (CI, deps, auth, secrets) — the conductor stays blocked, the user decides later
+- **LOGS** every decision to `{project}/.claude/ccheck.log`
+- **Re-reads** the sensitive zone list every iteration (so the Chef can add zones mid-sprint)
+
+**This replaces the Phase 5 `/loop` approach** which was fragile (depended on the user's session staying open) and optional (it should never have been optional).
+
+### 2.7 — Permissions (`{project}/.claude/settings.local.json`)
 
 Read `references/permissions-template.md`.
 
@@ -468,22 +484,23 @@ Present to the user:
 4. How to launch: `tmuxinator start {session}`
 5. Gotchas to watch for
 
-## Phase 5 — Launch the automatic Sous-Chef
+## Phase 5 — The ccheck runs automatically
 
-After the user runs `tmuxinator start`, **automatically launch** the Sous-Chef via `/loop`:
+The ccheck (contre-chef) window is part of the tmuxinator config — it starts automatically with `tmuxinator start {session}`. **No manual `/loop` setup needed.** The user does not need to do anything.
 
-```
-/loop 2m Sous-Chef check. Look at the boss pane {session}:0.0 with tmux capture-pane. If a permission is waiting ("Do you want to make this edit"), read the diff. Sensitive zones: parse the BOSS_SENSITIVE_PATHS block of {project}/.claude/shared-state.md (between <!-- BOSS_SENSITIVE_PATHS:START --> and :END, inside the ```sensitive-paths``` fence, ignore # and empty lines, keep the 1st column). If the diff touches a file matching one of these globs → SKIP (DO NOT approve). Normal zones: everything else → approve with tmux send-keys -t {session}:0.0 Enter. THEN recheck immediately (sleep 5 + capture-pane) — as long as there are queued permissions, keep approving. Stop when the boss is free. Log every action.
-```
+The ccheck watches the conductor pane every 30 seconds and:
+- **APPROVES** edits in normal zones (src/, tests/, shared-state.md, docs/)
+- **SKIPS** edits in sensitive zones (CI, deps, auth, security) — the conductor stays blocked, the user decides when they return
+- **LOGS** every decision to `{project}/.claude/ccheck.log` for traceability
+- **Re-reads** the sensitive zone list from shared-state.md on every iteration — so the Chef or the user can add zones mid-sprint
 
-**Why the structured parsing**: previously, sensitive zones were injected as opaque text into the `/loop` prompt. Result: the boss couldn't update them between loops (the prompt was frozen at creation time). Now the `/loop` re-reads the block on every tick, so the Chef or the human can add a sensitive zone mid-sprint and the next iteration picks it up.
+The user can leave. The ccheck keeps watch.
 
-The Sous-Chef runs in the user's session (this session, not inside tmux). It watches the boss every 2 minutes and:
-- **APPROVES** edits in normal zones (src/, tests/, shared-state.md)
-- **SKIPS** edits in sensitive zones (CI, deps, auth, security) — the boss stays blocked, the user will decide when they return
-- **Logs** every decision for traceability
-
-The user can leave. The Sous-Chef keeps watch.
+**Why this replaced the old `/loop` approach:**
+- The `/loop` ran in the user's session, not in tmux → closing the terminal killed it
+- The `/loop` was described as optional ("Phase 5") → but without it the conductor blocks
+- The `/loop` prompt was frozen at creation → zones added mid-sprint were ignored
+- The ccheck is a dedicated window that starts and stops with the brigade, reads fresh state every tick, and cannot be accidentally closed
 
 To stop: `CronDelete {job_id}`
 
@@ -491,7 +508,7 @@ To stop: `CronDelete {job_id}`
 
 | File | Content |
 |------|---------|
-| `references/gotchas-boss.md` | 14 known pitfalls and fixes |
+| `references/gotchas-boss.md` | 15 known pitfalls and fixes (including G24 — mandatory ccheck) |
 | `references/templates.md` | Index of all templates |
 | `references/shared-state-template.md` | The carnet de cuisine |
 | `references/conductor-prompt-template.md` | Chef + Sous-Chef + Commis instructions |
@@ -503,6 +520,7 @@ To stop: `CronDelete {job_id}`
 | `references/sprint-persistence.md` | Checkpoint, resume, rewind, fresh restart, sprint history (inspired by jj operation log) |
 | `references/simplified-model.md` | Stigmergy model for tiers S/M/L — Boids, quorum sensing, DNA repair, reaction-diffusion, apoptosis |
 | `references/parallel-exploration.md` | Competing hypotheses, parallel approaches, comparison grid |
+| `references/ccheck-prompt-template.md` | Contre-chef prompt (permission auto-approver) |
 | `references/raw-tmux-fallback.md` | POSIX bash script equivalent to the tmuxinator YAML (for Ruby-less environments) |
 
 ## Integration with other cli-* skills
