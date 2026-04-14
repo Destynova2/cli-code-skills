@@ -355,9 +355,50 @@ What is the problem or situation that requires a decision?
 
 ### Section 16 — Tradeoff Analysis
 
-**Source:** ATAM (Architecture Tradeoff Analysis Method), Bass/Clements/Kazman
+**Source:** ATAM (Architecture Tradeoff Analysis Method), Bass/Clements/Kazman (CMU/SEI TR-2000-004), *Software Architecture in Practice* (3rd ed.).
 
-**Quality Attribute Utility Tree:**
+ATAM is a 5-phase method that produces a structured list of risks, sensitivity points, and tradeoffs from a set of stakeholder-elicited scenarios. The HLD uses ATAM *in miniature*: the author plays stakeholder-and-evaluator in one head, but still walks the 5 phases so the output has the same shape (and survives external review).
+
+> **When to run the full 5 phases:** tier L or XL, or any HLD contested between teams. Tier S/M skip to Phase 4 and fill a light utility tree + tradeoff table only.
+
+#### Phase 1 — Scenario elicitation
+
+Write 6-12 scenarios across the project's quality attributes. A scenario has a fixed 6-part shape (SEI template):
+
+| Part | Example |
+|---|---|
+| **Source of stimulus** | A user of the web app |
+| **Stimulus** | Submits a search query |
+| **Environment** | Normal load, 10k concurrent users |
+| **Artifact** | The search service |
+| **Response** | Returns top 20 results |
+| **Response measure** | p95 latency < 200 ms, p99 < 500 ms |
+
+Collect scenarios from **at least 4 of these buckets** so no class of concern is skipped:
+
+| Bucket | Typical scenario seed |
+|---|---|
+| Performance | "Under peak load, X returns within Y ms" |
+| Availability | "When Z fails, the system degrades to ... within T seconds" |
+| Security | "An attacker with capability X cannot achieve Y" |
+| Scalability | "When load multiplies by N, the system ..." |
+| Modifiability | "A new feature of type X can be added in ≤ N files" |
+| Testability | "A regression in X can be caught by a test running in < T seconds" |
+| Usability | "A novice user completes task X in ≤ T seconds / N clicks" |
+| Deployability | "A rollback to version N-1 completes in < T minutes" |
+
+#### Phase 2 — Scenario prioritization
+
+Score each scenario on two axes — the `[B, T]` pair used in the utility tree.
+
+| Axis | H | M | L |
+|---|---|---|---|
+| **B — Business importance** | Contract breaker, revenue impact | Customer notices, reputation impact | Nice to have, internal only |
+| **T — Technical difficulty** | Unsolved in the proposed architecture | Needs explicit effort to achieve | Achieved by default / cheap |
+
+Only `[H, H]` and `[H, M]` scenarios go forward into Phase 3. The rest stay in the utility tree for traceability but are not analyzed deeply — they are not load-bearing on the architecture.
+
+**Quality Attribute Utility Tree** (Phase 1 + Phase 2 output):
 
 ```
 Utility
@@ -377,20 +418,73 @@ Utility
 
 Format: `[Business importance, Technical difficulty]` — H/M/L
 
-**Sensitivity points** (one decision affects one attribute):
-- "Database choice affects query performance"
+#### Phase 3 — Architectural approach analysis (per selected scenario)
 
-**Tradeoff points** (one decision affects multiple attributes in opposite directions):
-- "Microservices improve scalability but reduce operational simplicity"
+For each `[H,H]` or `[H,M]` scenario, answer four questions. This is where the work actually happens — the earlier phases just told you which scenarios are worth the walk.
 
-**Weighted decision matrix** (for key technology choices):
+**Per-scenario analysis table:**
 
-| Criterion | Weight | Option A | Score | Option B | Score |
+| # | Scenario | Approach / Tactic | Sensitivity point | Tradeoff point | Risk | Non-risk |
+|---|----------|-------------------|--------------------|-----------------|------|----------|
+| 1 | API p95 < 200ms | Read-through cache + connection pool + circuit breaker | Cache TTL: too short → DB thrashing; too long → stale reads | Cache size vs freshness | **R1** — cold-start penalty > 1s when cache is empty | **NR1** — warm-path is bounded by pool size, sized for peak |
+| 2 | 99.9% uptime | Active-passive failover, health checks every 5s | Health check interval ↔ failover latency | Faster failover = more false positives from network blips | **R2** — split-brain if network partition > health check interval | **NR2** — control plane uses external arbiter |
+
+**The four questions:**
+
+1. **Which tactic / approach addresses it?** Name the mechanism: cache, retry, leader election, partition, etc.
+2. **What is the sensitivity point?** A decision or parameter whose value strongly affects this scenario's response measure. Tag it — you will revisit it when tuning.
+3. **Is there a tradeoff point?** A decision that affects *this* scenario in one direction but another scenario in the opposite direction. This is ATAM's core output — make these explicit so they don't turn into surprises.
+4. **Risks vs non-risks?** Document both. A non-risk (NR) is a worry you investigated and *ruled out*; writing it down prevents someone from re-raising it in a later review.
+
+#### Phase 4 — Risk themes and tradeoff synthesis
+
+Cluster the risks and tradeoffs from Phase 3 into **themes** — architectural decisions that recur across scenarios.
+
+**Example risk themes:**
+
+- **Theme: cold-start behaviour** (R1). The system performs well under steady state but degrades at startup and after cache flushes. Mitigation: warm-up task on deployment, graceful degradation for the first 60 s.
+- **Theme: split-brain under partition** (R2). Any decision that improves failover latency makes this worse. Mitigation: accept slower failover, use external arbiter.
+
+**Tradeoff points** (decisions that hit multiple attributes in opposite directions) — promote these to first-class:
+
+| # | Tradeoff | Attributes traded | Current decision | Rationale |
+|---|----------|-------------------|------------------|-----------|
+| 1 | Microservices vs modular monolith | Scalability ↑ vs Operational simplicity ↓ | Modular monolith for v1 | Team size 6, not enough ops headcount for N services |
+| 2 | Strong consistency vs availability under partition | Correctness ↑ vs Availability ↓ | Strong consistency | Legal requirement on financial records |
+
+**Sensitivity points** (one decision affects one attribute) — list them so tuning is explicit:
+
+- Cache TTL affects p95 latency
+- Connection pool size affects concurrent request capacity
+- Health check interval affects failover latency
+
+#### Phase 5 — Presentation and decision matrix
+
+For decisions contested between options, use a weighted matrix. The weights come from the `B` column of the utility tree — a scenario with `B=H` has weight 5, `B=M` weight 3, `B=L` weight 1.
+
+**Weighted decision matrix:**
+
+| Criterion (from utility tree) | Weight | Option A | Score | Option B | Score |
 |-----------|--------|----------|-------|----------|-------|
-| Performance | 5 | Good (4) | 20 | Excellent (5) | 25 |
+| API p95 < 200ms | 5 | Good (4) | 20 | Excellent (5) | 25 |
+| 99.9% uptime | 5 | Good (4) | 20 | Average (3) | 15 |
 | Operational cost | 3 | Low (5) | 15 | High (2) | 6 |
-| Team familiarity | 4 | High (5) | 20 | Low (2) | 8 |
-| **Total** | | | **55** | | **39** |
+| Team familiarity | 3 | High (5) | 15 | Low (2) | 6 |
+| **Total** | | | **70** | | **52** |
+
+**Rules for the matrix:**
+
+- **Never hide a low score** — if Option B is worse on a criterion, write the low score. The point is to show the tradeoff, not to advocate one option.
+- **Include the decisive criterion in the ADR** — the row that made the difference goes into ADR §Consequences so a future reader knows why the contest was settled.
+- **If the totals are within 10% of each other**, the matrix is not telling you anything. Pick on strategic grounds and note that explicitly — don't pretend the matrix decided.
+
+#### Light version for tier S/M
+
+Tier S and M HLDs compress Phases 1-5 into a single short section:
+
+- **2-4 scenarios** instead of 6-12, skip the `[M, ·]` and `[L, ·]` tiers.
+- **No separate sensitivity / non-risk columns** — just Approach + Risk.
+- **Tradeoff table** is still mandatory — even a tier-S system has two or three cross-cutting decisions and naming them is cheap.
 
 ### Section 17 — Risks and Open Questions
 
