@@ -42,6 +42,8 @@ allowed-tools:
 5. **Document every ruleset change.** Add a comment in ci.yml explaining WHY the ruleset requires specific checks. Future you (or a teammate) will re-add the wrong checks if there's no explanation.
 6. **Transient failures get a rerun, not a fix.** Rate limits, runner timeouts, and network flakes are not code bugs. Rerun, don't refactor.
 7. **Orphan branches are tech debt.** Clean them on every release, not "when we have time".
+8. **Always enable auto-merge on every PR you create.** Every `gh pr create` is followed by `gh pr merge --auto --squash` (or `--rebase` / `--merge` per project policy). A PR without auto-merge is a PR somebody has to babysit — that is exactly the state this skill is designed to eliminate. The only exception is a **draft PR**: auto-merge is enabled when the draft is marked ready, not before. This rule applies to every agent that opens PRs through the skill (including the cli-forge-chef Sous-Chef).
+9. **Always check conflicts between parallel PRs before dispatch, not after.** When N commis open N parallel PRs against the same base, the file-exclusion is enforced on the commis side (cli-forge-chef PERT + Fiedler partition). On the GitHub side, this skill verifies it didn't leak: for every pair of open PRs against the same base branch, compute the intersection of their changed-files sets; any non-empty intersection is a future merge conflict and must be reported *before* auto-merge lands the first one. Detection is cheap; post-merge rebasing N-1 branches is not.
 
 ## Threat model — What goes wrong
 
@@ -56,6 +58,7 @@ allowed-tools:
 | CI fails on transient error | GitHub API rate limit, runner OOM, network timeout | "error in connecting to agent.api.stepsecurity.io" | Occasional |
 | Token can't push workflow files | OAuth token lacks `workflow` scope | "refusing to allow an OAuth App to create or update workflow" | On CI file edits |
 | Stale PRs from old sprints | Feature branches abandoned but PRs left open | PR list cluttered with OPEN PRs from weeks ago | Gradual |
+| Parallel PRs collide at merge | Two commis touched the same file despite the chef's file-exclusion | First PR merges, N-1 others block on conflict, sprint stalls | Common (multi-agent) |
 
 ## Input
 
@@ -114,7 +117,7 @@ For each dimension, detect issues and score:
 |---|---|---|
 | D1 | **Ruleset ↔ CI alignment** | Do rulesets require checks that path pruning can skip? |
 | D2 | **Branch hygiene** | Orphan remote branches? Stale local branches? Dangling worktrees? |
-| D3 | **PR lifecycle** | Open PRs > 7 days? Auto-merge enabled but stuck? Draft PRs abandoned? |
+| D3 | **PR lifecycle** | Open PRs > 7 days? Auto-merge enabled but stuck? Draft PRs abandoned? **Auto-merge enabled on every non-draft PR? Parallel PRs conflict-free (see §Parallel PR conflict scan)?** |
 | D4 | **Release flow** | release-plz PR in conflict? sync-main diverged? Tag ↔ branch mismatch? See `references/release-flow.md` for 6 failure modes |
 | D5 | **CI health** | Recent failures? Transient vs real? Flaky jobs? |
 | D6 | **Permissions & scopes** | CODEOWNERS valid? Token scopes sufficient? CLA configured? |
@@ -308,6 +311,91 @@ git merge origin/main --no-edit -X theirs
 git push origin sync-main-v${VERSION} --force-with-lease
 ```
 
+### F7 — PR opened without auto-merge
+
+**Symptom:** `gh pr list --json number,autoMergeRequest` returns rows with `autoMergeRequest: null` that are **not drafts**. They sit waiting for a human.
+
+**Fix — enable auto-merge on every affected PR:**
+
+```bash
+# Detect the project merge policy once (squash / rebase / merge)
+POLICY=$(gh api repos/${REPO} --jq '
+  if .allow_squash_merge then "--squash"
+  elif .allow_rebase_merge then "--rebase"
+  else "--merge" end')
+
+# Enable auto-merge on every non-draft PR missing it
+gh pr list --repo ${REPO} --state open \
+  --json number,isDraft,autoMergeRequest \
+  --jq '.[] | select(.isDraft == false and .autoMergeRequest == null) | .number' |
+while read -r PR; do
+  gh pr merge ${PR} --repo ${REPO} --auto ${POLICY} || \
+    echo "PR #${PR}: auto-merge failed — check for conflicts or missing required checks"
+done
+```
+
+**Prevention (for multi-agent flows):** The Sous-Chef of cli-forge-chef MUST chain `gh pr create` with `gh pr merge --auto` in the same command sequence. Never open a PR without immediately enabling auto-merge — the gap is exactly where PRs go to die.
+
+```bash
+gh pr create --title "feat(auth): JWT middleware" --body "..." --base develop && \
+gh pr merge --auto --squash
+```
+
+### F8 — Parallel PR conflict scan (pre-merge)
+
+**Symptom:** N commis have opened N parallel PRs against the same base. One merges cleanly; N-1 get blocked on conflict the moment it lands.
+
+**Why this happens:** The chef's PERT + Fiedler partition is supposed to prevent overlapping write-sets across commis. But (a) a commis may have touched a file outside its cluster due to an unexpected refactor, (b) auto-merge from the previous sprint may have stale branches, (c) the Fiedler partition may be absent on small projects. GitHub won't tell you about the conflict until the first merge lands — by then you are stuck.
+
+**Detection — run before enabling auto-merge on a batch:**
+
+```bash
+# List all open PRs against the same base
+BASE=develop  # or main, per branching model
+PRS=$(gh pr list --repo ${REPO} --base ${BASE} --state open \
+  --json number,headRefName --jq '.[] | "\(.number) \(.headRefName)"')
+
+# Build a map PR -> changed files
+declare -A PR_FILES
+while read -r NUM BRANCH; do
+  FILES=$(gh pr view ${NUM} --repo ${REPO} --json files --jq '.files[].path' | sort -u | tr '\n' ' ')
+  PR_FILES[${NUM}]="${FILES}"
+done <<< "${PRS}"
+
+# Compute pairwise intersections — any non-empty intersection is a future conflict
+PRS_ARR=("${!PR_FILES[@]}")
+for ((i=0; i<${#PRS_ARR[@]}; i++)); do
+  for ((j=i+1; j<${#PRS_ARR[@]}; j++)); do
+    A=${PRS_ARR[$i]}
+    B=${PRS_ARR[$j]}
+    OVERLAP=$(comm -12 \
+      <(printf '%s\n' ${PR_FILES[$A]} | sort -u) \
+      <(printf '%s\n' ${PR_FILES[$B]} | sort -u))
+    if [[ -n "${OVERLAP}" ]]; then
+      echo "CONFLICT: PR #${A} ↔ PR #${B} overlap on:"
+      echo "${OVERLAP}" | sed 's/^/  /'
+    fi
+  done
+done
+```
+
+**Exit actions, in order of preference:**
+
+1. **Sequence the two conflicting PRs** — pick one (lowest slack in the PERT, cf. cli-forge-chef pert-computation.md §4) and **disable auto-merge on the other** until the first lands, then rebase the loser:
+   ```bash
+   gh pr merge ${LOSER_PR} --disable-auto --repo ${REPO}
+   # After the winner lands:
+   gh pr checkout ${LOSER_PR} && git rebase origin/${BASE} && git push --force-with-lease
+   gh pr merge ${LOSER_PR} --auto --squash
+   ```
+2. **Split the conflicting file out of one of the PRs** — if the overlap is a single file that one commis touched incidentally, the cleanest fix is to revert that file on one branch.
+3. **Merge the two PRs into one** — only if the commits are small enough that a combined review is realistic.
+
+**Running this scan proactively:**
+
+- **Multi-agent sprints (cli-forge-chef):** the Sous-Chef runs the scan after every new PR is opened, before calling `gh pr merge --auto`. This is the structural defence — it catches any leak from the chef's file-exclusion.
+- **Repo audit mode:** include the scan in Phase 1 Dimension D3 check when there are ≥ 2 open PRs against the same base. Report each pair under `D3 — PR lifecycle`.
+
 ## Anti-patterns
 
 | # | Anti-pattern | Problem | Fix |
@@ -320,6 +408,8 @@ git push origin sync-main-v${VERSION} --force-with-lease
 | G6 | **workflow scope left active** | Security risk — any `gh` call can modify CI | `gh auth refresh` immediately after push |
 | G7 | **Stale release-plz PRs** | Conflict with develop, never auto-resolve | Close and let release-plz recreate |
 | G8 | **No CI comment in rulesets** | Next dev re-adds individual checks to the ruleset | Comment in ci.yml explaining the design |
+| G9 | **PR opened without auto-merge** | Somebody has to babysit it — exactly what this skill eliminates | Chain `gh pr create` with `gh pr merge --auto`, always. F7 fix |
+| G10 | **No pre-merge conflict scan on parallel PRs** | First PR lands, N-1 others freeze on conflict | Run F8 before every batch auto-merge. Sequence or rebase the losers |
 
 ## Dynamic Handoffs
 
