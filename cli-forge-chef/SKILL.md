@@ -333,6 +333,50 @@ If needed during the sprint: gh auth refresh -s workflow
 After the push: gh auth refresh (to remove it)
 ```
 
+#### Agent isolation model (CRITICAL — G26 + industry best practice 2026)
+
+**Every commis MUST work in an isolated worktree with its own branch. Never on the base branch directly.**
+
+```
+RULE: 1 commis = 1 worktree = 1 branch = 1 PR
+
+Base branch (develop or main) is NEVER modified directly by a commis.
+All work flows through: worktree → branch → push → PR → auto-merge.
+```
+
+This is the pattern used in production by teams running 4-7 parallel agents (incident.io, 2026). It prevents:
+- Commis stepping on each other's files
+- Push rejected by branch protection (G26)
+- Merge conflicts discovered too late
+- Work stranded locally when push fails
+
+**Worktree setup per commis:**
+
+```bash
+# Chef creates worktrees in Phase 0 (in on_project_start or manually)
+git worktree add ../{project}-wt-{commis_name} -b {branch_name} 2>/dev/null || true
+```
+
+**Conflict pre-detection (optional but recommended for 3+ commis):**
+
+If `clash` is installed (`which clash`), add to the ccheck or Sous-Chef loop:
+```bash
+clash status  # shows conflict matrix across all worktrees
+clash check {file}  # check before writing a specific file
+```
+
+If not installed, the coupling matrix from Phase 0.5 (`/cli-audit-tangle`) serves as the static conflict prevention.
+
+**Merge sequencing:**
+
+When multiple commis are done:
+1. The Sous-Chef merges PR 1 first (oldest or least coupled)
+2. Waits for auto-merge to complete
+3. Remaining commis rebase their branches: `git rebase origin/{base_branch}`
+4. Sous-Chef merges PR 2, and so on
+
+**Never merge all PRs simultaneously** — sequential merge with rebase between each avoids the quadratic conflict explosion.
+
 **Exception: missing tmuxinator is NOT a blocker.** If Ruby/gem is not available (air-gapped env, immutable OS like Bluefin/Silverblue), generate the raw-tmux fallback instead:
 - Read `references/raw-tmux-fallback.md`
 - Generate `{project}/.claude/scripts/boss-{session}.sh` (chmod +x)
