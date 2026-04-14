@@ -51,6 +51,8 @@ allowed-tools:
 | Release PR in conflict | release-plz bumps CHANGELOG.md, sync-main also touches it | "This branch has conflicts" | Every release |
 | Orphan branches accumulate | Merged PRs don't always delete branches | 10+ stale remote branches | Gradual |
 | Auto-merge doesn't trigger | Missing required checks or conflict blocks it | PR sits with auto-merge enabled but never merges | Common |
+| PR created without auto-merge | cli-forge-chef Sous-Chef creates PRs but doesn't enable `--auto` | PR is mergeable but nobody merges it | Common (multi-agent) |
+| Multi-agent push rejected | develop is protected, Sous-Chef tries direct push | `GH006: Protected branch update failed` | Common (multi-agent) |
 | CI fails on transient error | GitHub API rate limit, runner OOM, network timeout | "error in connecting to agent.api.stepsecurity.io" | Occasional |
 | Token can't push workflow files | OAuth token lacks `workflow` scope | "refusing to allow an OAuth App to create or update workflow" | On CI file edits |
 | Stale PRs from old sprints | Feature branches abandoned but PRs left open | PR list cluttered with OPEN PRs from weeks ago | Gradual |

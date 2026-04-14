@@ -184,12 +184,22 @@ If YES → PR mode. If NO → direct merge mode.
 2. You read {shared_state_path} section 'Done' to confirm
 3. You run the gates
 4. If PASS:
-   a. Push the commis branch: git push origin {{branch}}
-   b. Create a PR: gh pr create --base {base_branch} --head {{branch}} --title "{{commit_title}}" --body "{{gate_results}}"
-   c. Wait for CI: gh pr checks {{pr_number}} --watch
-   d. Squash merge: gh pr merge {{pr_number}} --squash --delete-branch
-   e. Update shared-state + SendMessage to the Chef
+   a. Push the commis branch:
+      git push origin {{branch}}
+   b. Create a PR with auto-merge enabled:
+      gh pr create --base {base_branch} --head {{branch}} --title "{{commit_title}}" --body "{{gate_results}}"
+   c. Enable auto-merge immediately (so it merges as soon as CI passes):
+      gh pr merge {{pr_number}} --squash --auto --delete-branch
+   d. The PR will auto-merge when all required checks pass. Do NOT wait — move to the next commis.
+   e. Periodically check merged PRs to update shared-state + SendMessage to the Chef:
+      gh pr view {{pr_number}} --json state --jq '.state'
+      If MERGED → update shared-state, notify Chef, unblock dependent commis
 5. If FAIL: SendMessage to the Commis + to the Chef
+
+NOTE: --auto means the merge happens automatically once CI passes.
+The Sous-Chef does NOT block waiting for CI — it enables auto-merge
+and moves on. This is critical for parallelism: while PR #1 waits
+for CI, the Sous-Chef can process PR #2 from another commis.
 
 === DIRECT MODE (no branch protection) ===
 1. Commis tells you 'ready for merge branch X'
