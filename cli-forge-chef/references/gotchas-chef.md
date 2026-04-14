@@ -352,4 +352,30 @@ echo "$(date -Is) | APPROVE | ..." >> .claude/ccheck.log
 
 Pre-authorizing these in settings.local.json covers the case where a commis (not just the ccheck) needs to read shared-state or write to sprint history.
 
-**If the user closes the ccheck window accidentally:** the Chef will block on the next permission. Relaunch with `tmuxinator stop && tmuxinator start` or manually open a new window and run the ccheck command.
+---
+
+## G26 — Protected branch rejects direct push (CRITICAL)
+
+**Problem:** develop (or main) has a GitHub ruleset requiring "Changes must be made through a pull request". The Sous-Chef tries to `git push origin develop` after merging locally → GitHub rejects the push. All commis work is stranded locally, nothing reaches the remote.
+
+**Cause:** The merge protocol assumed direct push was allowed. It didn't check whether the base branch was protected.
+
+**Symptoms:**
+```
+remote: error: GH006: Protected branch update failed
+remote: error: Changes must be made through a pull request.
+```
+
+**Fix in the Sous-Chef merge protocol:**
+1. At startup, detect if the base branch requires PRs:
+   ```bash
+   gh api repos/{owner}/{repo}/rulesets 2>/dev/null | grep -q 'pull_request'
+   ```
+2. If YES → **PR mode**: push the commis branch, `gh pr create`, `gh pr checks --watch`, `gh pr merge --squash`
+3. If NO → **direct mode**: merge locally, push directly
+
+**Detection:** If you see `GH006: Protected branch update failed` in the gate window, switch to PR mode immediately. Do NOT try to force-push.
+
+**Impact on the release chain:** Once PRs are merged to develop, the chain is automatic:
+release-plz PR → tag → sync-main PR → main catches up (10-30 min).
+The Sous-Chef should NOT wait for the full chain — once the PR to develop is merged, the commis can continue.

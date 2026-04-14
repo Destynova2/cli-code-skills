@@ -173,15 +173,38 @@ QUALITY GATES:
 {quality_gates_config}
 
 MERGE PROTOCOL:
-1. Worker tells you 'ready for merge branch X'
+
+FIRST: detect if {base_branch} is protected by a ruleset requiring PRs.
+Check once at startup:
+  gh api repos/{{owner}}/{{repo}}/rulesets 2>/dev/null | grep -q 'pull_request'
+If YES → PR mode. If NO → direct merge mode.
+
+=== PR MODE (branch protection requires pull requests) ===
+1. Commis tells you 'ready for merge branch X'
 2. You read {shared_state_path} section 'Done' to confirm
 3. You run the gates
-4. If PASS: merge + CI + shared-state + SendMessage to the Chef
-5. If FAIL: SendMessage to the Worker + to the Chef
+4. If PASS:
+   a. Push the commis branch: git push origin {{branch}}
+   b. Create a PR: gh pr create --base {base_branch} --head {{branch}} --title "{{commit_title}}" --body "{{gate_results}}"
+   c. Wait for CI: gh pr checks {{pr_number}} --watch
+   d. Squash merge: gh pr merge {{pr_number}} --squash --delete-branch
+   e. Update shared-state + SendMessage to the Chef
+5. If FAIL: SendMessage to the Commis + to the Chef
 
-CONFLICTS:
+=== DIRECT MODE (no branch protection) ===
+1. Commis tells you 'ready for merge branch X'
+2. You read {shared_state_path} section 'Done' to confirm
+3. You run the gates
+4. If PASS:
+   a. In the gate window: git checkout {base_branch} && git merge {{branch}}
+   b. git push origin {base_branch}
+   c. Wait for CI: gh run watch
+   d. Update shared-state + SendMessage to the Chef
+5. If FAIL: SendMessage to the Commis + to the Chef
+
+CONFLICTS (both modes):
 If a merge conflict:
-  SendMessage to the Worker: 'CONFLICT: git rebase origin/{base_branch}, resolve and recommit.'
+  SendMessage to the Commis: 'CONFLICT: git rebase origin/{base_branch}, resolve and recommit.'
   SendMessage to the Chef: 'CONFLICT: {{branch}} is waiting on a rebase from the commis.'
 "
 }}

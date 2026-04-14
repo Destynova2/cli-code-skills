@@ -85,10 +85,13 @@ gh pr list --repo ${REPO} --state open --json number,title,createdAt,isDraft,aut
 
 | Score | Criteria |
 |-------|----------|
-| 0 | Release PR in conflict, or sync-main diverged > 2 releases |
+| 0 | Release PR in conflict, or sync-main diverged > 2 releases, or multi-agent push rejected by branch protection |
 | 5 | Release PR clean, sync-main has minor conflicts |
 | 10 | Release flow working, sync-main automated |
-| 15 | Release-plz + sync-main + tag + GitHub Release all in sync |
+| 13 | Release-plz + sync-main + tag + GitHub Release all in sync |
+| 15 | All in sync + multi-agent workflow uses PR mode on protected branches (G26) |
+
+**Also check:** Do any rulesets on develop/main require PRs? If yes, verify that cli-forge-chef's merge protocol is in PR mode. If a recent sprint had `GH006: Protected branch update failed` errors → flag as critical and recommend G26 fix.
 
 ---
 
