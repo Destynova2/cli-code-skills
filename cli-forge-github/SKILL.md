@@ -103,22 +103,24 @@ gh pr list --repo ${REPO} --state open --json number,title,headRefName,createdAt
 gh run list --repo ${REPO} --limit 10 --json databaseId,status,conclusion,name,headBranch,event > /tmp/gh-runs.json
 ```
 
-### Phase 1 — Audit 8 dimensions
+### Phase 1 — Audit 9 dimensions
 
 Read `references/dimensions.md` for full scoring criteria.
+Read `references/release-flow.md` for D4 release flow details and failure modes.
 
-For each dimension, detect issues and score 0-4:
+For each dimension, detect issues and score:
 
 | # | Dimension | What to check |
 |---|---|---|
 | D1 | **Ruleset ↔ CI alignment** | Do rulesets require checks that path pruning can skip? |
 | D2 | **Branch hygiene** | Orphan remote branches? Stale local branches? Dangling worktrees? |
 | D3 | **PR lifecycle** | Open PRs > 7 days? Auto-merge enabled but stuck? Draft PRs abandoned? |
-| D4 | **Release flow** | release-plz PR in conflict? sync-main diverged? Tag ↔ branch mismatch? |
+| D4 | **Release flow** | release-plz PR in conflict? sync-main diverged? Tag ↔ branch mismatch? See `references/release-flow.md` for 6 failure modes |
 | D5 | **CI health** | Recent failures? Transient vs real? Flaky jobs? |
 | D6 | **Permissions & scopes** | CODEOWNERS valid? Token scopes sufficient? CLA configured? |
 | D7 | **Default branch config** | Squash-on-merge? Delete-branch-on-merge? Require linear history? |
 | D8 | **Workflow hygiene** | Unused workflows? Deprecated actions? Pinned action versions? |
+| D9 | **Prek ↔ CI alignment** | Local pre-commit/pre-push mirrors the fast CI checks? CI YAML validated locally? |
 
 ### Phase 2 — Fix detected issues
 
