@@ -66,6 +66,79 @@ Replace `{variables}` with the project values.
 | Module/Function | Coupling | Assigned to |
 |------------------|----------|-------------|
 
+## PERT (computed in Phase 0.5 — see references/pert-computation.md)
+
+> Scheduling contract for the sprint. Chef writes once at Phase 0.5.
+> Recomputed only on apoptosis, DENY past P, or user-added plat — never on every merge.
+> **Format is a Mermaid `flowchart LR` — never a `gantt`**. A PERT is a dependency DAG, not a timeline.
+
+```mermaid
+flowchart LR
+    start([Sprint start])
+    %% plats go here, critical-path nodes get :::critical
+    done([Envoye])
+    classDef critical stroke:#E74C3C,stroke-width:3px,fill:#FDEDEC
+```
+
+| Plat | O | M | P | E | σ | ES | EF | LS | LF | slack | critical |
+|------|---|---|---|---|---|----|----|----|----|-------|----------|
+
+**Makespan:** {makespan} commis-hours on the critical path.
+**95% CI:** {makespan} ± {ci} commis-hours.
+**Critical path:** {critical_path}.
+
+### Scheduled view (derived from PERT — wall-clock projection)
+
+> Post-scheduling `gantt` derived from ES/EF of the PERT. NOT the PERT itself.
+> The PERT above is the dependency contract; this gantt answers "when will it be done?".
+> Regenerated only when the PERT is recomputed (apoptosis / DENY past P / new plat).
+
+```mermaid
+gantt
+    title Sprint schedule (post-PERT projection)
+    dateFormat X
+    axisFormat %Hh
+    section Critical path
+    auth-refactor   :crit, 0, 4h
+    api-endpoints   :crit, after auth-refactor, 3h
+    section Buffer
+    schema-migrate  :2h, 0, 2h
+    docs-update     :1h, after api-endpoints, 1h
+```
+
+Critical-path tasks use `crit`. The section split makes the slack-free chain visually separable from the buffered tasks.
+
+## Task pool (dispatch queue — consumed by free commis)
+
+> Two views of the same state: a `kanban` for one-glance status, a table for machine parsing.
+> Derived from the PERT. `Ready = 1` iff all predecessors are Envoye.
+> Dispatch rule: highest Priority (longest path to done) wins, ties broken by smaller slack,
+> then smaller E. File-exclusion: never dispatch two rows whose Write-sets intersect.
+
+```mermaid
+---
+config:
+  kanban:
+    ticketBaseUrl: ''
+---
+kanban
+    Ready[Ready — pickable]
+        auth-refactor[auth-refactor<br/>pri=12 slack=0]@{ priority: 'High' }
+        schema-migrate[schema-migrate<br/>pri=8 slack=2]@{ priority: 'Medium' }
+    InProgress[In progress — locked to a commis]
+    Blocked[Waiting on predecessor]
+        api-endpoints[api-endpoints<br/>pri=8 slack=0<br/>waits: auth-refactor]@{ priority: 'High' }
+        docs-update[docs-update<br/>pri=1 slack=4<br/>waits: api-endpoints]@{ priority: 'Low' }
+    Envoye[Envoye — merged + CI green]
+```
+
+**Columns:** `Ready` (pickable now) / `InProgress` (a commis is on it) / `Blocked` (waiting on a predecessor) / `Envoye` (merged). A plat moves Ready → InProgress on dispatch, InProgress → Envoye on merge. A Blocked plat jumps to Ready when its last predecessor becomes Envoye.
+
+**Priority label** (`High` / `Medium` / `Low`) is derived from the PERT priority and maps directly to dispatch order. Critical-path plats (`slack = 0`) are always `High`.
+
+| Plat | Ready | Priority | Slack | Write-set | Commis |
+|------|-------|----------|-------|-----------|--------|
+
 ## Sensitive zones (3/3 unanimity quorum)
 
 > Reviewed at the end of every sprint. If a file causes problems, move it here.

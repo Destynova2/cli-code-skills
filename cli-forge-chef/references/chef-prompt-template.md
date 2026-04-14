@@ -186,12 +186,30 @@ If YES → PR mode. If NO → direct merge mode.
 4. If PASS:
    a. Push the commis branch:
       git push origin {{branch}}
-   b. Create a PR with auto-merge enabled:
+   b. Create a PR — auto-merge is MANDATORY, never create a PR without it (cli-forge-github rule #8):
       gh pr create --base {base_branch} --head {{branch}} --title "{{commit_title}}" --body "{{gate_results}}"
-   c. Enable auto-merge immediately (so it merges as soon as CI passes):
+   c. MANDATORY PARALLEL CONFLICT SCAN before enabling auto-merge.
+      For every other open PR against the same base, intersect the changed-files set with this PR.
+      If the intersection is non-empty → you have a conflict that will block the first merge:
+        gh pr view {{pr_number}} --json files --jq '.files[].path' | sort -u > /tmp/pr-{{pr_number}}.files
+        for OTHER in $(gh pr list --base {base_branch} --state open --json number --jq '.[].number'); do
+          [[ "$OTHER" == "{{pr_number}}" ]] && continue
+          gh pr view $OTHER --json files --jq '.files[].path' | sort -u > /tmp/pr-$OTHER.files
+          OVERLAP=$(comm -12 /tmp/pr-{{pr_number}}.files /tmp/pr-$OTHER.files)
+          if [[ -n "$OVERLAP" ]]; then
+            # Pick the winner: lower-slack (more critical) PR wins, loser waits
+            # Look up slack from shared-state.md "Task pool" priority column
+            # Disable auto-merge on the loser until the winner lands
+            echo "CONFLICT: PR #{{pr_number}} ↔ PR #$OTHER on $OVERLAP"
+            # Sequence them in the PERT (conflict-resolution.md) — see cli-forge-github F8
+          fi
+        done
+      This is cheap (one gh call per open PR) and prevents the "first lands, N-1 freeze" failure.
+      See cli-forge-github references/SKILL.md §F8 for the full detection script and exit actions.
+   d. Enable auto-merge (so it merges as soon as CI passes):
       gh pr merge {{pr_number}} --squash --auto --delete-branch
-   d. The PR will auto-merge when all required checks pass. Do NOT wait — move to the next commis.
-   e. Periodically check merged PRs to update shared-state + SendMessage to the Chef:
+   e. The PR will auto-merge when all required checks pass. Do NOT wait — move to the next commis.
+   f. Periodically check merged PRs to update shared-state + SendMessage to the Chef:
       gh pr view {{pr_number}} --json state --jq '.state'
       If MERGED → update shared-state, notify Chef, unblock dependent commis
 5. If FAIL: SendMessage to the Commis + to the Chef
@@ -200,6 +218,11 @@ NOTE: --auto means the merge happens automatically once CI passes.
 The Sous-Chef does NOT block waiting for CI — it enables auto-merge
 and moves on. This is critical for parallelism: while PR #1 waits
 for CI, the Sous-Chef can process PR #2 from another commis.
+
+RULES (from cli-forge-github §Rules for the Auditor 8 + 9):
+- Every non-draft PR gets auto-merge enabled IMMEDIATELY. No gap.
+- Every batch of parallel PRs gets a conflict scan BEFORE the first auto-merge lands.
+- A conflict found by the scan is sequenced (lower-slack PR waits) — never resolved post-merge.
 
 === DIRECT MODE (no branch protection) ===
 1. Commis tells you 'ready for merge branch X'
@@ -333,25 +356,70 @@ Exception: the Chef may send directly to commis to unblock them (green light, hi
 
 ## PERT
 
+The PERT is the scheduling contract for the sprint. It is computed ONCE in Phase 0.5
+(after /cli-audit-tangle, before spawning commis) following `references/pert-computation.md`.
+The Chef MUST paste two artefacts below: (1) a Mermaid `flowchart LR` with the critical path
+highlighted via `:::critical`, (2) a companion text table with O, M, P, E, σ, ES, EF, LS, LF,
+slack per plat and the makespan + 95% CI + critical path at the bottom.
+
+**Never use `gantt`** — a Gantt is a scheduled timeline, a PERT is a dependency DAG.
+
+### Mermaid diagram
+
+```mermaid
+{pert_mermaid}
 ```
-{pert_diagram}
+
+### Task table (source of truth for the pool)
+
+{pert_table}
+
+**Makespan:** {pert_makespan} commis-hours on the critical path.
+**95% CI:** {pert_makespan} ± {pert_ci} commis-hours.
+**Critical path:** {pert_critical_path}.
+
+### Dispatch rule (stigmergic, no Chef intervention)
+
+Commis self-serve from `shared-state.md` "Task pool" using this exact priority:
+
 ```
+priority(plat) = longest_path_from(plat, done)
+               = E(plat) + max(priority(succ))
+               = 0 if no successor
+
+Dispatch:
+  1. Ready set   = plats whose predecessors are all Envoye
+  2. Filter out  = any plat whose write-set intersects an In-progress plat (file exclusion)
+  3. Sort        = descending priority, ties broken by smaller slack, then smaller E
+  4. Assign      = first free commis to the top of the filtered ready set
+```
+
+Critical-path plats (slack = 0) are dispatched first by construction. Recompute the PERT
+only on apoptosis, DENY round past P, or user-added plat — never on every merge.
 
 ## Lifecycle
 
 ```
-Phase 0: Chef runs /cli-audit-tangle, assigns tasks
-Phase 1: Commis code in parallel (independent tasks)
-          Commis send "ready for merge" to the Sous-Chef
-          Sous-Chef runs gates + merge + CI
-          Sous-Chef reports back to the Chef
-Phase 2: Chef receives "MERGE OK" from the Sous-Chef
-          Chef sends "green light" to dependent commis
-          Commis start the next phase
-Phase 3: Repeat for each PERT phase
-Phase N: Chef runs /cli-cycle (final scorecard)
-          Chef shuts down the Sous-Chef + Commis
-          Chef produces the report
+Phase 0:   Chef runs /cli-audit-tangle — couplings + sensitive-zone map
+Phase 0.5: Chef computes the PERT (references/pert-computation.md)
+             - O/M/P per plat → E, σ
+             - Forward/backward pass → ES, LS, slack, critical path
+             - Write Mermaid + table to shared-state.md "## PERT"
+             - Write priorities to shared-state.md "## Task pool"
+Phase 1:   Commis self-serve from the pool
+             - Critical-path plats first, file-exclusion enforced
+             - Independent plats run strictly in parallel
+             - Commis send "ready for merge" to the Sous-Chef
+             - Sous-Chef runs gates + merge + CI, reports back to the Chef
+Phase 2:   On MERGE OK the Chef updates the pool (successors become ready)
+             Chef sends "green light" hints only if a commis is blocked
+Phase 3:   Repeat until the ready set is empty
+             Apoptosis / DENY past P → Chef recomputes the PERT (forward/backward only)
+Phase N:   Chef runs /cli-cycle (final scorecard)
+             Chef shuts down the Sous-Chef + Commis
+             Chef produces the sprint report following references/sprint-report-template.md
+             (gitGraph from git log, sankey from commis-hour tracking, radar from quality gates,
+              xyChart Amdahl curve from PERT makespan vs. measured)
 ```
 
 ## Shared memory — {shared_state_path}

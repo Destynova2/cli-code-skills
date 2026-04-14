@@ -113,7 +113,7 @@ Everything else passes without human intervention.
 | **Produit sensible** | 3/3 unanimity required | "Cargo.toml: rustls-pemfile advisory" |
 | **Produit retire** | Past hallucination → now a test case | "Blind auto-approve → G16" |
 | **Nouvelle recette** | New module to classify | "log_backend → normal, self_tuning → sensitive" |
-| Menu | PERT / roadmap | "Sprint S3: 4 plats" |
+| Menu | PERT (dependency DAG of plats with durations) | "Sprint S3: 4 plats, critical path A→C→D" |
 | Commande | Ticket / task | "feat/hit-decision-tokens" |
 | Plat | Feature merged + CI green | PR #88 merged |
 | Mise en place | shared-state.md "In progress" | Worker writes its target files |
@@ -126,6 +126,31 @@ Everything else passes without human intervention.
 | Appel au patron | ESCALATE (< 2%) | "Patron, edit on ci.yml, 3 rounds without consensus" |
 | Coup de feu | Parallel phase | 4 commis at the same time |
 | Service | Full sprint | Phase 0 → Phase N → report |
+
+### Plat lifecycle (state machine)
+
+A plat moves through a fixed sequence of states between `Ready` and `Envoye`. A DENY from a sous-chef loops back to `Cuisson`; a critical failure (same diff rejected twice, regression, 30-min idle) triggers `Apoptosis` and the plat re-enters the pool.
+
+```mermaid
+stateDiagram-v2
+    [*] --> Ready
+    Ready --> MiseEnPlace: dispatched to commis
+    MiseEnPlace --> Cuisson: write-set locked in shared-state
+    Cuisson --> Dressage: code + tests pass locally
+    Dressage --> Gouter: commit + lint clean, sent to Sous-Chef
+    Gouter --> Envoi: 2/3 APPROVE (normal) or 3/3 (sensitive)
+    Gouter --> Renvoi: DENY or CONCERN with solution
+    Renvoi --> Cuisson: commis applies the proposed fix
+    Envoi --> [*]: merged + CI green
+    Cuisson --> Apoptosis: same diff rejected 2x / idle 30min / regression
+    Dressage --> Apoptosis: same diff rejected 2x / regression
+    Apoptosis --> Ready: revert + locks released, plat re-enters the pool
+    Gouter --> AppelAuPatron: 3 rounds without consensus
+    AppelAuPatron --> Cuisson: human decision applied
+    AppelAuPatron --> [*]: human aborts the plat
+```
+
+This is the authoritative plat lifecycle — if prose anywhere else disagrees, fix the prose.
 
 ### Communication flow
 
@@ -518,10 +543,14 @@ Read EVERYTHING before asking anything:
 
 2. **How many commis?** → Count the tasks found in step 1, apply the tier (S/M/L/XL). Don't ask.
 
-3. **Sending order?** → Derive from dependencies:
-   - `cli-audit-tangle` (couplings = required sequence)
-   - If task B touches a file created by task A → B depends on A
-   - Otherwise → parallel
+3. **Sending order?** → Compute the PERT. Read `references/pert-computation.md` end-to-end. Summary:
+   - **First, check for `.claude/tangle-partition.json`** (exported by `cli-audit-tangle`). If present, each plat is matched to its Fiedler cluster and **one commis owns one cluster** for the sprint — file-exclusion becomes structural, not a runtime filter. Boundary functions become mandatory fan-in barriers in the PERT. If absent, run `/cli-audit-tangle` first on any sprint with > 5 plats; otherwise fall back to file-level coupling detection.
+   - Edges: Fiedler boundaries (if artefact present) + `cli-audit-tangle` couplings + explicit semantic dependencies. W on a file created by A → depends on A. Otherwise → parallel.
+   - For each plat, estimate O/M/P from the tier table (XS/S/M/L/XL based on file count + LOC + sensitive zone). Compute `E=(O+4M+P)/6` and `σ=(P-O)/6`.
+   - Forward/backward pass → ES, LS, slack per plat. Critical path = slack 0.
+   - Dispatch priority = longest path from the plat to `done` (not readiness alone). Critical-path plats go to the first free commis.
+   - File-exclusion filter: never dispatch two plats whose write-sets intersect. With a Fiedler partition, this check is already satisfied by the cluster-based assignment and becomes a sanity check only.
+   - Write the PERT (Mermaid `flowchart LR` with `:::critical`, see `pert-computation.md` §5) + the companion text table to `shared-state.md` under `## PERT`. This is the scheduling contract for the whole sprint.
    Don't ask.
 
 4. **Plats off-menu?** → Scan:
@@ -688,6 +717,8 @@ To stop: `CronDelete {job_id}`
 | `references/anti-patterns-chef.md` | 10 named brigade anti-patterns (Ping-Pong, Ghost Commis, God Commis, etc.) |
 | `references/sprint-persistence.md` | Checkpoint, resume, rewind, fresh restart, sprint history (inspired by jj operation log) |
 | `references/simplified-model.md` | Stigmergy model for tiers S/M/L — Boids, quorum sensing, DNA repair, reaction-diffusion, apoptosis |
+| `references/pert-computation.md` | O/M/P estimates, critical path, list scheduling with file-exclusion, precedence patterns, triage quadrant — "aller vite sans s'emmêler les pinceaux" |
+| `references/sprint-report-template.md` | Post-sprint report — gitGraph (branch topology), sankey (commis-hours flow), radar (quality), xyChart (Amdahl) |
 | `references/parallel-exploration.md` | Competing hypotheses, parallel approaches, comparison grid |
 | `references/ccheck-prompt-template.md` | Contre-chef prompt (permission auto-approver) |
 | `references/raw-tmux-fallback.md` | POSIX bash script equivalent to the tmuxinator YAML (for Ruby-less environments) |

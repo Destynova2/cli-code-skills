@@ -100,26 +100,35 @@ diff_size > 200 lines OR sensitive zone:
 
 **Result:** 60-70% of merges (small diffs in a normal zone) trigger no audit skill. The sous-chef validates them in 30 seconds.
 
-### 4. Reaction-Diffusion — self-organized task pool (replaces PERT monitoring)
+### 4. Reaction-Diffusion — self-organized task pool (driven by the PERT)
 
-The PERT is computed in Phase 0 and written to shared-state.md. Then the commis help themselves from the pool by readiness score.
+The PERT is computed in Phase 0.5 (`references/pert-computation.md`) and written to shared-state.md with a priority per plat. The commis then help themselves from the pool — no Chef scheduling loop.
+
+**Two numbers per plat:**
+
+- **Readiness** ∈ {0, 1}: 1 iff all PERT predecessors are `Envoye`. A plat only becomes pickable when all its inbound arrows in the PERT are green. There is no partial readiness — either a successor can start or it cannot.
+- **Priority** = longest path from the plat to `done` (cf. pert-computation.md §4). Static, computed once. Critical-path plats have the highest priority by construction.
 
 ```markdown
 ## Task pool
 
-| Task | Readiness | Activators | Inhibitors | Commis |
-|------|-----------|------------|------------|--------|
-| test-coverage | 1.0 | none required | none | - |
-| auth-refactor | 0.9 | schema-ready (yes) | none | commis-1 |
-| api-endpoints | 0.3 | auth-done (no) | auth/mod.rs locked | - |
-| docs-update | 0.1 | api-done (no), tests-done (no) | none | - |
+| Plat | Ready | Priority | Slack | Write-set | Commis |
+|------|-------|----------|-------|-----------|--------|
+| auth-refactor | 1 | 12.0 | 0 | src/auth/* | commis-1 |
+| schema-migrate | 1 | 8.0 | 2 | migrations/* | commis-2 |
+| api-endpoints | 0 | 8.0 | 0 | src/api/*, src/auth/mod.rs | - |
+| docs-update | 0 | 1.0 | 4 | docs/* | - |
 ```
 
-**Rules:**
-1. A free commis picks the task with the highest readiness
-2. When a commis finishes, its tokens update the readiness of dependent tasks
-3. No Chef needed to assign or rebalance — the pool self-organizes
-4. If 2 commis want the same task → first come, first served (lock in shared-state)
+**Dispatch rules (file-exclusion + critical-path-first):**
+
+1. A free commis scans the ready rows (`Ready = 1`).
+2. It filters out any row whose `Write-set` intersects the `Write-set` of a row already assigned (`Commis ≠ -`). This is the "don't tangle the brushes" rule — the commis never fights another commis for a file.
+3. It picks the highest-remaining priority. Ties → smaller slack, then smaller E.
+4. It writes its name into `Commis` (row lock). First come, first served if two commis race — the second one re-runs step 2 and picks the next candidate.
+5. When a plat merges (`Envoye`), the commis updates `Ready` on every successor whose predecessors are now all green. The pool re-sorts itself, no Chef intervention.
+
+**Why priority and not just readiness?** Picking the "most ready" task starves the critical path: the chef ends up using its best commis on slack-rich plats while critical work sits in the queue. Sorting by longest-remaining-path guarantees that scarce commis-hours are spent on the tasks that set the makespan — the definition of "aller le plus vite".
 
 ### 5. Apoptosis — self-termination of failing commis (replaces Patch Bankruptcy + Divergence Detection)
 
