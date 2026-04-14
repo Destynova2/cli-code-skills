@@ -196,6 +196,8 @@ Use the detected type to:
 
 ### 0.3 — Check prerequisites
 
+#### Tools
+
 | Tool | Check | Install (Fedora/RHEL) | Install (macOS) | Install (Debian/Ubuntu) | Fallback |
 |------|-------|-----------------------|-----------------|-------------------------|----------|
 | tmux | `which tmux` | `sudo dnf install tmux` | `brew install tmux` | `sudo apt install tmux` | None — required |
@@ -212,6 +214,77 @@ grep -q "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS" ~/.claude/settings.json 2>/dev/nu
 ```
 
 If a tool is missing → **show the install command for the detected OS** and stop.
+
+#### VCS — git or jj
+
+The project MUST be a version-controlled repository. Check:
+
+```bash
+# Detect VCS type
+if [ -d .jj ]; then
+  VCS="jj"
+elif git rev-parse --git-dir >/dev/null 2>&1; then
+  VCS="git"
+else
+  echo "FATAL: not a git or jj repository. Initialize with 'git init' or 'jj git init' first."
+  exit 1
+fi
+```
+
+If not a repo → **stop and ask the user to init**. The Chef never creates a repo — that's a user decision.
+
+#### GitHub repo & branch protection (G26)
+
+```bash
+# Check if this is a GitHub repo
+REPO=$(gh repo view --json nameWithOwner -q '.nameWithOwner' 2>/dev/null)
+if [ -z "$REPO" ]; then
+  echo "WARNING: not a GitHub repo or gh not authenticated. PR mode unavailable."
+  MERGE_MODE="direct"
+else
+  # Detect if base branch requires PRs (G26)
+  PROTECTED=$(gh api repos/${REPO}/rulesets 2>/dev/null | grep -c 'pull_request')
+  if [ "$PROTECTED" -gt 0 ]; then
+    MERGE_MODE="pr"
+    echo "DETECTED: branch protection requires PRs → Sous-Chef will use PR mode"
+    
+    # Check auto-merge is enabled in repo settings
+    AUTO_MERGE=$(gh api repos/${REPO} --jq '.allow_auto_merge' 2>/dev/null)
+    if [ "$AUTO_MERGE" != "true" ]; then
+      echo "FIX: enabling auto-merge on the repo (required for PR mode)"
+      gh api repos/${REPO} --method PATCH -f allow_auto_merge=true 2>/dev/null
+    fi
+  else
+    MERGE_MODE="direct"
+  fi
+fi
+```
+
+Record `MERGE_MODE` in shared-state.md so the Sous-Chef knows at runtime:
+
+```markdown
+## Sprint config
+| Key | Value |
+|-----|-------|
+| VCS | {git or jj} |
+| Merge mode | {direct or pr} |
+| Base branch | {develop or main} |
+| Repo | {owner/repo} |
+```
+
+#### gh auth scopes
+
+```bash
+# Check gh has the required scopes
+gh auth status 2>&1 | grep -q "repo" || echo "MISSING: gh scope 'repo'"
+```
+
+If the project has CI workflow files that may need editing, warn:
+```
+NOTE: pushing .github/workflows/ changes requires the 'workflow' scope.
+If needed during the sprint: gh auth refresh -s workflow
+After the push: gh auth refresh (to remove it)
+```
 
 **Exception: missing tmuxinator is NOT a blocker.** If Ruby/gem is not available (air-gapped env, immutable OS like Bluefin/Silverblue), generate the raw-tmux fallback instead:
 - Read `references/raw-tmux-fallback.md`
