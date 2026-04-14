@@ -233,11 +233,54 @@ fi
 
 If not a repo → **stop and ask the user to init**. The Chef never creates a repo — that's a user decision.
 
+#### Branching model detection
+
+Auto-detect the project's branching model. **Never assume Git Flow.**
+
+```bash
+# Detect GitHub repo
+REPO=$(gh repo view --json nameWithOwner,defaultBranchRef -q '.nameWithOwner' 2>/dev/null)
+DEFAULT_BRANCH=$(gh repo view --json defaultBranchRef -q '.defaultBranchRef.name' 2>/dev/null)
+
+# Detect branching model by examining existing branches
+HAS_DEVELOP=$(git branch -r 2>/dev/null | grep -c 'origin/develop')
+HAS_RELEASE_BRANCHES=$(git branch -r 2>/dev/null | grep -c 'origin/release/')
+HAS_RELEASE_PLZ=$(test -f release-plz.toml && echo 1 || echo 0)
+
+if [ "$HAS_DEVELOP" -gt 0 ] && [ "$HAS_RELEASE_BRANCHES" -gt 0 ]; then
+  BRANCH_MODEL="gitflow"
+  BASE_BRANCH="develop"
+  RELEASE_BRANCH="main"
+elif [ "$HAS_DEVELOP" -gt 0 ]; then
+  BRANCH_MODEL="github-flow-develop"
+  BASE_BRANCH="develop"
+  RELEASE_BRANCH="main"
+elif [ "$DEFAULT_BRANCH" = "main" ] || [ "$DEFAULT_BRANCH" = "master" ]; then
+  BRANCH_MODEL="github-flow"
+  BASE_BRANCH="${DEFAULT_BRANCH}"
+  RELEASE_BRANCH="${DEFAULT_BRANCH}"
+else
+  BRANCH_MODEL="trunk"
+  BASE_BRANCH="${DEFAULT_BRANCH:-main}"
+  RELEASE_BRANCH="${BASE_BRANCH}"
+fi
+```
+
+| Detected model | Base branch | Release branch | Commis branch from | PR target | Sync-main needed? |
+|---|---|---|---|---|---|
+| **github-flow** | main | main | main | main | No |
+| **github-flow-develop** | develop | main | develop | develop | Yes |
+| **gitflow** | develop | main | develop | develop | Yes (via release branches) |
+| **trunk** | main/master | same | main | main | No |
+
+**Impact on the brigade:**
+- **github-flow / trunk**: commis branch from main, PRs target main, no sync-main needed, release-plz (if used) targets main directly
+- **github-flow-develop**: commis branch from develop, PRs target develop, sync-main needed after each release tag
+- **gitflow**: same as above, plus release branches for stabilization
+
 #### GitHub repo & branch protection (G26)
 
 ```bash
-# Check if this is a GitHub repo
-REPO=$(gh repo view --json nameWithOwner -q '.nameWithOwner' 2>/dev/null)
 if [ -z "$REPO" ]; then
   echo "WARNING: not a GitHub repo or gh not authenticated. PR mode unavailable."
   MERGE_MODE="direct"
@@ -260,16 +303,20 @@ else
 fi
 ```
 
-Record `MERGE_MODE` in shared-state.md so the Sous-Chef knows at runtime:
+Record ALL detected config in shared-state.md so the Sous-Chef and commis know at runtime:
 
 ```markdown
 ## Sprint config
 | Key | Value |
 |-----|-------|
 | VCS | {git or jj} |
+| Branch model | {github-flow / github-flow-develop / gitflow / trunk} |
+| Base branch | {main / develop / master} |
+| Release branch | {main / master} |
 | Merge mode | {direct or pr} |
-| Base branch | {develop or main} |
 | Repo | {owner/repo} |
+| Default branch | {from GitHub API} |
+| Sync-main needed | {yes or no} |
 ```
 
 #### gh auth scopes

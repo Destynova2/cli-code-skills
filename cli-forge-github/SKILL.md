@@ -37,7 +37,7 @@ allowed-tools:
 
 1. **Read before touching.** Always `gh api` the current state before proposing changes. Rulesets, branch protections, and workflows interact in non-obvious ways.
 2. **Fix the root cause, not the symptom.** A PR stuck on "pending" is not fixed by force-merging — find which check is missing and why.
-3. **Never force-push main or develop.** Use `--force-with-lease` on feature branches only. Main/develop are sacred.
+3. **Never force-push protected branches.** Detect the base and release branches (main, develop, master, trunk) and never force-push them. Use `--force-with-lease` on feature branches only.
 4. **Prefer API over UI.** Rulesets, checks, and branch cleanup are all automatable via `gh api`. The UI is for humans reviewing the result.
 5. **Document every ruleset change.** Add a comment in ci.yml explaining WHY the ruleset requires specific checks. Future you (or a teammate) will re-add the wrong checks if there's no explanation.
 6. **Transient failures get a rerun, not a fix.** Rate limits, runner timeouts, and network flakes are not code bugs. Rerun, don't refactor.
@@ -68,8 +68,25 @@ allowed-tools:
 | Signal | Tier | Scope |
 |---|---|---|
 | Personal project, 1 branch, no rulesets | **S** | Branch cleanup + CI check only |
-| Standard project, develop + main, rulesets | **M** | Full audit (all 8 dimensions) |
+| Standard project (any branching model), rulesets | **M** | Full audit (all 8 dimensions) |
 | Monorepo or multi-workflow with release automation | **L** | Full audit + release flow + cross-workflow analysis |
+
+**Branching model detection:** Before auditing, detect which model the project uses. Do NOT assume Git Flow.
+
+```bash
+DEFAULT_BRANCH=$(gh repo view --json defaultBranchRef -q '.defaultBranchRef.name' 2>/dev/null)
+HAS_DEVELOP=$(git branch -r 2>/dev/null | grep -c 'origin/develop')
+
+# github-flow: only main, no develop
+# github-flow-develop: develop + main (like grob)
+# gitflow: develop + main + release/* branches
+# trunk: single branch, everything goes to main/master
+```
+
+Adapt the audit to the detected model:
+- **D4 (release flow)**: sync-main only applies to github-flow-develop and gitflow
+- **F6 (sync-main conflicts)**: skip entirely for github-flow and trunk
+- **Branch hygiene**: "orphan" definition depends on the model — in trunk, any non-main branch older than 7 days is suspect
 
 ## Workflow
 
