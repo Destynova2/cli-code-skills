@@ -4,12 +4,12 @@
 
 ---
 
-## The ideal flow (github-flow-develop model, e.g., grob)
+## The ideal flow (github-flow model (default, e.g., grob))
 
 ```
-Commis pushes → PR → CI → auto-merge to develop
+Commis pushes → PR → CI → auto-merge to main
                                 ↓
-                    release-plz detects fix/feat commits
+                    release-plz detects fix/feat commits on main
                                 ↓
                     release-plz creates Release PR (version bump + changelog)
                                 ↓
