@@ -310,6 +310,77 @@ Read `references/fix-patterns.md` for concrete remediation patterns by language 
 | 3 | Remove `old_handler()` | Cleanup | Low | Low | `src/api.rs` |
 ```
 
+## Exported artefact — `tangle-partition.json`
+
+In addition to the human-readable markdown report, **always emit a machine-parseable partition file at `.claude/tangle-partition.json`** in the project root. This artefact is the single point of contact between `cli-audit-tangle` and downstream skills — most importantly `cli-forge-chef`, which uses the Fiedler clusters to pre-assign commis to modules so that two commis never get tasks from the same cluster (file-exclusion by construction, not by runtime filter).
+
+**Schema:**
+
+```json
+{
+  "version": 1,
+  "generated_at": "2026-04-14T15:32:00Z",
+  "scope": "src/",
+  "tier": "M",
+  "graph": {
+    "nodes": 147,
+    "edges": 312,
+    "density": 0.014,
+    "max_chain_depth": 6
+  },
+  "clusters": [
+    {
+      "id": "cluster-0",
+      "label": "auth",
+      "files": ["src/auth/mod.rs", "src/auth/jwt.rs", "src/auth/session.rs"],
+      "functions": 28,
+      "internal_edges": 45,
+      "external_edges": 12,
+      "cohesion_coupling_ratio": 3.75,
+      "fiedler_sign": "negative",
+      "boundary_functions": ["auth::verify_token"],
+      "recommended_commis_hint": "one commis owns this cluster"
+    },
+    {
+      "id": "cluster-1",
+      "label": "api",
+      "files": ["src/api/handlers.rs", "src/api/router.rs"],
+      "functions": 34,
+      "internal_edges": 61,
+      "external_edges": 18,
+      "cohesion_coupling_ratio": 3.39,
+      "fiedler_sign": "positive",
+      "boundary_functions": ["api::dispatch"],
+      "recommended_commis_hint": "one commis owns this cluster"
+    }
+  ],
+  "boundary_functions": [
+    {
+      "name": "auth::verify_token",
+      "fiedler_value": 0.02,
+      "reason": "near-zero Fiedler value — bridges auth and api clusters",
+      "warning": "assigning a commis to this function pulls in both clusters — sequence instead of parallelize"
+    }
+  ],
+  "god_functions": [
+    {"name": "process_request", "god_score": 0.91, "action": "type_II_split"}
+  ],
+  "cycles": [
+    {"id": "scc-1", "functions": ["parse", "validate"], "cut_point": "parse->validate", "fix": "introduce Validator trait"}
+  ],
+  "tangle_score": 67
+}
+```
+
+**Rules for the file:**
+
+- **Always emit** — even when the run is read-only or the report is skipped. The JSON is the cheap common denominator for other skills.
+- **Path is fixed** — `.claude/tangle-partition.json` at project root. Do not invent per-run names. The chef reads the latest one.
+- **Clusters come from the Fiedler partition** — recursive 2-way cuts until each cluster is below the tier threshold (see `references/analysis-methods.md` §"Module Boundary Analysis"). The `fiedler_sign` field lets downstream skills tell cluster membership from the sign change in the Fiedler vector without recomputing.
+- **Boundary functions** are the functions whose Fiedler value is closer than 0.1 to zero (inclusive). They are the "frontier" nodes that belong to both sides — assigning them to a single commis pulls in both clusters, which is exactly the tangle the chef is trying to avoid.
+- **`recommended_commis_hint`** — short free-form string the chef can read directly. Always one of: `"one commis owns this cluster"`, `"split across N commis — cluster too large"`, `"sensitive zone — single commis, 3/3 quorum"`.
+- **Backward compatibility** — bump `version` when the schema changes. Downstream skills read the version and refuse to consume an unknown major.
+
 ## Scoring
 
 ```
