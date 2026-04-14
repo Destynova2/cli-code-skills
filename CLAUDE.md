@@ -17,11 +17,11 @@ for d in cli-*/; do cp -r "$d" ~/.claude/skills/"${d%/}"; done
 
 Do NOT use symlinks — use real copies.
 
-## Current skills (21)
+## Current skills (22)
 
 **Audit (9):** cli-audit-code, cli-audit-doc, cli-audit-drift, cli-audit-shell, cli-audit-sync, cli-audit-tangle, cli-audit-test, cli-audit-wizard, cli-cycle
 
-**Forge (11):** cli-forge-arch, cli-forge-chef, cli-forge-doc, cli-forge-github, cli-forge-hld, cli-forge-infra, cli-forge-lld, cli-forge-pipeline, cli-forge-readme, cli-forge-schema, cli-forge-tree
+**Forge (12):** cli-forge-arch, cli-forge-chef, cli-forge-doc, cli-forge-github, cli-forge-hld, cli-forge-infra, cli-forge-lld, cli-forge-pipeline, cli-forge-prez, cli-forge-readme, cli-forge-schema, cli-forge-tree
 
 **Git (1):** cli-git-conventional
 
