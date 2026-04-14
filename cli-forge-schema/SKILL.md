@@ -81,7 +81,9 @@ What does the user want to visualize?
 | Existing Mermaid block (broken or ugly) | Fix syntax errors, improve readability |
 | Markdown table | Convert to the most appropriate visual format |
 | Code/architecture | Extract structure and visualize it |
-| Kanban / PERT / timeline data | Convert to proper Mermaid format |
+| Kanban board (todo/doing/done) | Convert to `flowchart` with subgraphs per column |
+| PERT / dependency graph (tasks + durations) | Convert to `flowchart` with durations on edges (not `gantt` — PERT is a DAG, not a timeline) |
+| Roadmap / scheduled timeline | Convert to `gantt` or `timeline` |
 | "Simplify this diagram" | Reduce complexity, split if needed |
 
 ### Step 2 — Choose the right diagram type
@@ -180,7 +182,7 @@ classDef neutral fill:#ECF0F1,stroke:#BDC3C7,color:#2C3E50
 
 ### Step 5 — Convert existing content
 
-Read `references/conversions.md` for 15+ conversion patterns: table→diagram, kanban→flowchart, PERT→gantt, SQL→ER, JSON→class, API→sequence, RACI→flowchart, and more.
+Read `references/conversions.md` for 15+ conversion patterns: table→diagram, kanban→flowchart, PERT→flowchart (DAG with durations), roadmap→gantt, SQL→ER, JSON→class, API→sequence, RACI→flowchart, and more.
 
 ### Step 6 — Review checklist
 

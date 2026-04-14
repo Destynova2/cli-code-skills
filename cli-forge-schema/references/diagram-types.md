@@ -336,6 +336,231 @@ sankey-beta
 
 ---
 
+## 13. Kanban
+
+Best for: workflow state boards (todo/doing/done), task pools with priority, sprint backlogs. Unlike a flowchart-with-subgraphs, `kanban` renders columns natively and supports per-card metadata.
+
+```mermaid
+kanban
+    Todo[To do]
+        task1[Set up auth]@{ priority: 'High' }
+        task2[Write docs]@{ priority: 'Low' }
+    Doing[In progress]
+        task3[Refactor API]@{ priority: 'High', assigned: 'alice' }
+    Done[Done]
+        task4[Initial schema]
+```
+
+**Tips:**
+- Columns are the top-level items. Cards go underneath with 4-space indent.
+- Per-card metadata via `@{ key: 'value' }` — known keys: `priority` (High/Medium/Low), `assigned`, `ticket`.
+- Use when a flowchart would force you to fake columns with `subgraph` — kanban is clearer.
+
+---
+
+## 14. Radar Chart
+
+Best for: multi-dimensional scorecards (quality gates, skill matrices, benchmark comparisons). One polygon per subject, one axis per dimension.
+
+```mermaid
+radar-beta
+    axis scope["Scope"], secu["Security"], qualite["Quality"]
+    axis test["Tests"], drift["Drift"], docs["Docs"]
+    curve target["Target"]{90, 95, 85, 80, 90, 75}
+    curve actual["Sprint 42"]{92, 95, 88, 72, 85, 60}
+    max 100
+    min 0
+```
+
+**Tips:**
+- Keep under 8 axes — beyond that the polygon is unreadable.
+- At most 3 curves per chart, otherwise polygons overlap and nothing is distinguishable.
+- Axes must stay in the same order across curves (the shape is only meaningful when aligned).
+
+---
+
+## 15. XY Chart
+
+Best for: quantitative 2D plots — curves over time, Amdahl speedups, scaling curves, cost/benefit tradeoffs.
+
+```mermaid
+xychart-beta
+    title "Speedup vs commis count"
+    x-axis "Commis" [1, 2, 3, 4, 5, 6]
+    y-axis "Speedup factor" 0 --> 5
+    line [1.0, 1.85, 2.5, 2.9, 3.1, 3.2]
+    line [1.0, 2.0, 3.0, 4.0, 5.0, 6.0]
+```
+
+**Tips:**
+- Use `line` for a continuous series, `bar` for discrete samples.
+- Two lines are the max before legends get confusing — use paired charts if you need more.
+- Provide both axes with units in the title or axis label (viewers can't guess scale from data).
+
+---
+
+## 16. Block Diagram
+
+Best for: high-level system topology where grouping/containment matters more than arrows. More flexible than `flowchart` for dashboards and data-flow boards.
+
+```mermaid
+block-beta
+    columns 3
+    frontend["Web UI"]:1 api["API Gateway"]:1 mobile["Mobile App"]:1
+    auth["Auth"]:1 core["Core Services"]:1 cache["Cache"]:1
+    db[("Database")]:3
+    frontend --> api
+    mobile --> api
+    api --> auth
+    api --> core
+    core --> cache
+    core --> db
+```
+
+**Tips:**
+- `columns N` sets the grid width. Blocks span with `:K` where K is the number of columns occupied.
+- Use when `flowchart` would force you into awkward ranks; `block-beta` gives you grid control.
+- Arrows still work — the layout is what changes.
+
+---
+
+## 17. Architecture Diagram
+
+Best for: cloud topology with service icons (AWS/GCP/Azure-style deployment maps). Supports a curated icon set via `icon:` and logical groupings with `group`.
+
+```mermaid
+architecture-beta
+    group api(cloud)[API Layer]
+    group data(database)[Data Layer]
+
+    service gw(internet)[Gateway] in api
+    service svc(server)[Service] in api
+    service cache(database)[Cache] in data
+    service db(database)[Database] in data
+
+    gw:R --> L:svc
+    svc:R --> L:cache
+    svc:B --> T:db
+```
+
+**Tips:**
+- `group name(icon)[Label]` creates a named container with an icon.
+- `service name(icon)[Label] in groupname` places the service in the group.
+- Arrows use port suffixes `:L/:R/:T/:B` (left/right/top/bottom) — this is what makes the layout stable.
+- Requires a Mermaid version with architecture-beta support. If the target renderer is unknown, fall back to `flowchart` with subgraphs.
+
+---
+
+## 18. Timeline
+
+Best for: chronological events with titled eras — release history, project phases, sprint retro history. Differs from `gantt` because timeline has no durations, only dated points.
+
+```mermaid
+timeline
+    title Project history
+    section Discovery
+        2025 Q1 : Kickoff
+                : Requirements gathered
+    section Build
+        2025 Q2 : MVP released
+        2025 Q3 : Performance pass
+                : Cache layer added
+    section Scale
+        2025 Q4 : Multi-region deploy
+        2026 Q1 : v2.0 rewrite complete
+```
+
+**Tips:**
+- Use `section` to group periods — the renderer puts a bracket around each.
+- Points within a section share an x-coordinate; sub-points use `:`.
+- **Not a gantt.** Use `timeline` when durations don't matter (what happened when), `gantt` when they do (how long each piece takes).
+
+---
+
+## 19. Treemap
+
+Best for: proportional area maps — code ownership by module, commis-hours per plat, disk usage, budget breakdown. Packs all categories into one rectangle so area is immediately comparable.
+
+```mermaid
+treemap-beta
+"Backend"
+    "auth": 250
+    "api": 400
+    "db": 180
+"Frontend"
+    "web": 320
+    "mobile": 150
+"Infra"
+    "ci": 80
+    "deploy": 60
+```
+
+**Tips:**
+- Indentation is meaningful: children are indented under their parent category.
+- Values must be numeric and additive — leaves are summed into parents.
+- Use when a pie chart has > 7 slices or when you need two levels of hierarchy.
+
+---
+
+## 20. Ishikawa (Fishbone)
+
+Best for: cause-effect analysis — post-mortems, 5-why root-cause trees, brainstorming failure modes. The standard quality-engineering diagram for mapping contributing factors to an outcome.
+
+```mermaid
+flowchart LR
+    effect[Sprint slipped 3 days]
+    subgraph people[People]
+        p1[Commis-3 new]
+        p2[Sous-chef secu absent]
+    end
+    subgraph process[Process]
+        pr1[No PERT recomputation]
+        pr2[DENY round ignored]
+    end
+    subgraph tools[Tools]
+        t1[CI flaky]
+        t2[Outdated lint]
+    end
+    subgraph environment[Environment]
+        e1[Merge freeze mid-sprint]
+    end
+    people --> effect
+    process --> effect
+    tools --> effect
+    environment --> effect
+```
+
+**Tips:**
+- Mermaid has no native `ishikawa` diagram — emulate with `flowchart LR`, the effect on the right, and 4-6 subgraphs on the left acting as bones.
+- Standard bone categories (Ishikawa 6M): Methods, Machines (tools), Materials, Measurements, Mother Nature (environment), Manpower (people). Pick the 4 that fit.
+- Keep to 2 levels of causes per bone — more and the diagram becomes a wall.
+
+---
+
+## 21. Venn Diagram
+
+Best for: set overlaps — 2 or 3 sets showing common vs exclusive elements. Use sparingly: beyond 3 sets a Venn is unreadable; switch to a `quadrantChart` or a table.
+
+Mermaid has no native Venn diagram — emulate with a `block-beta` grid or a table. If a Venn is actually the right shape, the user probably needs a `quadrantChart` with 2 axes instead.
+
+```mermaid
+quadrantChart
+    title "Overlap — Backend vs Frontend skills"
+    x-axis Frontend --> Backend
+    y-axis Junior --> Senior
+    quadrant-1 Backend senior
+    quadrant-2 Fullstack senior
+    quadrant-3 Fullstack junior
+    quadrant-4 Backend junior
+    Alice: [0.3, 0.9]
+    Bob: [0.8, 0.4]
+    Carol: [0.5, 0.7]
+```
+
+**Tip:** if a user asks for a Venn, ask first what they actually want to show. It is almost always a 2×2 quadrant, a hierarchy (`treemap`), or a set difference (table with checkmarks).
+
+---
+
 ## Color Palette (GitHub-safe)
 
 ### Functional palette (5 colors max per diagram)
