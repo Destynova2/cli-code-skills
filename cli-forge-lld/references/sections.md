@@ -394,26 +394,86 @@ retryable_codes: [408, 429, 500, 502, 503, 504]
 
 ### Section 12 — Component-Level Security (STRIDE)
 
-**Source:** OWASP, Microsoft STRIDE
+**Source:** OWASP, Microsoft STRIDE (Adam Shostack — *Threat Modeling: Designing for Security*), DREAD risk scoring.
 
-> **Scope:** This is STRIDE at the component/code level — SQL injection in repositories, IDOR in controllers, input validation. System-level trust boundaries (network zones, mTLS, encryption at rest) belong in the HLD.
+> **Scope:** STRIDE at the component/code level — SQL injection in repositories, IDOR in controllers, input validation. System-level trust boundaries (network zones, mTLS, encryption at rest) belong in the HLD.
 
-Per-component threat analysis:
+#### Step 1 — Per-category threat elicitation (the 6 STRIDE properties)
 
-| Threat | Category | Component | Mitigation |
-|--------|----------|-----------|-----------|
-| Forged JWT | Spoofing | Auth middleware | Validate signature against JWKS, reject `alg: none` |
-| SQL injection | Tampering | Repository | Parameterized queries only, never string concat |
-| Excessive data in error | Info Disclosure | Error handler | Strip internal details, never expose provider keys |
-| Missing rate limit | DoS | API Gateway | Rate limit per user/IP/tenant |
-| Direct DB access | Elevation | Network | DB not exposed publicly, network policies |
-| Missing audit log | Repudiation | All mutations | Log who did what when, immutable audit trail |
+For **every component** in the class/module diagram, walk the 6 STRIDE categories and ask the elicitation question. Do NOT skip a category because "it doesn't apply" — write "N/A — reason" explicitly. A category without a written reason is an oversight.
 
-**Input validation rules:**
-- Validate at the boundary (controller), trust internally
-- Max body size enforced (e.g., 10MB)
-- CRLF injection prevention in headers
-- Path traversal prevention in file operations
+| Code | Threat category | Violated property | Elicitation question | Typical component-level threats |
+|------|-----------------|-------------------|----------------------|---------------------------------|
+| **S** | **Spoofing** | Authenticity | "Can an attacker impersonate a legitimate actor calling this component?" | Forged JWT, session fixation, replay, weak auth, `alg: none`, public keys served by same origin |
+| **T** | **Tampering** | Integrity | "Can an attacker modify data in flight or at rest that this component trusts?" | SQL injection, path traversal, deserialization, unsigned config, checksum bypass, mutation of immutable fields |
+| **R** | **Repudiation** | Non-repudiation | "Can an actor deny performing an action this component handles?" | Missing audit log, mutable log file, shared service account, no user id in log line, clock drift |
+| **I** | **Information Disclosure** | Confidentiality | "Can an attacker read data they shouldn't through this component?" | Excessive error details, debug endpoints in prod, PII in logs, side-channel (timing, error-message), IDOR, verbose 500 |
+| **D** | **Denial of Service** | Availability | "Can an attacker exhaust a resource this component depends on?" | Missing rate limit, unbounded regex (ReDoS), unbounded allocation, recursive payload, zip bomb, connection pool exhaustion |
+| **E** | **Elevation of Privilege** | Authorization | "Can an attacker gain privileges this component was not supposed to grant?" | Missing authz check, role confusion, TOCTOU, direct DB access, SSRF reaching internal services, insecure direct object reference |
+
+#### Step 2 — Per-component threat table
+
+For each component × each STRIDE category that applies, write one row. Empty rows allowed when `N/A` has a reason.
+
+| # | Component | STRIDE | Threat | Attack scenario | Mitigation | DREAD |
+|---|-----------|--------|--------|-----------------|------------|-------|
+| 1 | Auth middleware | S | Forged JWT | Attacker crafts token with `alg: none` and omits signature | Reject `alg: none` outright, pin JWKS URL, verify `iss`/`aud` claims | 8.4 |
+| 2 | Order repository | T | SQL injection | Unsanitized `order_id` parameter from controller | Parameterized queries only, reject non-UUID input at boundary | 9.0 |
+| 3 | Audit logger | R | Log tampering | Attacker with FS access edits `audit.log` to cover tracks | Append-only log, off-box shipping, HMAC per line | 6.2 |
+| 4 | Error handler | I | Stack trace leak | 500 responses return Rust panic with file paths and DB URL | Custom formatter strips internals in prod, keep details in structured logs only | 7.6 |
+| 5 | Search endpoint | D | ReDoS | User-supplied regex executed with catastrophic backtracking | Use RE2 (no backtracking) or pre-validate regex complexity | 5.8 |
+| 6 | File download | E | Path traversal → SSRF | `filename=../../etc/passwd` resolved inside downloader | Canonicalize path, reject `..`, allow-list roots, network egress policy | 8.8 |
+
+#### Step 3 — DREAD risk scoring
+
+For each threat in the table, compute a DREAD score so the team can triage. Use the 1-10 scale (Microsoft DREAD, as reframed by Shostack):
+
+```
+DREAD = (Damage + Reproducibility + Exploitability + Affected users + Discoverability) / 5
+```
+
+| Letter | Meaning | 1 | 5 | 10 |
+|---|---|---|---|---|
+| **D** — Damage | Impact if the attack succeeds | Nothing sensitive | One user's data | Root / full data breach |
+| **R** — Reproducibility | How reliably the attack works | Only under rare race condition | Works most of the time | Works every time |
+| **E** — Exploitability | Effort and skill required | Novel research attack | Skilled attacker + tooling | Script kiddie, single curl |
+| **A** — Affected users | Blast radius | One user | A tenant / team | Every user |
+| **D** — Discoverability | How easy to find | Source access required | Published OWASP pattern | Visible in Burp at page load |
+
+**Severity bands** (apply to the final DREAD average):
+
+| DREAD score | Severity | Action before shipping |
+|---|---|---|
+| ≥ 8.0 | **Critical** | Must fix before merge. Block the gate. |
+| 6.0 – 7.9 | **High** | Fix before release. Open a ticket with sprint deadline. |
+| 4.0 – 5.9 | **Medium** | Fix next sprint. Add a mitigation comment in code. |
+| < 4.0 | **Low** | Document in the LLD, accept with owner's sign-off. |
+
+#### Step 4 — Input validation rules (boundary contract)
+
+These are the universal defences that apply independently of the STRIDE walk. Every boundary-facing component MUST implement them:
+
+- **Validate at the boundary, trust internally** — canonicalize → parse into a domain type at controller ingress. Nothing downstream accepts a `String` where it could be a `UserId`.
+- **Max body size enforced** (e.g., 10 MB) — rejected before deserialization, not after.
+- **Regex engine without backtracking** (RE2 / re2j / Hyperscan) wherever user input reaches a regex.
+- **Allow-list over deny-list** for everything that can be enumerated: filenames, commands, column names, hostnames.
+- **CRLF injection prevention** in every header setter. Reject `\r` and `\n` in any value headed for an HTTP header.
+- **Path traversal prevention** — canonicalize, then check the prefix belongs to the allowed root. Never trust a normalized path from the OS.
+- **Deserialization** — reject polymorphic class inputs (`$type` in JSON), pin allowed types.
+- **Rate limits** on every mutation and every auth-adjacent read. Per-user, per-IP, per-tenant.
+
+#### Step 5 — Threat-to-test traceability
+
+Every Critical or High DREAD row in §Step 2 MUST have a corresponding negative test in the testability design (§13). Create the traceability table:
+
+| Threat # | Test | Test type | Location |
+|---|---|---|---|
+| 1 | `rejects_alg_none_jwt` | Unit | `auth/tests/jwt.rs` |
+| 2 | `rejects_sql_injection_order_id` | Integration | `orders/tests/repo_injection.rs` |
+| 4 | `error_response_does_not_leak_stacktrace_in_release` | Integration | `errors/tests/format.rs` |
+| 6 | `rejects_path_traversal_in_filename` | Integration | `files/tests/download.rs` |
+
+The traceability table is the **bridge between §12 (threat) and §13 (testability)** — without it, STRIDE is just a wishlist. If a threat has no test, it isn't mitigated; it is merely *claimed* to be mitigated.
 
 ### Section 13 — Testability Design
 
