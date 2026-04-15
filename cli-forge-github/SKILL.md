@@ -44,6 +44,7 @@ allowed-tools:
 7. **Orphan branches are tech debt.** Clean them on every release, not "when we have time".
 8. **Always enable auto-merge on every PR you create.** Every `gh pr create` is followed by `gh pr merge --auto --squash` (or `--rebase` / `--merge` per project policy). A PR without auto-merge is a PR somebody has to babysit — that is exactly the state this skill is designed to eliminate. The only exception is a **draft PR**: auto-merge is enabled when the draft is marked ready, not before. This rule applies to every agent that opens PRs through the skill (including the cli-forge-chef Sous-Chef).
 9. **Always check conflicts between parallel PRs before dispatch, not after.** When N commis open N parallel PRs against the same base, the file-exclusion is enforced on the commis side (cli-forge-chef PERT + Fiedler partition). On the GitHub side, this skill verifies it didn't leak: for every pair of open PRs against the same base branch, compute the intersection of their changed-files sets; any non-empty intersection is a future merge conflict and must be reported *before* auto-merge lands the first one. Detection is cheap; post-merge rebasing N-1 branches is not.
+10. **A PR is not done until the client has the fork in it.** "Auto-merge enabled" is *not* "merged". Any session with PRs in flight runs a post-merge landing watchdog (F9) that polls every 45 s, rebases BEHIND branches on cascade, reruns transient failures (max 2× per cause), and only declares "done" once the PR is `MERGED`, the release tag is cut (if applicable), orphan branches are deleted, and downstream PRs have been caught up. A brigade achieves this via the Maître d'hôtel role (cli-forge-chef references/maitre-dhotel.md); a single-agent session achieves it by calling F9 directly.
 
 ## Threat model — What goes wrong
 
@@ -59,6 +60,7 @@ allowed-tools:
 | Token can't push workflow files | OAuth token lacks `workflow` scope | "refusing to allow an OAuth App to create or update workflow" | On CI file edits |
 | Stale PRs from old sprints | Feature branches abandoned but PRs left open | PR list cluttered with OPEN PRs from weeks ago | Gradual |
 | Parallel PRs collide at merge | Two commis touched the same file despite the chef's file-exclusion | First PR merges, N-1 others block on conflict, sprint stalls | Common (multi-agent) |
+| "Auto-merge enabled" mistaken for "merged" | Operator walks away; PR drifts into BEHIND/BLOCKED after release-plz or another PR lands | Several PRs stuck with `autoMergeRequest: true` but never landing | Common (multi-agent, release automation) |
 
 ## Input
 
@@ -396,6 +398,125 @@ done
 - **Multi-agent sprints (cli-forge-chef):** the Sous-Chef runs the scan after every new PR is opened, before calling `gh pr merge --auto`. This is the structural defence — it catches any leak from the chef's file-exclusion.
 - **Repo audit mode:** include the scan in Phase 1 Dimension D3 check when there are ≥ 2 open PRs against the same base. Report each pair under `D3 — PR lifecycle`.
 
+### F9 — Post-merge landing watchdog (the "fork in the client" loop)
+
+**Symptom:** PRs have auto-merge enabled but never actually land. `gh pr list` shows several open PRs, each with `autoMergeRequest: true`. The operator assumed "auto-merge enabled" meant "done" and walked away.
+
+**Root cause:** Auto-merge is necessary but not sufficient. It waits for `CLEAN` + required checks; it does NOT rebase `BEHIND` branches when main moves, it does NOT rerun transient failures, it does NOT verify the release tag was cut. Every time release-plz or another PR lands, the remaining PRs drift into `BEHIND`, and auto-merge quietly gives up.
+
+**Fix — the polling loop:**
+
+```bash
+#!/usr/bin/env bash
+# F9 — Post-merge landing watchdog.
+# Run this loop for as long as there is at least one in-flight PR.
+
+set -euo pipefail
+REPO=${REPO:-$(gh repo view --json nameWithOwner --jq .nameWithOwner)}
+BASE=${BASE:-$(gh repo view --json defaultBranchRef --jq .defaultBranchRef.name)}
+POLICY=$(gh api repos/${REPO} --jq '
+  if .allow_squash_merge then "squash"
+  elif .allow_rebase_merge then "rebase"
+  else "merge" end')
+
+declare -A RELAUNCHES   # transient retries per run_id
+declare -A FIRST_SEEN   # first-seen timestamp per PR
+
+while true; do
+  IN_FLIGHT=$(gh pr list --repo ${REPO} --base ${BASE} --state open \
+    --json number,headRefName,mergeStateStatus,autoMergeRequest,updatedAt \
+    --jq '.[] | select(.autoMergeRequest != null) | "\(.number)\t\(.headRefName)\t\(.mergeStateStatus)"')
+
+  [[ -z "${IN_FLIGHT}" ]] && { echo "No in-flight PRs, watchdog exiting"; break; }
+
+  while IFS=$'\t' read -r PR BRANCH STATE; do
+    FIRST_SEEN[$PR]=${FIRST_SEEN[$PR]:-$(date +%s)}
+    AGE=$(( $(date +%s) - ${FIRST_SEEN[$PR]} ))
+
+    # Timeout: 2 hours stuck = escalate
+    if (( AGE > 7200 )); then
+      echo "ESCALADE: PR #${PR} stuck ${AGE}s"
+      continue
+    fi
+
+    case "${STATE}" in
+      MERGED)
+        # Service 5 (Encaissement) — handled out-of-loop below
+        ;;
+      CLEAN|HAS_HOOKS|UNSTABLE)
+        : # wait, auto-merge will fire
+        ;;
+      BEHIND)
+        echo "Rattrapage: PR #${PR}"
+        git fetch origin >/dev/null 2>&1
+        git checkout ${BRANCH} 2>/dev/null || git checkout -b ${BRANCH} origin/${BRANCH}
+        if git rebase origin/${BASE} 2>/dev/null; then
+          git push --force-with-lease origin ${BRANCH}
+          gh pr merge ${PR} --repo ${REPO} --auto --${POLICY} || true
+        else
+          git rebase --abort
+          echo "Renvoi: PR #${PR} has rebase conflicts — manual resolution needed"
+          gh pr merge ${PR} --repo ${REPO} --disable-auto
+        fi
+        ;;
+      BLOCKED)
+        # Look for transient failures
+        FAILED=$(gh pr view ${PR} --repo ${REPO} --json statusCheckRollup \
+          --jq '.statusCheckRollup[] | select(.conclusion == "FAILURE") | .detailsUrl' \
+          | grep -oE 'runs/[0-9]+' | cut -d/ -f2 | sort -u)
+        for RUN in ${FAILED}; do
+          if gh run view ${RUN} --repo ${REPO} --log 2>/dev/null \
+              | grep -qE 'rate limit|timeout|OOM|connection refused|stepsecurity'; then
+            RELAUNCHES[$RUN]=$(( ${RELAUNCHES[$RUN]:-0} + 1 ))
+            if (( ${RELAUNCHES[$RUN]} <= 2 )); then
+              echo "Relance ${RELAUNCHES[$RUN]}/2: run ${RUN}"
+              gh run rerun ${RUN} --repo ${REPO} --failed
+            else
+              echo "ESCALADE: run ${RUN} transient failed 3 times in a row"
+            fi
+          else
+            echo "Renvoi: PR #${PR} real failure on run ${RUN}"
+            gh pr merge ${PR} --repo ${REPO} --disable-auto
+          fi
+        done
+        ;;
+      DIRTY)
+        # Merge conflict — try rebase, else disable auto-merge
+        git fetch origin >/dev/null 2>&1
+        git checkout ${BRANCH} 2>/dev/null || git checkout -b ${BRANCH} origin/${BRANCH}
+        if git rebase origin/${BASE} 2>/dev/null; then
+          git push --force-with-lease origin ${BRANCH}
+          gh pr merge ${PR} --repo ${REPO} --auto --${POLICY}
+        else
+          git rebase --abort
+          echo "Renvoi: PR #${PR} DIRTY, rebase conflicts — manual resolution"
+          gh pr merge ${PR} --repo ${REPO} --disable-auto
+        fi
+        ;;
+    esac
+  done <<< "${IN_FLIGHT}"
+
+  # Handle newly-merged PRs — cascade rattrapage on the rest
+  JUST_MERGED=$(gh pr list --repo ${REPO} --base ${BASE} --state merged --limit 5 \
+    --json number,mergedAt --jq '.[] | select(.mergedAt > "'$(date -u -d '@'$(( $(date +%s) - 60 )) +%FT%TZ)'") | .number')
+  if [[ -n "${JUST_MERGED}" ]]; then
+    echo "Cascade rattrapage after: ${JUST_MERGED}"
+    # The outer loop picks them up on the next iteration (BEHIND will appear)
+  fi
+
+  sleep 45
+done
+```
+
+**Exit conditions:**
+- In-flight list is empty → the loop exits cleanly. All plats are served.
+- Any PR escalated (timeout > 2 h, or 3 transient reruns on the same run) → the loop reports it and continues with the rest; the operator handles the escalade manually.
+
+**Where to run it:**
+- **Brigade mode:** the Maître d'hôtel runs a smarter version of this as its whole purpose (see `cli-forge-chef references/maitre-dhotel.md`). Do not run F9 separately in a brigade session — the two would race.
+- **Single-agent mode:** the agent runs F9 in a background bash (`run_in_background: true`) immediately after opening a batch of parallel PRs. The agent can keep working on the next task; F9 reports back when the batch is done.
+- **Repo audit mode:** F9 is the fix for any open PR in D3 with `autoMergeRequest: true` but not `CLEAN`.
+
 ## Anti-patterns
 
 | # | Anti-pattern | Problem | Fix |
@@ -410,6 +531,7 @@ done
 | G8 | **No CI comment in rulesets** | Next dev re-adds individual checks to the ruleset | Comment in ci.yml explaining the design |
 | G9 | **PR opened without auto-merge** | Somebody has to babysit it — exactly what this skill eliminates | Chain `gh pr create` with `gh pr merge --auto`, always. F7 fix |
 | G10 | **No pre-merge conflict scan on parallel PRs** | First PR lands, N-1 others freeze on conflict | Run F8 before every batch auto-merge. Sequence or rebase the losers |
+| G11 | **Walking away after `gh pr merge --auto`** | PRs stall on BEHIND/BLOCKED forever. Operator returns hours later to manual rebasing | Run F9 (post-merge landing watchdog). In a brigade, spawn the Maître d'hôtel. "Auto-merge enabled" is not "merged" |
 
 ## Dynamic Handoffs
 

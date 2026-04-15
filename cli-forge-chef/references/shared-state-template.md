@@ -31,10 +31,21 @@ Replace `{variables}` with the project values.
 | Worktree | Branch | Task | Result | Tests | Files modified | Date |
 |----------|--------|------|--------|-------|-----------------|------|
 
+## Maître d'hôtel surveillance (in-flight PRs post-merge)
+
+> The Maître d'hôtel owns this section. Sous-Chef appends a new row when handing off a PR;
+> M'H updates Status on every 45 s poll; M'H moves the row to "Valid merges" on Encaissement.
+> Any PR here is NOT considered merged — "auto-merge enabled" is not "merged".
+
+| PR | Branch | Sent by | Status | Last check | Relaunches | Issue |
+|----|--------|---------|--------|------------|------------|-------|
+
+**Status legend:** En salle | Surveillance | Rattrapage | Relance | Renvoi | Escalade | Encaissement
+
 ## Valid merges
 
-| Branch | Merge commit | CI run | Status | Date |
-|--------|-------------|--------|--------|------|
+| Branch | Merge commit | CI run | Status | Date | Tag |
+|--------|-------------|--------|--------|------|-----|
 
 ## Potential conflicts
 

@@ -84,8 +84,28 @@ allowed-tools:
 │                                                      │
 │  - Each has their own station (worktree / project)   │
 │  - Prepare their plat (code, test, commit)           │
-│  - Announce "Pret !" to the sous-chef          │
+│  - Announce "Pret !" to the sous-chef                │
 │  - DO NOT DECIDE when to send out                    │
+└──────────────────────┬──────────────────────────────┘
+                       │ "Plat au passe"
+┌──────────────────────▼──────────────────────────────┐
+│              MAITRE D'HOTEL                          │
+│  (pass → client, landing watchdog)                   │
+│                                                      │
+│  - Receives PRs once auto-merge is enabled           │
+│  - Polls until MERGED (not just "auto-merge on")     │
+│  - Rattrapage: rebase BEHIND branches when main moves│
+│  - Relance: rerun transient CI failures (max 2x)     │
+│  - Renvoi: real failures go back to the Sous-Chef    │
+│  - Encaissement: tag verified + shared-state updated │
+│  - Reports "Client content" only when all 6 done     │
+│                                                      │
+│  Read references/maitre-dhotel.md for the full role  │
+└──────────────────────┬──────────────────────────────┘
+                       │ "Client content + tag"
+┌──────────────────────▼──────────────────────────────┐
+│                   CLIENT (happy)                     │
+│  Release tag cut, prod deploy green, sprint done     │
 └─────────────────────────────────────────────────────┘
 ```
 
@@ -122,7 +142,12 @@ Everything else passes without human intervention.
 | Gouter | Quorum vote by the Sous-Chefs | "2/3 APPROVE (normal) or 3/3 (sensitive)" |
 | Pass | CI pipeline | gh run watch |
 | Envoi | Merge + green light | "Envoyez! feat/x merged." |
-| Renvoi | Gate failed or quorum DENY | "Renvoie! Sous-Chef Secu proposes: ..." |
+| Plat au passe | Sous-Chef hands a PR to the Maître d'hôtel with auto-merge on | "Plat au passe: #201, auto-merge squash" |
+| Rattrapage | Maître d'hôtel rebases a BEHIND branch | "Rattrapage #201: main moved after #200 landed" |
+| Relance | Maître d'hôtel reruns a transient CI failure (max 2x per cause) | "Relance #202: CodeQL rate-limit" |
+| Encaissement | Maître d'hôtel confirms MERGED + tag cut + shared-state updated | "Encaissement #201 → v0.36.17" |
+| Client content | Maître d'hôtel signals full landing to the Chef | "Client content: 3 plats, 2 tags, 0 orphans" |
+| Renvoi | Gate failed or quorum DENY, or real failure from Maître d'hôtel | "Renvoie! Sous-Chef Secu proposes: ..." |
 | Appel au patron | ESCALATE (< 2%) | "Patron, edit on ci.yml, 3 rounds without consensus" |
 | Coup de feu | Parallel phase | 4 commis at the same time |
 | Service | Full sprint | Phase 0 → Phase N → report |
@@ -141,7 +166,21 @@ stateDiagram-v2
     Gouter --> Envoi: 2/3 APPROVE (normal) or 3/3 (sensitive)
     Gouter --> Renvoi: DENY or CONCERN with solution
     Renvoi --> Cuisson: commis applies the proposed fix
-    Envoi --> [*]: merged + CI green
+    Envoi --> PlatAuPasse: Sous-Chef creates PR with auto-merge + F8 conflict scan
+    PlatAuPasse --> EnSalle: Maitre d'hotel receives the plat
+    EnSalle --> Surveillance: polling loop every 45s
+    Surveillance --> Surveillance: CLEAN / HAS_HOOKS / UNSTABLE (wait)
+    Surveillance --> Rattrapage: BEHIND (main moved)
+    Rattrapage --> Surveillance: rebase + force-push-with-lease + re-enable auto-merge
+    Rattrapage --> Renvoi: rebase conflict
+    Surveillance --> Relance: BLOCKED + transient CI
+    Relance --> Surveillance: gh run rerun --failed
+    Relance --> Escalade: 3rd transient in a row
+    Surveillance --> Renvoi: BLOCKED + real failure OR DIRTY merge conflict
+    Surveillance --> Encaissement: MERGED
+    Encaissement --> ClientContent: tag verified + shared-state Valid merges updated + cascade Rattrapage on other in-flight
+    ClientContent --> [*]: Chef notified, plat fully served
+    Escalade --> [*]: > 2h timeout, Chef takes over
     Cuisson --> Apoptosis: same diff rejected 2x / idle 30min / regression
     Dressage --> Apoptosis: same diff rejected 2x / regression
     Apoptosis --> Ready: revert + locks released, plat re-enters the pool
@@ -616,7 +655,26 @@ Resolution rounds if no consensus. Human escalation < 2%.
 
 **COPY the prompt from `references/chef-prompt-template.md` section "Spawn the Sous-Chef".**
 
-Handles quality gates, merges, CI. Does not vote on permissions.
+Handles quality gates, merges, CI. Does not vote on permissions. On PR creation, runs the F8 parallel conflict scan (cli-forge-github), enables auto-merge, and hands off to the Maître d'hôtel — the Sous-Chef does NOT wait for the PR to land.
+
+### 2.4b — The Maître d'hôtel (MANDATORY when tier ≥ M, release-plz present, or branch protection active)
+
+**COPY the prompt from `references/chef-prompt-template.md` section "Spawn the Maître d'hôtel".**
+**Read `references/maitre-dhotel.md` for the full role specification.**
+
+The Maître d'hôtel is the brigade's post-merge landing watchdog. He receives every PR the Sous-Chef hands off (with auto-merge already enabled), polls the GitHub merge queue every 45 s, and stays on the plat until it is `MERGED`, the release tag is cut (if applicable), cascading `BEHIND` rebases are done on every other in-flight PR, shared-state.md "Valid merges" is updated, and the Chef has received the "Client content" signal.
+
+**Why mandatory at tier ≥ M:** without a Maître d'hôtel, "auto-merge enabled" is mistaken for "merged". The operator ends up rebasing PRs by hand every time release-plz bumps a version, exactly what this brigade pattern is designed to avoid. One Maître d'hôtel per brigade, centralized polling, cheap (Sonnet, no judgement).
+
+Scale rule (from `maitre-dhotel.md` §7):
+
+| Signal | Spawn M'H? |
+|---|---|
+| 1 plat in the sprint | No — Sous-Chef inline |
+| 2-3 plats, no release automation | No — Sous-Chef inline |
+| ≥ 4 plats OR release-plz present OR branch protection active | **Yes, mandatory** |
+| Critical-path sprint (any failure = sprint slip) | **Yes, mandatory** |
+| Project uses GitHub merge queue | **Yes, mandatory** |
 
 ### 2.5 — Commis station sheets (embedded)
 
@@ -718,6 +776,7 @@ To stop: `CronDelete {job_id}`
 | `references/sprint-persistence.md` | Checkpoint, resume, rewind, fresh restart, sprint history (inspired by jj operation log) |
 | `references/simplified-model.md` | Stigmergy model for tiers S/M/L — Boids, quorum sensing, DNA repair, reaction-diffusion, apoptosis |
 | `references/pert-computation.md` | O/M/P estimates, critical path, list scheduling with file-exclusion, precedence patterns, triage quadrant — "aller vite sans s'emmêler les pinceaux" |
+| `references/maitre-dhotel.md` | Post-merge landing watchdog — receives PRs from the Sous-Chef and polls until MERGED + tag cut + shared-state updated. Handles BEHIND/BLOCKED/DIRTY/transient without waking the operator |
 | `references/sprint-report-template.md` | Post-sprint report — gitGraph (branch topology), sankey (commis-hours flow), radar (quality), xyChart (Amdahl) |
 | `references/parallel-exploration.md` | Competing hypotheses, parallel approaches, comparison grid |
 | `references/ccheck-prompt-template.md` | Contre-chef prompt (permission auto-approver) |
