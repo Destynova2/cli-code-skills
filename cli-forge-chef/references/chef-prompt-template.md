@@ -555,6 +555,12 @@ MISSION: {mission}
 
 {steps}
 
+FORBIDDEN git operations (G30):
+- NEVER run `git fetch origin` or `git pull` — sync is the Sous-Chef's job. Fetching mid-mission pulls a moving target and desynchronises the rebase the Sous-Chef plans.
+- NEVER run `git reset --hard` on your branch — it silently wipes uncommitted work and any commit the Sous-Chef may have staged. Lost work = missed SLA.
+- If you truly need to undo a commit: use `git reset --soft HEAD~1` (keep changes staged) or `git reset --mixed HEAD~1` (keep changes unstaged), then SendMessage to the Sous-Chef explaining what you rewound and why.
+- Rebase is the Sous-Chef's job. If you receive a CONFLICT message, follow the Sous-Chef's exact instructions — do not improvise a `git fetch && git rebase` on your own.
+
 WHEN YOU ARE DONE:
 1. Commit on your branch (do not push)
 2. Update shared-state.md "Done"

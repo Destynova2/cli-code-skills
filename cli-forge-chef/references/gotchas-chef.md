@@ -379,3 +379,24 @@ remote: error: Changes must be made through a pull request.
 **Impact on the release chain:** Once PRs are merged to develop, the chain is automatic:
 release-plz PR → tag → sync-main PR → main catches up (10-30 min).
 The Sous-Chef should NOT wait for the full chain — once the PR to develop is merged, the commis can continue.
+
+## G30 — Commis running `git fetch origin` or `git reset --hard` corrupts the brigade
+
+**Problem:** A commis in its worktree runs `git fetch origin` to "stay up to date", or `git reset --hard HEAD~1` to "undo a botched commit". The Sous-Chef then tries to push or rebase the branch and either (a) hits a moving target (fetch introduced remote refs the Sous-Chef did not plan for), or (b) discovers the branch is missing commits it expected (reset --hard destroyed them).
+
+**Cause:** Commis prompts did not forbid these operations. Commis assume that their worktree is "theirs" to manage, when in fact the Sous-Chef owns the sync and rebase protocol — the commis only owns the working tree and commits.
+
+**Symptoms:**
+- Sous-Chef reports "branch is behind / ahead of origin in an unexpected way"
+- `git log` on the commis branch shows missing commits the commis remembers writing
+- Push fails with "tip of your current branch is behind its remote counterpart" because a stale fetch moved origin refs
+- Rebase by the Sous-Chef produces spurious conflicts on files the commis never touched
+
+**Fix in the commis prompt (chef-prompt-template.md §Commis prompt template):** Add a FORBIDDEN git operations block:
+- NEVER `git fetch origin` or `git pull`
+- NEVER `git reset --hard`
+- If reset is truly needed: `git reset --soft` or `git reset --mixed` only, then notify the Sous-Chef
+
+**Detection:** At the start of a sprint, the Sous-Chef can verify by checking `git reflog` on each commis branch after the first commit — any `reset: moving to HEAD~` or `fetch origin` entry is a red flag. If detected, SendMessage the commis to stop and escalate to the Chef.
+
+**Why this matters:** The brigade is deterministic by design — one commis = one branch = one PR. Any git operation that silently rewrites history or moves remote refs breaks that determinism and turns a 2h sprint into a 6h forensic session.
