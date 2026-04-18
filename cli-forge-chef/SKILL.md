@@ -700,7 +700,7 @@ Read `references/tmuxinator-template.md`.
 
 Read `references/ccheck-prompt-template.md` and customize with the project paths.
 
-The ccheck is a dedicated Claude instance in its own tmux window that watches the Chef pane and auto-approves permissions in normal zones. **Without it, the Chef blocks on every worker edit and the brigade stalls.**
+The ccheck is a dedicated Claude instance in its own tmux window that watches the Chef pane and auto-approves **UI keyboard permissions** in normal zones. **Without it, the Chef blocks on every worker edit and the brigade stalls.**
 
 The ccheck:
 - **APPROVES** edits in normal zones (src/, tests/, shared-state.md, docs/)
@@ -709,6 +709,34 @@ The ccheck:
 - **Re-reads** the sensitive zone list every iteration (so the Chef can add zones mid-sprint)
 
 **This replaces the Phase 5 `/loop` approach** which was fragile (depended on the user's session staying open) and optional (it should never have been optional).
+
+### 2.6b — The contre-chef-inter (MANDATORY at tier ≥ M — G29)
+
+**Why this exists** : `ccheck` handles only **UI keyboard prompts** (`Do you want to make this edit?`). In Agent Teams mode (tier ≥ M), **commis** request permissions through the **team protocol** — these appear as `Permission request sent to team "<team>" leader` cards that **cannot be approved via keyboard**. The Chef (team leader) must approve via `SendMessage` tool call. If the Chef is in a thinking loop or busy, these requests queue up for 30+ min and block commis. Observed on grob-s5 (2026-04-17) : commis-2 waited 45 min for a shared-state.md edit on normal zone.
+
+**Generate `{project}/.claude/prompts/contre-chef-inter-{session}.md`.**
+
+Read `references/contre-chef-inter-prompt-template.md` and customize with the project paths.
+
+The contre-chef-inter is a **Haiku-powered team member** in its own tmux window that:
+- Scans the Chef pane every 20s for Agent Teams permission cards
+- Extracts `(commis, tool, file)` tuple from each pending card
+- Classifies zone (normal / sensitive) via shared-state BOSS_SENSITIVE_PATHS
+- Sends a `SendMessage` to the Chef with pre-chewed `APPROVE` or `HOLD` recommendation
+- Escalates to user after 100s+ of persistent stall despite nudges
+- Logs every decision to `/tmp/{session}-inter.log`
+
+**Scale rule:**
+
+| Tier | Spawn contre-chef-inter? |
+|---|---|
+| S (1 commis, no Agent Teams) | No |
+| M (2-5 commis via TeamCreate) | **Yes, mandatory** |
+| L+ (parallel Agent Teams) | **Yes, mandatory** |
+
+**Cost:** ~$0.05 per 6h sprint (Haiku 4.5, ~50 iterations × ~2k input tokens).
+
+**Why different from ccheck:** ccheck sends `tmux send-keys Enter` (keyboard); contre-chef-inter sends `SendMessage` (team protocol). They handle **orthogonal** permission pathways. Both are needed at tier ≥ M.
 
 ### 2.7 — Permissions (`{project}/.claude/settings.local.json`)
 
@@ -730,6 +758,11 @@ Read `references/permissions-template.md`.
    - `test -f {project}/.claude/prompts/ccheck-{session}.md` — if missing, **STOP and generate the ccheck prompt**
    - If either check fails, do NOT proceed to Phase 4. Fix the generation first.
    - This is a hard gate, not a warning. The brigade WILL stall without the ccheck.
+7. **MANDATORY at tier ≥ M — contre-chef-inter validation (G29):**
+   - `grep -q 'inter' ~/.config/tmuxinator/{session}.yml` — if tier ≥ M and missing, **STOP and add the inter window**
+   - `test -f {project}/.claude/prompts/contre-chef-inter-{session}.md` — if missing, **STOP and generate**
+   - Verify the Chef prompt contains `Agent { name: "contre-chef-inter"` in the TeamCreate spawn block
+   - Hard gate. Without contre-chef-inter at tier M+, the team-leader approval bottleneck will stall the brigade (observed grob-s5 2026-04-17, 45 min wait on normal-zone edit).
 
 ## Phase 4 — Bon appétit
 
