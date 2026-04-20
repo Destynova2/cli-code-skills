@@ -264,19 +264,33 @@ HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
   CMD ["/usr/local/bin/app", "healthcheck"]
 ```
 
-### Quadlet Health directives
+### Pod YAML health directives (preferred)
 
-```ini
-# app.container (Quadlet)
-[Container]
-Image=localhost/myapp:latest
-User=1001
-ReadOnly=true
-HealthCmd=/usr/local/bin/app healthcheck
-HealthInterval=30s
-HealthTimeout=5s
-HealthRetries=3
-HealthStartPeriod=10s
+```yaml
+# In pod.yaml — native Kubernetes probe syntax
+containers:
+  - name: app
+    image: localhost/myapp:latest
+    securityContext:
+      runAsUser: 1001
+      readOnlyRootFilesystem: true
+    readinessProbe:
+      exec:
+        command: ["/usr/local/bin/app", "healthcheck"]
+      periodSeconds: 15
+      timeoutSeconds: 5
+    livenessProbe:
+      exec:
+        command: ["/usr/local/bin/app", "healthcheck"]
+      periodSeconds: 30
+      timeoutSeconds: 5
+      failureThreshold: 3
+    startupProbe:
+      exec:
+        command: ["/usr/local/bin/app", "healthcheck"]
+      initialDelaySeconds: 10
+      periodSeconds: 5
+      failureThreshold: 12
 ```
 
 ### Healthcheck design rules
@@ -785,15 +799,54 @@ env:
 
 Resolves to the host gateway IP. Works in rootless Podman, Docker, nerdctl.
 
+### Multi-pod DNS (aardvark-dns) — when pods need to talk to each other
+
+When you have **separate pods** that need to discover each other by name
+(e.g., a DB pod and an App pod with different lifecycles), use `Network=`
+in the `.kube` file. Podman's aardvark-dns resolves pod names automatically.
+
+```ini
+# app.network (Quadlet — one file, auto-created)
+[Network]
+Internal=true
+
+# db.kube
+[Install]
+WantedBy=default.target
+
+[Kube]
+Yaml=db.yml
+Network=app.network
+
+# app.kube
+[Install]
+WantedBy=default.target
+
+[Kube]
+Yaml=app.yml
+Network=app.network
+```
+
+In `app.yml`, the app container reaches the DB pod by its pod name:
+
+```yaml
+env:
+  - { name: DB_HOST, value: "db" }   # resolved by aardvark-dns
+  - { name: DB_PORT, value: "5432" }
+```
+
+**Rule:** Same lifecycle → same pod (localhost). Different lifecycle → separate pods on shared network (DNS by pod name).
+
 ### Anti-patterns
 
 | Anti-pattern | Fix |
 |---|---|
-| Hardcoded `127.0.0.1` between separate containers | Put them in the same pod or use `host.containers.internal` |
+| Hardcoded `127.0.0.1` between separate pods | Use shared `.network` + pod name DNS |
 | `--network=host` | Use pod pattern — shared net ns without losing isolation |
 | Secrets in pod YAML | Use Kustomize `secretGenerator` + `.env` files (.gitignored) |
 | Secrets in environment inline | Use `envFrom: secretRef` pointing to Kustomize secret |
 | Multiple .container Quadlet files for coupled services | One pod YAML + one .kube file |
+| .container + .network for tightly coupled services | One pod YAML (they share localhost) |
 
 ---
 
