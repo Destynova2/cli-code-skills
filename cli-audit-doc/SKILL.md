@@ -1,5 +1,7 @@
 ---
 name: cli-audit-doc
+metadata:
+  author: Destynova2
 description: "Audit documentation quality with weighted scoring across 12 dimensions (Diataxis coverage, completeness, freshness, readability, examples, accessibility, CI testing). Detects doc anti-patterns (Wall of Text, The Lie, Jargon Soup). Use when reviewing doc quality, auditing documentation, checking for stale docs, or saying 'audit docs', 'doc quality', 'documentation review'. Invoke with an optional file or directory path."
 argument-hint: "[file-or-directory]"
 context: fork

@@ -1,5 +1,7 @@
 ---
 name: cli-audit-shell
+metadata:
+  author: Destynova2
 description: >
   Audit shell scripts against Google Shell Style Guide + ops best practices.
   Scores 12 dimensions: strict mode coherence, error surfaces, logging,

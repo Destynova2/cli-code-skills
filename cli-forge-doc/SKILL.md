@@ -1,5 +1,7 @@
 ---
 name: cli-forge-doc
+metadata:
+  author: Destynova2
 description: Generate and audit comprehensive project documentation from a Git repository. Produces standard documentation (CONTRIBUTING.md, architecture, troubleshooting) in Diataxis structure with zero AI markers by default. Use this skill whenever someone asks to document a project, generate docs, create a README, write API docs, or improve existing documentation. Also trigger when someone mentions "doc", "documentation", "readme", "explain this codebase", "onboard developers", or "make this project understandable".
 argument-hint: "[git-repo-path]"
 context: fork

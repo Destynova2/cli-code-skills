@@ -1,5 +1,7 @@
 ---
 name: cli-cycle
+metadata:
+  author: Destynova2
 description: "Continuous improvement cycle — orchestrates all cli-* skills on the current project, synthesizes results, and proposes prioritized improvements. Use when the user wants a full project review, a health check, a weekly cycle, or says 'audit everything', 'review the project', 'health check', 'what should I improve', 'run all audits', 'cycle', 'improvement cycle'. Designed for recurring use with '/loop 7d /cli-cycle'."
 argument-hint: "[project-path-or-scope-directory]"
 context: fork

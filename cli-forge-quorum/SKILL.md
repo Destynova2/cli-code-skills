@@ -1,5 +1,7 @@
 ---
 name: cli-forge-quorum
+metadata:
+  author: Destynova2
 description: Generate a Byzantine-fault-tolerant multi-agent orchestration using the REC-Quorum pattern (Reflect/Execute/Control with adaptive quorums, tickets pré-signés, leaderless execute, view-change timeouts). Use when a brigade-style orchestrator has stalled on a single-leader bottleneck, when deterministic decision quality is required (SLA/compliance/incident-response), when the team has > 5 agents with parallelism, or when operators mention 'BFT agents', 'REC-Quorum', 'deterministic consensus', 'threshold signatures', 'quorum adaptatif', 'view-change', 'leaderless execute', 'Byzantine orchestration'. Upgrade path from cli-forge-chef when Brigade stalls or requires formal audit trail.
 ---
 

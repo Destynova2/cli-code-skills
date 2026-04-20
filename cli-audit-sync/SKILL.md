@@ -1,5 +1,7 @@
 ---
 name: cli-audit-sync
+metadata:
+  author: Destynova2
 description: "Verify documentation-code coherence: detect stale references, broken links, terminology drift, outdated diagrams, and non-working examples. Use when the user wants to check if docs match reality, detect doc drift, verify README accuracy, find stale documentation, or says 'is my doc up to date', 'check coherence', 'sync docs', 'doc drift', 'stale docs', 'verify documentation'. Also triggers on 'broken links', 'outdated references', 'docs match code'."
 argument-hint: "[project-path]"
 context: fork

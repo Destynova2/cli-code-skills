@@ -1,5 +1,7 @@
 ---
 name: cli-forge-chef
+metadata:
+  author: Destynova2
 description: >
   Generate a multi-agent orchestrator for any project using the Brigade de Cuisine pattern:
   Chef (plans, decides), Sous-Chef (validates, merges), Commis (execute).

@@ -1,5 +1,7 @@
 ---
 name: cli-git-conventional
+metadata:
+  author: Destynova2
 description: >
   Enforce Conventional Commits v1.0.0, SemVer 2.0.0, branch naming, and human ghostwriter
   style on all git/jj operations. Zero AI markers. Use on 'commit', 'branch', 'tag',

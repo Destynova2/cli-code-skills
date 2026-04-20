@@ -1,5 +1,7 @@
 ---
 name: cli-forge-schema
+metadata:
+  author: Destynova2
 description: "Use this skill to generate, convert, or refine diagrams and visual representations in GitHub-compatible Mermaid. Triggers include: 'diagram', 'schema', 'flowchart', 'sequence diagram', 'architecture diagram', 'ER diagram', 'state machine', 'gantt', 'mindmap', 'timeline', 'mermaid', 'visualize', 'draw', 'convert table to diagram', 'kanban', 'PERT', 'roadmap', 'changelog', 'sankey', 'quadrant', 'git graph', or any request to create, fix, or improve a visual representation of data, processes, or architecture. Also triggers when the user pastes broken Mermaid, asks to simplify a complex diagram, wants to convert markdown tables/bullet lists/SQL schemas/JSON structures/API lists/RACI matrices into visual formats, or says 'make this visual'. Do NOT use for actual image generation (PNG, SVG rendering) — output is always Mermaid markdown."
 argument-hint: "[description-or-file-to-visualize]"
 context: fork

@@ -1,5 +1,7 @@
 ---
 name: cli-audit-drift
+metadata:
+  author: Destynova2
 description: >
   Detect silent semantic drift between intended behavior (CONTRACTS.md) and actual implementation.
   Scans code against functional contracts, invariants, and known drift history to catch behavioral

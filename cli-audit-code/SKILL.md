@@ -1,5 +1,7 @@
 ---
 name: cli-audit-code
+metadata:
+  author: Destynova2
 description: "Audit code quality with weighted scoring across 12 dimensions (naming, complexity, module design, DRY, errors, security, tests, architecture). Detects named anti-patterns (Fowler/Mantyla taxonomy). Use when reviewing code quality, auditing clean code compliance, checking for code smells, or saying 'audit code', 'code quality', 'code review', 'tech debt'. Invoke with an optional file or directory path."
 argument-hint: "[file-or-directory]"
 context: fork

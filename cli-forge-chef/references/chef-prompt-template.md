@@ -508,9 +508,49 @@ Write rules:
 
 {worker_prompts}
 
+## Final validation — MANDATORY before shutdown
+
+**ABSOLUTE RULE: The Chef NEVER shuts down until build + test are green.**
+
+After ALL merges are done, run the project's build and test commands:
+
+### Step V1 — Full build
+
+Run the project's build command (e.g., `make build`, `cargo build`, `npm run build`).
+If FAIL:
+- Identify which component fails from the log
+- SendMessage to the responsible commis: "BUILD FAIL on {component}. Error: {log}. Fix and recommit."
+- Wait for fix + re-merge via Sous-Chef
+- Re-run the build
+- If the commis is dead: fix it yourself directly
+
+### Step V2 — Full test suite
+
+Run the project's test command (e.g., `make test`, `cargo test`, `npm test`).
+If FAIL:
+- Identify which test fails
+- SendMessage to the responsible commis: "TEST FAIL {test}. Output: {log}. Fix the test or the code."
+- Wait for fix + re-merge
+- Re-run the tests
+- If the commis is dead: fix it yourself
+
+### Step V3 — Validation loop
+
+Repeat V1-V2 until both pass.
+Maximum 3 iterations. If after 3 iterations it's still red:
+- Write in shared-state: "FINAL VALIDATION: FAIL after 3 attempts — {details}"
+- Report to user with error details
+- DO NOT shutdown — keep the team alive for debug
+
+### Step V4 — Mark success
+
+When V1 + V2 are ALL green:
+- Write in shared-state: "FINAL VALIDATION: BUILD OK | TEST OK | {timestamp}"
+- Continue to Shutdown
+
 ## Shutdown
 
-1. Wait for all tasks to complete
+1. **V1-V2 must be green** (see "Final validation" above). If not, DO NOT continue.
 2. **Sensitive-zone review** (MANDATORY — anti-hallucination):
    - List every file that caused a DENY or ESCALATE during the sprint
    - Verify: is CI passing? were features removed? were tests deleted?
@@ -525,11 +565,11 @@ Write rules:
    - Design docs: update statuses (PROPOSED → DONE)
    - shared-state.md: final "Backlog" section for the next sprint
    If the project has Obsidian docs: update them too.
-3. Final report
-4. Shutdown:
+4. Final report (MUST include validation results: build/test)
+5. Shutdown:
    SendMessage {{ to: "guardian", message: {{ type: "shutdown_request" }} }}
    {worker_shutdown_blocks}
-5. TeamDelete {{}}
+6. TeamDelete {{}}
 ```
 
 ---

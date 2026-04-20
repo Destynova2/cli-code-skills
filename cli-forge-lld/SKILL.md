@@ -1,5 +1,7 @@
 ---
 name: cli-forge-lld
+metadata:
+  author: Destynova2
 description: "Generate a Low-Level Design (LLD) document for a software component or service. Use when the user mentions 'LLD', 'low-level design', 'detailed design', 'class diagram', 'sequence diagram', 'API spec', 'database schema', 'component design', 'module design', 'STRIDE', 'threat model', or asks for detailed technical design of a specific service/component. Produces C4 L3-L4 diagrams, class/sequence/state diagrams, API contracts, DB schemas, error handling, and testability design. Do NOT use for system-level architecture — use cli-forge-hld instead."
 argument-hint: "[component-or-service-name]"
 context: fork

@@ -1,5 +1,7 @@
 ---
 name: cli-forge-hld
+metadata:
+  author: Destynova2
 description: "Generate a High-Level Design (HLD) document for a software system. Use when the user mentions 'HLD', 'system design', 'architecture document', 'design doc', 'ADR', 'C4 diagram', 'back-of-envelope', 'capacity planning', 'ATAM', 'arc42', 'design proposal', 'Gate review', or says 'design X', 'architect Y'. Produces C4 L1-L2 diagrams, capacity estimations, ADRs, tradeoff analysis, and deployment architecture. Do NOT use for low-level/detailed design (class diagrams, DB schemas, API specs) — use cli-forge-lld instead."
 argument-hint: "[system-name-or-description]"
 context: fork

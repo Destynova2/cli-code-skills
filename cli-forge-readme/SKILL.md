@@ -1,5 +1,7 @@
 ---
 name: cli-forge-readme
+metadata:
+  author: Destynova2
 description: "Use this skill whenever the user wants to create, improve, audit, or rewrite a README.md file for any project. Triggers include: 'readme', 'README', 'documentation for my project', 'write a readme', 'improve my readme', 'project landing page', or any request to document a codebase, library, CLI tool, infrastructure project, or research repo. Also triggers when the user asks to 'make my project more accessible', 'add a getting started guide', or wants badges, installation instructions, or contributing guidelines. Use this skill even when the user just says 'document this' or 'make this repo presentable'. Do NOT use for API reference docs generation, full documentation sites (mdbook, docusaurus), or man pages."
 argument-hint: "[project-path]"
 context: fork

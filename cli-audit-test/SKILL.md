@@ -1,5 +1,7 @@
 ---
 name: cli-audit-test
+metadata:
+  author: Destynova2
 description: "Audit test plan quality and maturity. Scores coverage, techniques, pyramid balance, negative testing, NFR, automation, CI integration. Use when reviewing a test plan, test strategy, test suite structure, or saying 'audit tests', 'test quality', 'test plan review', 'test maturity', 'are my tests good enough', 'test scoring', 'test pyramid'. Also triggers on 'test coverage', 'test gaps', 'missing tests'."
 argument-hint: "[test-plan-file-or-tests-directory]"
 context: fork

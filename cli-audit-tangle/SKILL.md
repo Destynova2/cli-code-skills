@@ -1,5 +1,7 @@
 ---
 name: cli-audit-tangle
+metadata:
+  author: Destynova2
 description: >
   Detect spaghetti code and dependency cycles using graph theory, spectral analysis, and biomimetic patterns.
   Finds god functions, circular dependencies, dead code, suboptimal module boundaries,

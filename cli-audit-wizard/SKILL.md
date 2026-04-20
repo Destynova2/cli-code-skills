@@ -1,5 +1,7 @@
 ---
 name: cli-audit-wizard
+metadata:
+  author: Destynova2
 description: >
   Audit configuration wizard UX and lifecycle quality (setup, doctor, edit, migrate).
   Scores the 4 Laws (ask once, defaults, recap, config-as-code), credential discovery,
