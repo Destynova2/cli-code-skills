@@ -557,178 +557,243 @@ command:
 
 ---
 
-## 9. Inter-container communication — never rely on localhost alone
+## 9. Pod YAML + Quadlet .kube + Kustomize — the standard deployment model
 
-**Rule:** When multiple containers must communicate (DB ↔ App ↔ Cache ↔ Monitoring),
-NEVER assume `127.0.0.1`. Use explicit, resilient communication paths.
+**Rule:** Always use Pod YAML + Quadlet `.kube` + Kustomize overlays.
+One pattern, not four. Containers in the same pod share `localhost`.
+For host services, use `host.containers.internal`.
 
-### Decision matrix
+### Communication model
 
-| Method | When to use | Resilience | Rootless support |
-|--------|-------------|------------|-----------------|
-| **Podman pod** (shared localhost) | Tightly coupled services that MUST co-schedule | Low — no isolation, all-or-nothing restart | Full |
-| **User-defined network + DNS** | Independent services needing discovery by name | High — restart-tolerant, name-based | Full (netavark/CNI) |
-| **Unix socket (bind mount)** | Same-host, high-throughput, zero-network (DB ↔ App) | High — no port, no TCP overhead | Full |
-| **Systemd socket activation** | Lazy-start, on-demand service wakeup | High — native supervision | Quadlet only |
-| **Host network (--network=host)** | Legacy compat, monitoring bridges | Low — no isolation | Full but defeats purpose |
+| From → To | Method | Example |
+|-----------|--------|---------|
+| Container → same-pod container | `localhost:port` | WebUI → DB on `localhost:1433` |
+| Container → host service | `host.containers.internal` | Container → host monitoring agent |
+| Container → external | Published `hostPort` | Client → DB on `host:1433` |
 
-### Recommended: user-defined network + container DNS
+### Reference architecture
 
-```bash
-# Create a rootless user network (persists across reboots via Quadlet)
-podman network create app-internal
+A pod shares network namespace — containers communicate via `localhost`.
+Deploy via Quadlet `.kube` referencing a standard pod YAML.
 
-# Containers resolve each other by name
-podman run -d --network app-internal --name mariadb myapp-mariadb:latest
-podman run -d --network app-internal --name central myapp-central:latest
-# central can reach mariadb at: mariadb:3306 (DNS name, NOT localhost)
-```
-
-#### Quadlet equivalent
-
-```ini
-# app-internal.network (Quadlet)
-[Network]
-Driver=bridge
-Internal=true
-DNS=true
-
-# mariadb.container (Quadlet)
-[Container]
-Image=localhost/myapp-mariadb:latest
-Network=app-internal.network
-User=1001
-ReadOnly=true
-
-# central.container (Quadlet)
-[Container]
-Image=localhost/myapp-central:latest
-Network=app-internal.network
-User=1001
-ReadOnly=true
-Environment=DB_HOST=mariadb
-Environment=DB_PORT=3306
-```
-
-**Key points:**
-- `Internal=true` → no external access, containers only reach each other
-- `DNS=true` → containers resolve by name (not IP)
-- No port mapping needed between containers on the same network
-- Only expose ports to the host when external access is required
-
-#### Compose equivalent
+**Pod YAML** (`mssql.yml`):
 
 ```yaml
-services:
-  mariadb:
-    image: myapp-mariadb:latest
-    networks: [internal]
-    read_only: true
-    user: "1001:0"
+apiVersion: v1
+kind: Pod
+metadata:
+  name: mssql
+  labels:
+    app: mssql
+spec:
+  restartPolicy: Always
 
-  central:
-    image: myapp-central:latest
-    networks: [internal]
-    read_only: true
-    user: "1001:0"
-    environment:
-      DB_HOST: mariadb
-      DB_PORT: "3306"
-    depends_on:
-      mariadb:
-        condition: service_healthy
+  initContainers:
+    - name: init-volumes
+      image: docker.io/alpine/openssl:latest
+      command: ["/bin/sh", "-c"]
+      args:
+        - |
+          # Fix ownership for rootless UID
+          for d in data log backup certificates; do
+            chown -R 10001:0 /var/opt/mssql/${d}
+            chmod 0750 /var/opt/mssql/${d}
+          done
+          # Generate TLS cert if absent
+          CERT=/var/opt/mssql/certificates
+          if [ ! -f "${CERT}/server.crt" ]; then
+            openssl req -new -x509 -days 365 -nodes \
+              -keyout "${CERT}/server.key" \
+              -out "${CERT}/server.crt" \
+              -subj "/CN=mssql/O=MyOrg"
+            chown 10001:0 "${CERT}/server.key" "${CERT}/server.crt"
+            chmod 600 "${CERT}/server.key"
+          fi
+      securityContext:
+        runAsUser: 0
+      volumeMounts:
+        - { name: data, mountPath: /var/opt/mssql/data }
+        - { name: log, mountPath: /var/opt/mssql/log }
+        - { name: backup, mountPath: /var/opt/mssql/backup }
+        - { name: certs, mountPath: /var/opt/mssql/certificates }
 
-networks:
-  internal:
-    internal: true  # no external access
+  containers:
+    # --- Main service (non-root UID 10001) ---
+    - name: mssql
+      image: localhost/mssql:latest
+      ports:
+        - containerPort: 1433
+          hostPort: 1433
+      envFrom:
+        - secretRef:
+            name: env
+      securityContext:
+        allowPrivilegeEscalation: false
+        capabilities:
+          drop: [ALL]
+          add: [NET_BIND_SERVICE]
+      readinessProbe:
+        exec:
+          command: ["/usr/local/bin/healthcheck"]
+        periodSeconds: 15
+        timeoutSeconds: 5
+      livenessProbe:
+        exec:
+          command: ["/usr/local/bin/healthcheck"]
+        periodSeconds: 30
+        failureThreshold: 3
+      resources:
+        requests: { memory: "512Mi", cpu: "250m" }
+        limits:   { memory: "2304Mi", cpu: "2000m" }
+      volumeMounts:
+        - { name: data, mountPath: /var/opt/mssql/data }
+        - { name: log, mountPath: /var/opt/mssql/log }
+        - { name: backup, mountPath: /var/opt/mssql/backup }
+        - { name: certs, mountPath: /var/opt/mssql/certificates }
+        - { name: tmp, mountPath: /tmp }
+
+    # --- Sidecar WebUI (connects via localhost — same pod) ---
+    - name: webui
+      image: docker.io/dbgate/dbgate:latest
+      ports:
+        - containerPort: 3000
+          hostPort: 3000
+      env:
+        - { name: SERVER_con1, value: "localhost" }
+        - { name: PORT_con1, value: "1433" }
+        - { name: PASSWORD_MODE_con1, value: "askUser" }
+      securityContext:
+        allowPrivilegeEscalation: false
+        runAsNonRoot: true
+        runAsUser: 1000
+        capabilities:
+          drop: [ALL]
+      resources:
+        requests: { memory: "64Mi", cpu: "50m" }
+        limits:   { memory: "256Mi", cpu: "500m" }
+
+  volumes:
+    - { name: data, persistentVolumeClaim: { claimName: mssql-data } }
+    - { name: log, persistentVolumeClaim: { claimName: mssql-log } }
+    - { name: backup, persistentVolumeClaim: { claimName: mssql-backup } }
+    - { name: certs, persistentVolumeClaim: { claimName: mssql-certs } }
+    - { name: tmp, emptyDir: {} }
 ```
 
-### Unix socket pattern (DB ↔ App, highest performance)
-
-```bash
-# Host creates shared socket directory
-install -d -o 1001 -g 0 -m 0750 /run/app/sockets
-
-# MariaDB exposes socket, not TCP
-podman run -d \
-  --name mariadb \
-  -v /run/app/sockets:/var/run/mysqld:Z \
-  myapp-mariadb:latest
-
-# App connects via socket, not TCP
-podman run -d \
-  --name central \
-  -v /run/app/sockets:/var/run/mysqld:ro,Z \
-  -e DB_SOCKET=/var/run/mysqld/mysqld.sock \
-  myapp-central:latest
-```
-
-**Advantages over TCP localhost:**
-- No TCP overhead (30-40% faster for local queries)
-- No port conflict risk
-- No port exposure to host
-- File permissions = access control (no firewall needed)
-
-#### Quadlet with socket
+**Quadlet .kube** (`~/.config/containers/systemd/mssql.kube`):
 
 ```ini
-# mariadb.container
-[Container]
-Volume=/run/app/sockets:/var/run/mysqld:Z
+# Quadlet .kube — systemd manages the pod lifecycle
+[Install]
+WantedBy=default.target
 
-# central.container
-[Container]
-Volume=/run/app/sockets:/var/run/mysqld:ro,Z
-Environment=DB_SOCKET=/var/run/mysqld/mysqld.sock
+[Kube]
+Yaml=mssql.yml
 ```
+
+**Launch:**
+```bash
+cp mssql.yml ~/.config/containers/systemd/
+cp mssql.kube ~/.config/containers/systemd/
+systemctl --user daemon-reload
+systemctl --user start mssql
+```
+
+**Why .kube over .container:**
+- One YAML, one unit — simpler than N .container files
+- Standard Kubernetes pod spec (portable, lintable, `kubectl apply` compatible)
+- Init containers, probes, resources, securityContext — all native
+- Sidecars share `localhost` (no network config needed)
+
+### Kustomize structure
+
+```
+deploy/
+├── base/
+│   ├── kustomization.yaml
+│   ├── pod.yaml              # Pod spec (no secrets, no env-specific values)
+│   └── pvcs.yaml             # PersistentVolumeClaims
+├── overlays/
+│   ├── dev/
+│   │   ├── kustomization.yaml
+│   │   └── secret.env        # .gitignored — real secrets
+│   └── prod/
+│       ├── kustomization.yaml
+│       └── secret.env        # .gitignored — real secrets
+└── secret.env.example         # Committed — template with placeholder values
+```
+
+**Base kustomization.yaml:**
+
+```yaml
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: database
+resources:
+  - pvcs.yaml
+  - pod.yaml
+```
+
+**Overlay kustomization.yaml** (`overlays/dev/`):
+
+```yaml
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - ../../base
+secretGenerator:
+  - name: env
+    envs:
+      - secret.env
+    options:
+      disableNameSuffixHash: true
+```
+
+**secret.env.example** (committed, placeholder values):
+
+```env
+# Copy to overlays/dev/secret.env and set real values
+# Generate strong passwords:
+#   openssl rand -base64 24 | tr -d '/+=' | head -c 20
+SA_PASSWORD=ChangeMeStrong!1
+APP_PASSWORD=ChangeMeStrong!2
+MONITORING_PASSWORD=ChangeMeStrong!3
+HEALTHCHECK_PASSWORD=ChangeMeStrong!4
+```
+
+**Render and deploy:**
+
+```bash
+# Render the final manifests
+kustomize build deploy/overlays/dev > /tmp/app.yml
+
+# Install Quadlet
+cp /tmp/app.yml ~/.config/containers/systemd/
+cp deploy/base/app.kube ~/.config/containers/systemd/
+systemctl --user daemon-reload
+systemctl --user start app
+```
+
+### host.containers.internal
+
+When a container needs to reach a service on the **host**, use the built-in DNS:
+
+```yaml
+env:
+  - { name: MONITORING_HOST, value: "host.containers.internal" }
+```
+
+Resolves to the host gateway IP. Works in rootless Podman, Docker, nerdctl.
 
 ### Anti-patterns
 
-| Anti-pattern | Problem | Fix |
-|---|---|---|
-| `--network=host` everywhere | No isolation, port conflicts, defeats rootless | Use user-defined network |
-| Hardcoded `127.0.0.1:3306` | Breaks when containers are on different networks or pods | Use DNS name or socket |
-| Hardcoded container IP | IPs change on restart | Use DNS names |
-| `localhost` in config files | Ambiguous: host's localhost or container's? | Use explicit service name or socket path |
-| No `Internal=true` on app network | Services accidentally reachable from host/outside | Always `Internal=true` for backend networks |
-| Shared pod for unrelated services | One crash restarts everything, no independent scaling | Pod only for tightly coupled (sidecar pattern) |
-
-### When to use a pod (shared localhost)
-
-Pods are appropriate ONLY for the sidecar pattern — tightly coupled containers
-that MUST share network namespace:
-
-- App + log collector (fluentbit)
-- App + TLS proxy (envoy/traefik sidecar)
-- App + metrics exporter (prometheus exporter)
-
-```bash
-podman pod create --name app-pod -p 8080:8080
-podman run -d --pod app-pod --name app myapp:latest
-podman run -d --pod app-pod --name metrics myapp-exporter:latest
-# metrics can reach app at localhost:8080 (same network namespace)
-```
-
-For everything else (DB, cache, message broker, monitoring), use a **user-defined network**.
-
-### Goss validation for inter-container communication
-
-```yaml
-# goss.yaml — verify DNS resolution works
-command:
-  # Can resolve peer by name (not IP)
-  "getent hosts mariadb":
-    exit-status: 0
-  # Connection works
-  "timeout 5 bash -c 'echo > /dev/tcp/mariadb/3306'":
-    exit-status: 0
-
-# goss.yaml — verify socket communication works
-file:
-  /var/run/mysqld/mysqld.sock:
-    exists: true
-    filetype: socket
-```
+| Anti-pattern | Fix |
+|---|---|
+| Hardcoded `127.0.0.1` between separate containers | Put them in the same pod or use `host.containers.internal` |
+| `--network=host` | Use pod pattern — shared net ns without losing isolation |
+| Secrets in pod YAML | Use Kustomize `secretGenerator` + `.env` files (.gitignored) |
+| Secrets in environment inline | Use `envFrom: secretRef` pointing to Kustomize secret |
+| Multiple .container Quadlet files for coupled services | One pod YAML + one .kube file |
 
 ---
 
