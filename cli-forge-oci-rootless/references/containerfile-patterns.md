@@ -799,26 +799,62 @@ env:
 
 Resolves to the host gateway IP. Works in rootless Podman, Docker, nerdctl.
 
-### Multi-pod DNS (aardvark-dns) — when pods need to talk to each other
+### Multi-pod with DNS (aardvark-dns) — one systemctl start
 
-When you have **separate pods** that need to discover each other by name
-(e.g., a DB pod and an App pod with different lifecycles), use `Network=`
-in the `.kube` file. Podman's aardvark-dns resolves pod names automatically.
+When you need **multiple pods that discover each other by name**, put all pods
+in a single multi-document YAML + one `.kube` + one `.network`. Three files total.
 
+**File 1: `app.network`** (Quadlet)
 ```ini
-# app.network (Quadlet — one file, auto-created)
 [Network]
 Internal=true
+```
 
-# db.kube
-[Install]
-WantedBy=default.target
+**File 2: `app.yml`** (multi-document — all pods in one file)
+```yaml
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: db
+spec:
+  restartPolicy: Always
+  containers:
+    - name: mariadb
+      image: localhost/mariadb:latest
+      ports:
+        - containerPort: 3306
+      securityContext:
+        runAsUser: 10001
+        allowPrivilegeEscalation: false
+      volumeMounts:
+        - { name: data, mountPath: /var/lib/mysql }
+  volumes:
+    - { name: data, persistentVolumeClaim: { claimName: db-data } }
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: app
+spec:
+  restartPolicy: Always
+  containers:
+    - name: central
+      image: localhost/central:latest
+      ports:
+        - containerPort: 8080
+          hostPort: 8080
+      env:
+        # DNS name = pod name ("db") — resolved by aardvark-dns
+        - { name: DB_HOST, value: "db" }
+        - { name: DB_PORT, value: "3306" }
+      securityContext:
+        runAsUser: 1001
+        allowPrivilegeEscalation: false
+```
 
-[Kube]
-Yaml=db.yml
-Network=app.network
-
-# app.kube
+**File 3: `app.kube`** (Quadlet)
+```ini
 [Install]
 WantedBy=default.target
 
@@ -827,15 +863,21 @@ Yaml=app.yml
 Network=app.network
 ```
 
-In `app.yml`, the app container reaches the DB pod by its pod name:
-
-```yaml
-env:
-  - { name: DB_HOST, value: "db" }   # resolved by aardvark-dns
-  - { name: DB_PORT, value: "5432" }
+**Deploy:**
+```bash
+cp app.{network,yml,kube} ~/.config/containers/systemd/
+systemctl --user daemon-reload
+systemctl --user start app  # starts ALL pods, one command
 ```
 
-**Rule:** Same lifecycle → same pod (localhost). Different lifecycle → separate pods on shared network (DNS by pod name).
+**How it works:**
+- `app.network` creates a user-defined network with DNS (aardvark-dns)
+- `app.yml` defines N pods separated by `---` — all in one file
+- `app.kube` ties everything together as one systemd unit
+- Pods resolve each other by `metadata.name` (e.g., `db:3306`)
+- One `systemctl --user start app` starts the entire stack
+
+**Rule:** Same lifecycle → same pod (localhost). Different lifecycle → separate pods in same YAML (DNS by pod name). Either way: **3 files, 1 systemd unit**.
 
 ### Anti-patterns
 
