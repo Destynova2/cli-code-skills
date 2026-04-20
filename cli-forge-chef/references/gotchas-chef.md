@@ -400,3 +400,24 @@ The Sous-Chef should NOT wait for the full chain — once the PR to develop is m
 **Detection:** At the start of a sprint, the Sous-Chef can verify by checking `git reflog` on each commis branch after the first commit — any `reset: moving to HEAD~` or `fetch origin` entry is a red flag. If detected, SendMessage the commis to stop and escalate to the Chef.
 
 **Why this matters:** The brigade is deterministic by design — one commis = one branch = one PR. Any git operation that silently rewrites history or moves remote refs breaks that determinism and turns a 2h sprint into a 6h forensic session.
+
+## G31 — Chef pane idle because no initial user message (CRITICAL)
+
+**Symptom:** The Chef pane shows the `❯` prompt but nothing happens. The `chef-prompt.md` system prompt contains "G3: Start IMMEDIATELY without waiting for a user message" yet the Chef sits there. Sprint never starts.
+
+**Root cause:** `claude --append-system-prompt "..."` without a trailing **positional prompt argument** launches the REPL in idle state. The system prompt only governs behaviour *when the user speaks* — Claude Code's interactive mode does not auto-fire. `tmux send-keys "text" Enter` workarounds are unreliable: the input widget treats the keystroke as a newline within the multiline buffer rather than a submission, leaving the message typed-but-unsent.
+
+**Fix:** Pass the kick-off as the last positional argument:
+
+```yaml
+- claude --dangerously-skip-permissions --permission-mode bypassPermissions \
+         --teammate-mode tmux \
+         --append-system-prompt "$(cat prompts/chef-sprint.md)" \
+         "Demarre IMMEDIATEMENT Phase 0 selon le system prompt : TeamCreate, recruter sous-chefs + maitre-d + commis, puis executer le PERT."
+```
+
+The last string is consumed as the first **user message** — Claude fires the system prompt in response and the sprint boots. Same trick applies to `ccheck` and `contre-chef-inter` panes.
+
+**Detection:** 10 min after `tmuxinator start`, `gh pr list --state open --limit 10` is still empty AND `tmux capture-pane -t <sprint>:chef -p | tail -5` shows no output from Claude. If so, rerun the pane command with the positional prompt appended.
+
+**Why this matters:** Without the fix, every brigade start requires a human to attach to tmux and type "go". That defeats the unattended-sprint value proposition and burns 30-60 min of wall-clock per sprint waiting to be noticed.

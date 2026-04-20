@@ -29,11 +29,14 @@ on_project_stop:
 
 windows:
   # --- CHEF: creates the team, spawns sous-chefs + commis ---
-  # GOTCHAS: G1 (bypassPermissions), G2 (append-system-prompt), G4 (teammate-mode tmux)
+  # GOTCHAS: G1 (bypassPermissions), G2 (append-system-prompt), G4 (teammate-mode tmux),
+  # G31 (initial prompt as positional arg — without it, Claude sits at the REPL
+  # waiting for a human even though the system prompt says "G3: Start IMMEDIATELY";
+  # tmux send-keys cannot reliably submit to Claude Code's input widget).
   - chef:
       root: {project_path}
       panes:
-        - claude --dangerously-skip-permissions --permission-mode bypassPermissions --teammate-mode tmux --append-system-prompt "$(cat {project_path}/.claude/prompts/chef-{session_name}.md)"
+        - claude --dangerously-skip-permissions --permission-mode bypassPermissions --teammate-mode tmux --append-system-prompt "$(cat {project_path}/.claude/prompts/chef-{session_name}.md)" "Demarre IMMEDIATEMENT Phase 0 selon le system prompt : TeamCreate, recruter sous-chefs + maitre-d + commis, puis executer le PERT."
 
   # --- GATE: merge, CI, release (pure shell, no claude) ---
   # The Sous-Chef sends commands here via tmux send-keys
@@ -49,7 +52,7 @@ windows:
   - ccheck:
       root: {project_path}
       panes:
-        - claude --dangerously-skip-permissions --permission-mode bypassPermissions --append-system-prompt "$(cat {project_path}/.claude/prompts/ccheck-{session_name}.md)"
+        - claude --dangerously-skip-permissions --permission-mode bypassPermissions --append-system-prompt "$(cat {project_path}/.claude/prompts/ccheck-{session_name}.md)" "Start watching chef pane and auto-approve permissions per the system prompt. Begin now."
 ```
 
 ## Architecture in tmux
