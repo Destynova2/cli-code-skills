@@ -28,6 +28,10 @@
 | `cli-git-conventional` | **Always** — formats all commits during correction phase. Zero AI markers |
 | `cli-forge-github` | GitHub repo exists (`.github/` or `gh repo view` succeeds). Audits rulesets, branches, PRs, CI health |
 | `cli-forge-chef` | Skip (multi-agent orchestration — triggered explicitly) |
+| `cli-forge-quorum` | Skip (BFT multi-agent orchestration — triggered explicitly, upgrade from chef) |
+| `cli-forge-oci-rootless` | Skip (OCI rootless migration — triggered explicitly on migration projects) |
+| `cli-forge-prez` | Skip (presentation generation — triggered explicitly) |
+| `cli-watermark` | Skip (steganographic watermarking — triggered explicitly) |
 
 ---
 
