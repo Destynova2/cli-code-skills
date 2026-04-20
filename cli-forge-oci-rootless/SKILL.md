@@ -334,6 +334,7 @@ Rootless migrations fail at boundaries. Build an explicit fault map:
 - SELinux/AppArmor labels
 - host secrets and certificate ownership
 - registry reachability and image pinning
+- inter-container communication (network DNS vs Unix socket vs pod localhost vs host network)
 - local vs remote monitoring path
 - backup archive path and restore target
 - reboot/rerun/dirty-host behavior

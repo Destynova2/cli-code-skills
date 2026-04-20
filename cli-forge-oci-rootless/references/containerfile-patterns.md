@@ -129,6 +129,8 @@ command:
       - "/test-write: Read-only file system"
 
 http:
+  # Use container's own loopback for self-healthcheck
+  # For inter-container probes, use DNS name (e.g., http://mariadb:3306)
   http://localhost:8080/healthz:
     status: 200
     timeout: 5000
@@ -555,7 +557,182 @@ command:
 
 ---
 
-## 9. Checklist — mandatory for every image
+## 9. Inter-container communication — never rely on localhost alone
+
+**Rule:** When multiple containers must communicate (DB ↔ App ↔ Cache ↔ Monitoring),
+NEVER assume `127.0.0.1`. Use explicit, resilient communication paths.
+
+### Decision matrix
+
+| Method | When to use | Resilience | Rootless support |
+|--------|-------------|------------|-----------------|
+| **Podman pod** (shared localhost) | Tightly coupled services that MUST co-schedule | Low — no isolation, all-or-nothing restart | Full |
+| **User-defined network + DNS** | Independent services needing discovery by name | High — restart-tolerant, name-based | Full (netavark/CNI) |
+| **Unix socket (bind mount)** | Same-host, high-throughput, zero-network (DB ↔ App) | High — no port, no TCP overhead | Full |
+| **Systemd socket activation** | Lazy-start, on-demand service wakeup | High — native supervision | Quadlet only |
+| **Host network (--network=host)** | Legacy compat, monitoring bridges | Low — no isolation | Full but defeats purpose |
+
+### Recommended: user-defined network + container DNS
+
+```bash
+# Create a rootless user network (persists across reboots via Quadlet)
+podman network create app-internal
+
+# Containers resolve each other by name
+podman run -d --network app-internal --name mariadb myapp-mariadb:latest
+podman run -d --network app-internal --name central myapp-central:latest
+# central can reach mariadb at: mariadb:3306 (DNS name, NOT localhost)
+```
+
+#### Quadlet equivalent
+
+```ini
+# app-internal.network (Quadlet)
+[Network]
+Driver=bridge
+Internal=true
+DNS=true
+
+# mariadb.container (Quadlet)
+[Container]
+Image=localhost/myapp-mariadb:latest
+Network=app-internal.network
+User=1001
+ReadOnly=true
+
+# central.container (Quadlet)
+[Container]
+Image=localhost/myapp-central:latest
+Network=app-internal.network
+User=1001
+ReadOnly=true
+Environment=DB_HOST=mariadb
+Environment=DB_PORT=3306
+```
+
+**Key points:**
+- `Internal=true` → no external access, containers only reach each other
+- `DNS=true` → containers resolve by name (not IP)
+- No port mapping needed between containers on the same network
+- Only expose ports to the host when external access is required
+
+#### Compose equivalent
+
+```yaml
+services:
+  mariadb:
+    image: myapp-mariadb:latest
+    networks: [internal]
+    read_only: true
+    user: "1001:0"
+
+  central:
+    image: myapp-central:latest
+    networks: [internal]
+    read_only: true
+    user: "1001:0"
+    environment:
+      DB_HOST: mariadb
+      DB_PORT: "3306"
+    depends_on:
+      mariadb:
+        condition: service_healthy
+
+networks:
+  internal:
+    internal: true  # no external access
+```
+
+### Unix socket pattern (DB ↔ App, highest performance)
+
+```bash
+# Host creates shared socket directory
+install -d -o 1001 -g 0 -m 0750 /run/app/sockets
+
+# MariaDB exposes socket, not TCP
+podman run -d \
+  --name mariadb \
+  -v /run/app/sockets:/var/run/mysqld:Z \
+  myapp-mariadb:latest
+
+# App connects via socket, not TCP
+podman run -d \
+  --name central \
+  -v /run/app/sockets:/var/run/mysqld:ro,Z \
+  -e DB_SOCKET=/var/run/mysqld/mysqld.sock \
+  myapp-central:latest
+```
+
+**Advantages over TCP localhost:**
+- No TCP overhead (30-40% faster for local queries)
+- No port conflict risk
+- No port exposure to host
+- File permissions = access control (no firewall needed)
+
+#### Quadlet with socket
+
+```ini
+# mariadb.container
+[Container]
+Volume=/run/app/sockets:/var/run/mysqld:Z
+
+# central.container
+[Container]
+Volume=/run/app/sockets:/var/run/mysqld:ro,Z
+Environment=DB_SOCKET=/var/run/mysqld/mysqld.sock
+```
+
+### Anti-patterns
+
+| Anti-pattern | Problem | Fix |
+|---|---|---|
+| `--network=host` everywhere | No isolation, port conflicts, defeats rootless | Use user-defined network |
+| Hardcoded `127.0.0.1:3306` | Breaks when containers are on different networks or pods | Use DNS name or socket |
+| Hardcoded container IP | IPs change on restart | Use DNS names |
+| `localhost` in config files | Ambiguous: host's localhost or container's? | Use explicit service name or socket path |
+| No `Internal=true` on app network | Services accidentally reachable from host/outside | Always `Internal=true` for backend networks |
+| Shared pod for unrelated services | One crash restarts everything, no independent scaling | Pod only for tightly coupled (sidecar pattern) |
+
+### When to use a pod (shared localhost)
+
+Pods are appropriate ONLY for the sidecar pattern — tightly coupled containers
+that MUST share network namespace:
+
+- App + log collector (fluentbit)
+- App + TLS proxy (envoy/traefik sidecar)
+- App + metrics exporter (prometheus exporter)
+
+```bash
+podman pod create --name app-pod -p 8080:8080
+podman run -d --pod app-pod --name app myapp:latest
+podman run -d --pod app-pod --name metrics myapp-exporter:latest
+# metrics can reach app at localhost:8080 (same network namespace)
+```
+
+For everything else (DB, cache, message broker, monitoring), use a **user-defined network**.
+
+### Goss validation for inter-container communication
+
+```yaml
+# goss.yaml — verify DNS resolution works
+command:
+  # Can resolve peer by name (not IP)
+  "getent hosts mariadb":
+    exit-status: 0
+  # Connection works
+  "timeout 5 bash -c 'echo > /dev/tcp/mariadb/3306'":
+    exit-status: 0
+
+# goss.yaml — verify socket communication works
+file:
+  /var/run/mysqld/mysqld.sock:
+    exists: true
+    filetype: socket
+```
+
+---
+
+## 10. Checklist — mandatory for every image
 
 Before declaring T1 gate passed, verify ALL items:
 
