@@ -118,29 +118,74 @@ If any answer is "no" that matters to the use case, **stop** and suggest `cli-fo
 Produce at minimum:
 
 1. **`{project}/.claude/rec-quorum/orchestrator-{session}.md`** — main orchestrator prompt (replaces Chef role)
-2. **`{project}/.claude/rec-quorum/control-validator-{role}-{session}.md`** — N prompts, one per Control validator
-3. **`{project}/.claude/rec-quorum/ticket-template.json`** — canonical ticket schema
-4. **`{project}/.claude/rec-quorum/shared-state.jsonl`** — bootstrap the append-only log
-5. **`~/.config/tmuxinator/{session}.yml`** — windows for orchestrator + N validators + contre-chef-inter
-6. **`{project}/.claude/rec-quorum/petri-net.cpn` or `.bpmn`** — workflow model for the sprint
-7. **`{project}/.claude/settings.local.json`** — permissions covering all worktrees + signing ops
+2. **`{project}/.claude/rec-quorum/plan-validator-{role}-{session}.md`** — Phase 0 validator prompts (scope, secu)
+3. **`{project}/.claude/rec-quorum/control-validator-{role}-{session}.md`** — Phase 2 validator prompts (tests, security, contracts, policy, perf)
+4. **`{project}/.claude/rec-quorum/apply-pane-{session}.md`** — apply pane prompt (Phase 2 mutations coordinator, see `references/apply-quorum-rec-q.md`)
+5. **`{project}/.claude/rec-quorum/ticket-template.json`** — canonical ticket schema
+6. **`{project}/.claude/rec-quorum/shared-state.jsonl`** — bootstrap the append-only log
+7. **`{project}/.claude/rec-quorum/certificates/.gitkeep`** — directory for Phase-transition signed certificates (Q8)
+8. **`{project}/.claude/rec-quorum/plans/.gitkeep`** — directory for apply plan artefacts (apply-quorum)
+9. **`~/.config/tmuxinator/{session}.yml`** — windows for orchestrator + plan-validators + control-validators + apply pane + commis + ccheck + contre-chef-inter
+10. **`{project}/.claude/rec-quorum/petri-net.cpn` or `.bpmn`** — workflow model for the sprint
+11. **`{project}/.claude/settings.local.json`** — root permissions (see Reused artefacts below)
+12. **`{project}/scripts/brigade-setup-worktrees.sh`** — idempotent worktree + per-pane permissions setup (reused from `cli-forge-chef/references/brigade-setup-worktrees.sh`, extended for REC-Q's role list)
+
+### Reused artefacts (imported from `cli-forge-chef`)
+
+Do not re-invent these. Import the chef versions verbatim and, where needed, extend:
+
+| Artefact (chef source) | REC-Q use |
+|---|---|
+| `cli-forge-chef/references/ccheck-prompt-template.md` | Mandatory ccheck window (G24) |
+| `cli-forge-chef/references/contre-chef-inter-prompt-template.md` | Phase 1 ticket verifier (see `references/leaderless-execute.md`) |
+| `cli-forge-chef/references/tmuxinator-template.md` | Base structure — uses `--append-system-prompt-file` (G34-safe), no wrapper script, `brigade-setup-worktrees.sh` in `on_project_start` |
+| `cli-forge-chef/references/brigade-setup-worktrees.sh` | Idempotent setup, no SIGPIPE (G35), one branch per agent (G36) |
+| `cli-forge-chef/references/permissions-template.md` | Per-worktree `settings.local.json` for standalone panes (gate, apply, maitre). Teammates inherit the root (G32) — so the root `settings.local.json` must carry the strictest deny list |
+| `cli-forge-chef/references/maitre-dhotel.md` | Post-merge watchdog, unchanged |
+| `cli-forge-chef/references/gotchas-chef.md` | Base gotchas — read alongside `references/gotchas-quorum.md` |
+| `cli-forge-chef/references/apply-quorum.md` | Lighter apply protocol for dev sprints; REC-Q uses `references/apply-quorum-rec-q.md` instead |
+
+**Never generate `scripts/brigade-launch-agent.sh`** — it's the obsolete wrapper superseded by `--append-system-prompt-file` (see `references/anti-patterns.md` §22).
 
 ### Phase 4 — Hard gates before launch
 
 Before running `tmuxinator start {session}`:
 
-1. **Petri net soundness**: run a soundness check (Renew, WoPeD, or a custom reachability check). If the net has deadlocks or dead transitions, **stop**.
+1. **Petri net soundness**: run a soundness check (Renew, WoPeD, or a custom reachability check). If the net has deadlocks or dead transitions, **stop**. (`gotchas-quorum.md` Q10)
 2. **Ticket schema valid**: validate `ticket-template.json` against JSON Schema.
-3. **N validators spawned**: count Agent blocks in orchestrator prompt. Must equal `floor(N/2) + 1` at minimum.
-4. **Timeouts set**: every phase must have a timeout. Missing timeout = guaranteed stall.
+3. **N validators spawned**: count Agent blocks in orchestrator prompt. Must equal `floor(N/2) + 1` at minimum for Control, 2 for Plan.
+4. **Timeouts set**: every phase must have a timeout. Missing timeout = guaranteed stall. (`anti-patterns.md` §11)
 5. **Contre-chef-inter present**: inherit from `cli-forge-chef` §2.6b — mandatory at tier ≥ M.
-6. **Cost estimate printed**: LLM calls × N = predicted cost. Operator must confirm.
+6. **Cost estimate printed**: LLM calls × N = predicted cost. Operator must confirm. (`anti-patterns.md` §17)
+7. **Native flag used, no wrapper script**: `! grep -q '\$(cat ' ~/.config/tmuxinator/{session}.yml` AND `! test -f {project}/scripts/brigade-launch-agent.sh` AND `grep -qc 'append-system-prompt-file' ~/.config/tmuxinator/{session}.yml`. Reject legacy wrapper generation. (`anti-patterns.md` §18, §22)
+8. **Setup script executable and idempotent**: `test -x {project}/scripts/brigade-setup-worktrees.sh` AND `! grep -q 'pipefail' $_` AND `! grep -q 'worktree add.*| head' ~/.config/tmuxinator/{session}.yml`. (`anti-patterns.md` §19)
+9. **One branch per agent worktree**: `git branch --list 'wt/*' | wc -l` equals the count of non-commis agent panes; `{base_branch}-{commis_name}` branches exist for each commis. (`anti-patterns.md` §20)
+10. **Trust prompt auto-accept scheduled**: `grep -q 'Down Enter' ~/.config/tmuxinator/{session}.yml` AND the line contains `&` so it doesn't block on sleep. (`anti-patterns.md` §21)
+11. **Root settings.local.json denies destructive Bash**: `grep -c 'Bash(tofu apply\|Bash(helm upgrade\|Bash(kubectl apply\|Bash(gh release\|Bash(git push --force' {project}/.claude/settings.local.json | (read n; [[ $n -ge 5 ]])`. Teammates inherit the root — strict deny list here is the only line of defence. (`gotchas-quorum.md` Q4)
+12. **Apply pane permissions allow infra tools, deny push**: `test -f {project}-wt-apply/.claude/settings.local.json` AND it allows `tofu:*` / `helm:*` / `kubectl:*` AND denies `git push:*` / `git commit:*`. (`apply-quorum-rec-q.md`)
+13. **Phase-transition certificate dirs present**: `test -d {project}/.claude/rec-quorum/certificates/` AND `test -d {project}/.claude/rec-quorum/plans/`. (`gotchas-quorum.md` Q8)
+14. **Orchestrator prompt strips Brigade classification logic**: `! grep -iE 'classify|decide.*zone|check.*sensitive' {project}/.claude/rec-quorum/orchestrator-{session}.md` in the Phase 1 section. (`gotchas-quorum.md` Q7, `anti-patterns.md` §10)
+15. **Control validators are distinct**: diff each pair of `control-validator-*.md` prompts — any two literally identical up to `{role}` substitution fails the gate. (`gotchas-quorum.md` Q6, `anti-patterns.md` §15)
 
 If any gate fails, do NOT proceed. Fix generation first.
 
+## Reference index
+
+| File | Content |
+|---|---|
+| `references/rec-phases.md` | Phase 0 / 1 / 2 specs with timeouts, hash-canonical voting, view-change |
+| `references/leaderless-execute.md` | Tickets pré-signés, contre-chef-inter as verifier, budget enforcement |
+| `references/quorum-sizing.md` | Criticality classifier, N mapping, cost model, heterogeneous quorums |
+| `references/bft-primitives.md` | Pointers to HotStuff-lite, Mir-BFT, Mercury, BFTBrain, threshold sigs |
+| `references/petri-cwn-templates.md` | Workflow modelling with Petri / Colored Workflow Nets, soundness analysis |
+| `references/upgrade-from-brigade.md` | Six incremental migration steps from `cli-forge-chef` |
+| `references/apply-quorum-rec-q.md` | Phase 2 apply quorum for `tofu apply` / `helm upgrade` / `kubectl apply` / `gh release create` / feature-branch force-push |
+| `references/gotchas-quorum.md` | REC-Q-specific gotchas Q1-Q10, plus cross-reference map to `cli-forge-chef/references/gotchas-chef.md` G1-G38 |
+| `references/anti-patterns.md` | 22 patterns to refuse (architecture + launch-time bugs) |
+
 ## Anti-patterns to refuse
 
-Read `references/anti-patterns.md` (to be written — see backlog). Never generate:
+Read `references/anti-patterns.md`. Never generate:
 
 - **Same quorum for all tasks** — trivial tasks at N=5 waste 5× cost; critical at N=1 = no safety
 - **Majority vote on free text** — two agents write "looks good" with different wording; nothing reproducible. Always hash canonical form first

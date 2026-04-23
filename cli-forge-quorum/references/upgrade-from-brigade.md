@@ -90,6 +90,22 @@ These concepts are REC-Q-specific (not in Brigade):
 - **Use both Brigade and REC-Q for different sprints of the same project** — pick one and stick with it. Mixing creates confusion about which shared-state format is canonical.
 - **Port all Brigade features verbatim** — REC-Q explicitly drops the Chef's ad-hoc approval role. That's not a bug to fix.
 
+## What does NOT get solved by the upgrade (G32 persists)
+
+The Brigade's `G32 — Agent Teams teammates inherit the lead's permissions` limitation is structural to Claude Code's Agent Teams API: teammates cannot be spawned with their own `cwd:` or `settings.local.json`. **This limitation persists in REC-Q.**
+
+Tickets pré-signés (step 2) fix the *approval stall* — the commis no longer waits on the Orchestrator for every Edit. But tickets are a *logical* check done by `contre-chef-inter` at the Edit tool-call level. They do NOT constrain Bash primitives. A commis's Bash allow/deny list is still whatever the Orchestrator's root `settings.local.json` says.
+
+**What to do about it:**
+
+1. **Put the strict deny list at the root.** The Orchestrator's `settings.local.json` must deny `Bash(git push --force*:*)`, `Bash(tofu apply:*)`, `Bash(helm upgrade:*)`, `Bash(kubectl apply:*)`, `Bash(gh release:*)`, `Bash(rm -rf /:*)` for EVERYONE. Every teammate inherits this.
+2. **Put the mutating allow list in standalone panes only.** The `apply` pane, the `gate` pane (push), and the `maitre` pane (rebase + force-with-lease on feature) are tmuxinator panes, NOT teammates. Each has its own `{project}-wt-<role>/.claude/settings.local.json`. Those files DO get read because these panes are separate `claude` processes.
+3. **Treat tickets as defence in depth, not primary enforcement.** A well-behaved commis follows its ticket; the root deny list stops the one that doesn't.
+
+See `cli-forge-chef/references/gotchas-chef.md` G32 for the full finding and the
+official Claude Code documentation quote. See `references/gotchas-quorum.md` Q4
+for the REC-Q-specific reformulation.
+
 ## Rollback plan
 
 If REC-Q proves over-engineered for a given project, rolling back is straightforward:

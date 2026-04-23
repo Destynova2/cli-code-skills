@@ -149,3 +149,79 @@ Predicted cost at REC-Q: $Y (about 2-3× Brigade baseline)
 Ship anyway? [y/N]
 ```
 Make operators consciously accept the cost.
+
+## 18. Loading the orchestrator prompt via `$(cat ...)` in the tmuxinator YAML
+
+**Symptom**: the generated `~/.config/tmuxinator/{session}.yml` contains `claude --append-system-prompt "$(cat prompts/orchestrator.md)"`. The orchestrator pane dies with bash parse errors or launches with a garbled prompt.
+
+**Why it's wrong**: a realistic orchestrator prompt contains backticks (code samples), `$(...)` snippets (command examples), and unbalanced quotes inside code blocks. `$(cat ...)` expands through the shell before claude sees anything — the shell re-interprets backticks / `$(...)` / quotes in the Markdown. One unbalanced quote in any code sample and bash aborts the command. See `cli-forge-chef/references/gotchas-chef.md` G34 for the full backstory.
+
+**Correct**: use the native `--append-system-prompt-file <path>` flag. The flag reads the file inside claude — the shell sees only the path:
+
+```yaml
+- claude --dangerously-skip-permissions --permission-mode bypassPermissions --teammate-mode tmux \
+         --append-system-prompt-file /path/to/prompts/orchestrator-{session}.md \
+         "Begin Phase 0 per the system prompt."
+```
+
+No wrapper script. No `.initial.txt` file. No shell re-parsing.
+
+**Detection**: `! grep -q '\$(cat ' ~/.config/tmuxinator/{session}.yml` must be true.
+
+## 19. Inline `git worktree add ... | head -1` in `on_project_start`
+
+**Symptom**: the tmuxinator `on_project_start` runs, reports success, but only some of the worktrees are actually created. Subsequent re-runs fail because orphan directories block re-creation.
+
+**Why it's wrong**: under `set -o pipefail`, piping `git worktree add` into `head -1` triggers SIGPIPE on git after head closes stdin. Git aborts mid-creation; the worktree registry is left inconsistent. See `cli-forge-chef/references/gotchas-chef.md` G35.
+
+**Correct**: reuse `cli-forge-chef`'s `scripts/brigade-setup-worktrees.sh` which handles idempotency, orphan recovery, and avoids the pipe entirely. Adapt for REC-Q by extending the role list (orchestrator, N plan-validators, N control-validators, apply pane, commis, maître, gate, ccheck, inter). Call it from `on_project_start` with a single line.
+
+**Detection**: `! grep -q 'worktree add.*| head' ~/.config/tmuxinator/{session}.yml`.
+
+## 20. Shared branch across validators or commis
+
+**Symptom**: only the first validator/commis spawns successfully; the rest sit idle because `git worktree add <path> <branch>` silently fails when `<branch>` is already attached elsewhere.
+
+**Why it's wrong**: the same branch cannot be checked out in two worktrees. If the generator assigns `wt/control` to all N Control-Validators, only one succeeds. See `cli-forge-chef/references/gotchas-chef.md` G36.
+
+**Correct**: one branch per agent worktree. Suggested naming for REC-Q:
+```
+wt/orch-{session}            ← orchestrator
+wt/plan-scope                ← plan-validator-scope
+wt/plan-secu                 ← plan-validator-secu
+wt/control-tests             ← control-validator-tests
+wt/control-security          ← control-validator-security
+wt/control-contracts         ← control-validator-contracts
+{base}-commis-{commis_name}  ← commis i
+```
+
+**Detection**: `git branch | grep -c '^  wt/\|^  {base_branch}-'` equals the number of agent panes.
+
+## 21. First-time trust prompt ignored
+
+**Symptom**: the orchestrator + N validator panes sit on the "Bypass Permissions" trust dialog indefinitely. Sprint never starts.
+
+**Why it's wrong**: Claude Code's trust prompt is shown on any new cwd regardless of `--dangerously-skip-permissions`. See `cli-forge-chef/references/gotchas-chef.md` G37.
+
+**Correct**: `on_project_start` includes a delayed `Down Enter` auto-send to every claude pane:
+
+```yaml
+on_project_start:
+  - (sleep 3 && for w in orchestrator plan-scope plan-secu control-tests control-secu ccheck inter; do
+       tmux send-keys -t {session}:$w Down Enter 2>/dev/null || true
+     done) &
+```
+
+The `&` is mandatory; without it tmuxinator blocks on the sleep.
+
+**Detection**: 30 s after `tmuxinator start`, `tmux capture-pane -p -t {session}:orchestrator | grep -c 'Bypass Permissions'` must be 0.
+
+## 22. Obsolete wrapper script still referenced
+
+**Symptom**: the generated `tmuxinator/{session}.yml` invokes `{project}/scripts/brigade-launch-agent.sh` (or a REC-Q equivalent). The script may or may not exist.
+
+**Why it's wrong**: an earlier generation of `cli-forge-chef` created a wrapper to work around the shell-mangling issue (G34). That wrapper is now obsolete because `--append-system-prompt-file` is natively supported. A new `cli-forge-quorum` generation should not carry the legacy pattern.
+
+**Correct**: never emit `brigade-launch-agent.sh`. If the file exists on disk from a prior iteration, delete it. YAML launches claude directly with the native flag.
+
+**Detection**: `! test -f {project}/scripts/brigade-launch-agent.sh && ! grep -q 'brigade-launch-agent' ~/.config/tmuxinator/{session}.yml`.
