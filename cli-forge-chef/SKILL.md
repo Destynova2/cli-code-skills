@@ -78,6 +78,20 @@ allowed-tools:
 │  - Merge + CI (tmux send-keys gate)                  │
 │  - Updates the carnet (shared-state.md)              │
 │  - Runs in bypassPermissions                         │
+│  - CWD = {project}-wt-gate                           │
+│    (push + PR allowed, apply DENIED)                 │
+├──────────────────────────────────────────────────────┤
+│              APPLY PANE (only if infra present)      │
+│  (executes tofu/helm/kubectl after 3/3 quorum)       │
+│                                                      │
+│  - Receives APPLY_REQUEST from any agent             │
+│  - Runs the plan (tofu plan, helm diff, kubectl diff)│
+│  - Submits plan to 3 voting sous-chefs — 3/3 needed  │
+│  - Executes only after unanimous APPROVE             │
+│  - Prod target → extra PATRON ACK                    │
+│  - CWD = {project}-wt-apply                          │
+│    (tofu/helm/kubectl allowed, git push DENIED)      │
+│  - See references/apply-quorum.md                    │
 └──────────────────────┬──────────────────────────────┘
                        │ SendMessage
 ┌──────────────────────▼──────────────────────────────┐
@@ -740,11 +754,34 @@ The contre-chef-inter is a **Haiku-powered team member** in its own tmux window 
 
 **Why different from ccheck:** ccheck sends `tmux send-keys Enter` (keyboard); contre-chef-inter sends `SendMessage` (team protocol). They handle **orthogonal** permission pathways. Both are needed at tier ≥ M.
 
-### 2.7 — Permissions (`{project}/.claude/settings.local.json`)
+### 2.7 — Permissions (one `settings.local.json` per worktree)
 
 Read `references/permissions-template.md`.
 
-### 2.7 — Gotchas
+**Every role gets its own `.claude/settings.local.json`** inside its own
+worktree. Claude Code resolves permissions from the agent's CWD, so when the
+Chef spawns each agent with `cwd: "{project}-wt-<role>"`, each agent reads its
+own file. The deny lists are then filesystem-enforced, not just prose in the
+prompt.
+
+Generate the following files (see the template for exact contents):
+
+| File | Role | Key allow | Key deny |
+|---|---|---|---|
+| `{project}/.claude/settings.local.json` | Chef root | SendMessage, read-only git, Skill(cli-*) | all `git push`, `tofu`, `helm upgrade`, `gh release` |
+| `{project}-wt-gate/.claude/settings.local.json` | Sous-Chef Merge | `git push`, `gh pr merge` | `tofu apply`, `helm upgrade`, `git push --force*` |
+| `{project}-wt-maitre/.claude/settings.local.json` | Maître d'hôtel | `git rebase`, `git push --force-with-lease` (feature only) | force-push on main/master/develop/trunk, `tofu`, `kubectl apply` |
+| `{project}-wt-apply/.claude/settings.local.json` | Apply pane | `tofu:*`, `helm:*`, `kubectl:*`, `ansible:*` | `git push`, `git commit`, `gh pr` |
+| `{project}-wt-vote-{scope,secu,qualite}/.claude/settings.local.json` | 3 voters | Read, SendMessage | all Write/Edit, all mutating Bash |
+| `{project}-wt-commis-N/.claude/settings.local.json` | Commis N | build tools, local git (no push), plan/diff variants | `git push`, `tofu apply`, `helm upgrade`, `kubectl apply`, PR merge |
+
+**Apply quorum** (read `references/apply-quorum.md`): `tofu apply`,
+`helm upgrade`, `kubectl apply`, `gh release create`, and feature-branch
+force-push all go through the **apply pane** AFTER a 3/3 unanimous vote on
+the plan by the 3 sous-chefs. The permissions above deny these commands to
+every other role; the apply quorum protocol gates the apply pane itself.
+
+### 2.7b — Gotchas
 
 **ALWAYS** include gotchas from `references/gotchas-chef.md` in the chef prompt.
 
@@ -816,6 +853,7 @@ To stop: `CronDelete {job_id}`
 | `references/parallel-exploration.md` | Competing hypotheses, parallel approaches, comparison grid |
 | `references/ccheck-prompt-template.md` | Contre-chef prompt (permission auto-approver) |
 | `references/raw-tmux-fallback.md` | POSIX bash script equivalent to the tmuxinator YAML (for Ruby-less environments) |
+| `references/apply-quorum.md` | Plan-then-apply 3/3 quorum protocol for `tofu apply`, `helm upgrade`, `kubectl apply`, `gh release create`, feature-branch force-push |
 
 ## Integration with other cli-* skills
 
