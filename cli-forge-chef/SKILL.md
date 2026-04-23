@@ -701,13 +701,32 @@ Each commis prompt includes:
 - SendMessage to the Sous-Chef when ready (NOT to the Chef)
 - Permissions go through the quorum of the 3 Sous-Chefs (the commis does not know this)
 
-### 2.5 — Tmuxinator (`~/.config/tmuxinator/{session}.yml`)
+### 2.5b — Launcher wrapper + setup scripts (MANDATORY — G34, G35, G36, G38)
+
+**Generate two scripts** into `{project}/scripts/`:
+
+1. `scripts/brigade-launch-agent.sh` — copy verbatim from `references/brigade-launch-agent.sh`, chmod +x. Replaces the broken `claude --append-system-prompt "$(cat ...)"` pattern (G34).
+2. `scripts/brigade-setup-worktrees.sh` — copy verbatim from `references/brigade-setup-worktrees.sh`, chmod +x. Idempotent worktree + permission setup, recovers from orphan state, avoids SIGPIPE (G35, G36).
+
+**Also generate an `.initial.txt`** per claude-driven role so the first user message is read from a file (via `$(< file)` in the wrapper) rather than shell-parsed:
+
+- `{project}/.claude/prompts/chef-{session}.initial.txt`
+- `{project}/.claude/prompts/ccheck-{session}.initial.txt`
+- `{project}/.claude/prompts/contre-chef-inter-{session}.initial.txt` (tier ≥ M only)
+
+The content is the kick-off message — typically 1-3 lines, e.g.:
+
+```
+Demarre IMMEDIATEMENT Phase 0 selon le system prompt: TeamCreate {session}, recruter les 3 voting sous-chefs, le sous-chef-merge, l'apply-pane, le maitre-d, le contre-chef-inter, et les N commis, puis executer le PERT.
+```
+
+### 2.5c — Tmuxinator (`~/.config/tmuxinator/{session}.yml`)
 
 Read `references/tmuxinator-template.md`.
 
 ```yaml
-# Chef — ALL these flags required (see gotchas)
-- claude --dangerously-skip-permissions --permission-mode bypassPermissions --teammate-mode tmux --append-system-prompt "$(cat {project}/.claude/prompts/chef-{session}.md)"
+# Chef — uses the wrapper script (NOT `claude $(cat ...)`  — that breaks on backticks, G34)
+- {project}/scripts/brigade-launch-agent.sh chef {session}
 ```
 
 ### 2.6 — The contre-chef / ccheck (MANDATORY — G24)
@@ -789,15 +808,27 @@ every other role; the apply quorum protocol gates the apply pane itself.
 
 1. Check tmuxinator syntax: `tmuxinator doctor`
 2. Verify all paths exist
-3. Verify branches don't conflict
+3. Verify branches don't conflict — each commis MUST have its own branch (G36). Run:
+   ```bash
+   git branch | grep -c "chore/phase-a-{session}"  # expect (N commis) + 1 integration
+   ```
 4. Verify permissions cover all operations
 5. Count commis — warn if > 5
-6. **MANDATORY — ccheck validation (G24):**
+6. **MANDATORY — launcher wrapper validation (G34, G35, G36, G38):**
+   - `test -x {project}/scripts/brigade-launch-agent.sh` — if missing/non-exec, **STOP**
+   - `test -x {project}/scripts/brigade-setup-worktrees.sh` — same
+   - `grep -q '\$(< ' {project}/scripts/brigade-launch-agent.sh` — wrapper must use safe read
+   - `! grep -q 'pipefail' {project}/scripts/brigade-setup-worktrees.sh` — setup must NOT set pipefail
+   - `grep -q '\${.*\[@\]+"\${.*\[@\]}"}' {project}/scripts/brigade-launch-agent.sh` — conditional array expansion present
+   - `! grep -q 'claude --append-system-prompt "\$(cat' ~/.config/tmuxinator/{session}.yml` — YAML must NOT use the broken pattern
+   - For each claude-driven pane: `test -f {project}/.claude/prompts/{role}-{session}.initial.txt`
+   - Hard gate. If any check fails, fix generation before proceeding.
+7. **MANDATORY — ccheck validation (G24):**
    - `grep -q 'ccheck' ~/.config/tmuxinator/{session}.yml` — if missing, **STOP and add the ccheck window**
    - `test -f {project}/.claude/prompts/ccheck-{session}.md` — if missing, **STOP and generate the ccheck prompt**
    - If either check fails, do NOT proceed to Phase 4. Fix the generation first.
    - This is a hard gate, not a warning. The brigade WILL stall without the ccheck.
-7. **MANDATORY at tier ≥ M — contre-chef-inter validation (G29):**
+8. **MANDATORY at tier ≥ M — contre-chef-inter validation (G29):**
    - `grep -q 'inter' ~/.config/tmuxinator/{session}.yml` — if tier ≥ M and missing, **STOP and add the inter window**
    - `test -f {project}/.claude/prompts/contre-chef-inter-{session}.md` — if missing, **STOP and generate**
    - Verify the Chef prompt contains `Agent { name: "contre-chef-inter"` in the TeamCreate spawn block
@@ -854,6 +885,8 @@ To stop: `CronDelete {job_id}`
 | `references/ccheck-prompt-template.md` | Contre-chef prompt (permission auto-approver) |
 | `references/raw-tmux-fallback.md` | POSIX bash script equivalent to the tmuxinator YAML (for Ruby-less environments) |
 | `references/apply-quorum.md` | Plan-then-apply 3/3 quorum protocol for `tofu apply`, `helm upgrade`, `kubectl apply`, `gh release create`, feature-branch force-push |
+| `references/brigade-launch-agent.sh` | Safe claude launcher (G34 fix — reads prompt via `$(< file)`, no shell re-parsing; G38 fix — conditional array expansion for bash 3.2) |
+| `references/brigade-setup-worktrees.sh` | Idempotent worktree + permissions setup (G35 fix — no SIGPIPE; G36 fix — one branch per commis; orphan dir recovery) |
 
 ## Integration with other cli-* skills
 

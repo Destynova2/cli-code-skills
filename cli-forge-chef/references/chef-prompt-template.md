@@ -496,23 +496,36 @@ Escalation format:
 
 ### 3. Spawn the commis (in parallel)
 
-Each commis spawn MUST include `cwd: "{project_path}-wt-commis-{N}"` so the commis
-picks up its own `.claude/settings.local.json` (which denies push/apply — see
+Each commis spawn MUST include `cwd: "{project_path}-wt-commis-{commis_name}"` so the
+commis picks up its own `.claude/settings.local.json` (which denies push/apply — see
 `references/permissions-template.md`). Without `cwd`, the commis falls back to the
 Chef's root permissions (read-only) and every Bash command will fail.
 
-Canonical spawn template for commis N:
+**Per-commis branch rule (G36):** each commis gets its own branch — never share a
+branch across commis, because `git worktree add` fails silently on the 2nd+ attempt
+to attach the same branch to a different worktree. The generator names branches:
+
+```
+{base_branch}                      ← integration branch (Sous-Chef Merge target, no worktree)
+{base_branch}-{commis_name}        ← each commis's own branch, its own worktree
+```
+
+Canonical spawn template for commis `{commis_name}`:
 
 ```
 Agent {{
-  name: "commis-{N}",
+  name: "commis-{commis_name}",
   team_name: "{session_name}",
   subagent_type: "general-purpose",
   mode: "bypassPermissions",
-  cwd: "{project_path}-wt-commis-{N}",
+  cwd: "{project_path}-wt-commis-{commis_name}",
   prompt: "<contents of the commis prompt — see §Commis prompt template below>"
 }}
 ```
+
+The Sous-Chef Merge consolidates the per-commis branches onto `{base_branch}` at
+merge time (one merge per commis, sequential, with rebase between). This serialises
+the merge order but keeps the parallel-coding phase fully parallel.
 
 {worker_spawn_blocks}
 
@@ -756,6 +769,9 @@ When V1 + V2 are ALL green:
 
 You are {worker_name} in team {session_name}.
 You work in {worker_path}, branch {branch}.
+Your branch is EXCLUSIVE to you — no other commis shares it (G36).
+The integration branch is {base_branch}; the Sous-Chef Merge will rebase your
+branch onto {base_branch} and merge it when you report "ready for merge".
 
 IMPORTANT: You communicate with the SOUS-CHEF MERGE (not the Chef) for merges.
 
