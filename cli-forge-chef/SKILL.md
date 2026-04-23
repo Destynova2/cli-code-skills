@@ -701,33 +701,34 @@ Each commis prompt includes:
 - SendMessage to the Sous-Chef when ready (NOT to the Chef)
 - Permissions go through the quorum of the 3 Sous-Chefs (the commis does not know this)
 
-### 2.5b — Launcher wrapper + setup scripts (MANDATORY — G34, G35, G36, G38)
+### 2.5b — Setup script (MANDATORY — G35, G36)
 
-**Generate two scripts** into `{project}/scripts/`:
+**Generate one script** into `{project}/scripts/`:
 
-1. `scripts/brigade-launch-agent.sh` — copy verbatim from `references/brigade-launch-agent.sh`, chmod +x. Replaces the broken `claude --append-system-prompt "$(cat ...)"` pattern (G34).
-2. `scripts/brigade-setup-worktrees.sh` — copy verbatim from `references/brigade-setup-worktrees.sh`, chmod +x. Idempotent worktree + permission setup, recovers from orphan state, avoids SIGPIPE (G35, G36).
+- `scripts/brigade-setup-worktrees.sh` — copy verbatim from `references/brigade-setup-worktrees.sh`, chmod +x. Idempotent worktree + permission setup, recovers from orphan state, avoids SIGPIPE on `git worktree add` (G35), one branch per commis (G36).
 
-**Also generate an `.initial.txt`** per claude-driven role so the first user message is read from a file (via `$(< file)` in the wrapper) rather than shell-parsed:
+The script creates every role's worktree, installs the per-worktree
+`.claude/settings.local.json` files, and creates the integration branch. It is
+called by `on_project_start` in the tmuxinator YAML.
 
-- `{project}/.claude/prompts/chef-{session}.initial.txt`
-- `{project}/.claude/prompts/ccheck-{session}.initial.txt`
-- `{project}/.claude/prompts/contre-chef-inter-{session}.initial.txt` (tier ≥ M only)
-
-The content is the kick-off message — typically 1-3 lines, e.g.:
-
-```
-Demarre IMMEDIATEMENT Phase 0 selon le system prompt: TeamCreate {session}, recruter les 3 voting sous-chefs, le sous-chef-merge, l'apply-pane, le maitre-d, le contre-chef-inter, et les N commis, puis executer le PERT.
-```
+**Note on the previous launcher wrapper:** earlier iterations of this skill also
+generated `scripts/brigade-launch-agent.sh` to work around `$(cat prompt.md)` shell-mangling (G34). That wrapper is **no longer generated** — use the native `--append-system-prompt-file` flag directly in the tmuxinator YAML (see §2.5c). The wrapper was overkill.
 
 ### 2.5c — Tmuxinator (`~/.config/tmuxinator/{session}.yml`)
 
 Read `references/tmuxinator-template.md`.
 
 ```yaml
-# Chef — uses the wrapper script (NOT `claude $(cat ...)`  — that breaks on backticks, G34)
-- {project}/scripts/brigade-launch-agent.sh chef {session}
+# Chef — use --append-system-prompt-file (native, G34-safe)
+- claude
+    --dangerously-skip-permissions
+    --permission-mode bypassPermissions
+    --teammate-mode tmux
+    --append-system-prompt-file {project}/.claude/prompts/chef-{session}.md
+    "Demarre IMMEDIATEMENT Phase 0 selon le system prompt."
 ```
+
+No wrapper script, no `$(cat ...)`, no `.initial.txt` files.
 
 ### 2.6 — The contre-chef / ccheck (MANDATORY — G24)
 
@@ -778,10 +779,22 @@ The contre-chef-inter is a **Haiku-powered team member** in its own tmux window 
 Read `references/permissions-template.md`.
 
 **Every role gets its own `.claude/settings.local.json`** inside its own
-worktree. Claude Code resolves permissions from the agent's CWD, so when the
-Chef spawns each agent with `cwd: "{project}-wt-<role>"`, each agent reads its
-own file. The deny lists are then filesystem-enforced, not just prose in the
-prompt.
+worktree — BUT the Agent Teams reality is more nuanced than « one file per role,
+filesystem-isolated » (see G32). In practice:
+
+- **Standalone `claude` panes** (chef, ccheck, contre-chef-inter, apply pane): DO
+  read their own cwd's `settings.local.json`. These are separate `claude` processes,
+  each with its own permission file. Filesystem isolation works for them.
+- **Agent Teams teammates** (sous-chefs, commis, maître-d'hôtel spawned via
+  TeamCreate/Agent): DO NOT support `cwd:` on spawn. They inherit the team lead's
+  (Chef's) `settings.local.json`. The per-worktree files for these roles exist on
+  disk (useful for documentation and for potential future migration to standalone
+  panes) but they are ignored at runtime.
+
+**Practical implication:** the Chef's root `settings.local.json` is the only one
+that actually gates commis / sous-chef Bash commands. Put the strictest deny list
+there — teammates inherit it. Allow dangerous primitives only in standalone pane
+files (gate, apply, maitre).
 
 Generate the following files (see the template for exact contents):
 
@@ -814,14 +827,13 @@ every other role; the apply quorum protocol gates the apply pane itself.
    ```
 4. Verify permissions cover all operations
 5. Count commis — warn if > 5
-6. **MANDATORY — launcher wrapper validation (G34, G35, G36, G38):**
-   - `test -x {project}/scripts/brigade-launch-agent.sh` — if missing/non-exec, **STOP**
-   - `test -x {project}/scripts/brigade-setup-worktrees.sh` — same
-   - `grep -q '\$(< ' {project}/scripts/brigade-launch-agent.sh` — wrapper must use safe read
-   - `! grep -q 'pipefail' {project}/scripts/brigade-setup-worktrees.sh` — setup must NOT set pipefail
-   - `grep -q '\${.*\[@\]+"\${.*\[@\]}"}' {project}/scripts/brigade-launch-agent.sh` — conditional array expansion present
-   - `! grep -q 'claude --append-system-prompt "\$(cat' ~/.config/tmuxinator/{session}.yml` — YAML must NOT use the broken pattern
-   - For each claude-driven pane: `test -f {project}/.claude/prompts/{role}-{session}.initial.txt`
+6. **MANDATORY — setup script + native flag validation (G34, G35, G36):**
+   - `test -x {project}/scripts/brigade-setup-worktrees.sh` — if missing/non-exec, **STOP**
+   - `! grep -q 'pipefail' {project}/scripts/brigade-setup-worktrees.sh` — setup must NOT set pipefail (G35)
+   - `! grep -q '\$(cat ' ~/.config/tmuxinator/{session}.yml` — YAML must NOT shell-expand the prompt (G34)
+   - `grep -qc 'append-system-prompt-file' ~/.config/tmuxinator/{session}.yml` — YAML uses native file flag (G34)
+   - `! test -f {project}/scripts/brigade-launch-agent.sh` — obsolete wrapper should NOT exist (delete if found)
+   - Branch count: `git branch | grep -c '{base_branch}-'` equals number of commis (G36)
    - Hard gate. If any check fails, fix generation before proceeding.
 7. **MANDATORY — ccheck validation (G24):**
    - `grep -q 'ccheck' ~/.config/tmuxinator/{session}.yml` — if missing, **STOP and add the ccheck window**
@@ -885,7 +897,6 @@ To stop: `CronDelete {job_id}`
 | `references/ccheck-prompt-template.md` | Contre-chef prompt (permission auto-approver) |
 | `references/raw-tmux-fallback.md` | POSIX bash script equivalent to the tmuxinator YAML (for Ruby-less environments) |
 | `references/apply-quorum.md` | Plan-then-apply 3/3 quorum protocol for `tofu apply`, `helm upgrade`, `kubectl apply`, `gh release create`, feature-branch force-push |
-| `references/brigade-launch-agent.sh` | Safe claude launcher (G34 fix — reads prompt via `$(< file)`, no shell re-parsing; G38 fix — conditional array expansion for bash 3.2) |
 | `references/brigade-setup-worktrees.sh` | Idempotent worktree + permissions setup (G35 fix — no SIGPIPE; G36 fix — one branch per commis; orphan dir recovery) |
 
 ## Integration with other cli-* skills

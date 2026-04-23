@@ -19,8 +19,8 @@ You work with a SOUS-CHEF MERGE (who validates/merges) and {n_commis} COMMIS (wh
 4. **G9**: NEVER merge without green CI — the Sous-Chef is the one verifying.
 5. **G10**: Check the couplings BEFORE assigning.
 6. **G11**: Maximum {max_commis} commis.
-7. **G32 — Per-worktree permissions**: every Agent spawn below MUST pass `cwd: "<worktree>"`. Claude Code reads `.claude/settings.local.json` from the agent's CWD — if you forget `cwd`, the agent falls back to the Chef's root file which is read-only, and every Bash command will fail. See `references/permissions-template.md` for the file-per-role layout.
-8. **G33 — Apply quorum**: `tofu apply`, `helm upgrade`, `kubectl apply`, `gh release create`, and force-push ALL go through the apply pane and a 3/3 vote on the plan. See `references/apply-quorum.md`. Commis, Sous-Chef, Maître cannot execute these directly — their `settings.local.json` denies them.
+7. **G32 — Permission inheritance**: Agent Teams teammates INHERIT the Chef's `settings.local.json` (doc: « all teammates start with the lead's permission mode »). `cwd:` / `isolation:` on Agent spawns is NOT accepted. The per-worktree `settings.local.json` files exist on disk and work for the standalone tmuxinator panes (chef, ccheck, inter), but NOT for teammates. The Chef's root permission file is the only one that matters for commis, sous-chefs, maître, apply pane. Make sure it denies push/apply for everyone.
+8. **G33 — Apply quorum**: `tofu apply`, `helm upgrade`, `kubectl apply`, `gh release create`, and force-push go through the apply pane (a standalone tmuxinator pane, NOT a teammate) and a 3/3 vote on the plan. See `references/apply-quorum.md`. The apply pane's own `settings.local.json` is what allows those commands — only that pane has them. Commis inherit the Chef's permissions and therefore cannot execute apply primitives even if their prompt tells them to.
 
 ## Startup
 
@@ -45,7 +45,6 @@ Agent {{
   team_name: "{session_name}",
   subagent_type: "general-purpose",
   mode: "bypassPermissions",
-  cwd: "{project_path}-wt-vote-scope",
   prompt: "
 You are SOUS-CHEF SCOPE in team {session_name}. You vote on commis permissions.
 
@@ -99,7 +98,6 @@ Agent {{
   team_name: "{session_name}",
   subagent_type: "general-purpose",
   mode: "bypassPermissions",
-  cwd: "{project_path}-wt-vote-secu",
   prompt: "
 You are SOUS-CHEF SECURITY in team {session_name}. You vote on commis permissions.
 
@@ -151,7 +149,6 @@ Agent {{
   team_name: "{session_name}",
   subagent_type: "general-purpose",
   mode: "bypassPermissions",
-  cwd: "{project_path}-wt-vote-qualite",
   prompt: "
 You are SOUS-CHEF QUALITY in team {session_name}. You vote on commis permissions.
 
@@ -211,7 +208,6 @@ Agent {{
   team_name: "{session_name}",
   subagent_type: "general-purpose",
   mode: "bypassPermissions",
-  cwd: "{project_path}-wt-gate",
   prompt: "
 You are SOUS-CHEF MERGE in team {session_name}. You merge and validate CI.
 
@@ -309,7 +305,6 @@ Agent {{
   team_name: "{session_name}",
   subagent_type: "general-purpose",
   mode: "bypassPermissions",
-  cwd: "{project_path}-wt-apply",
   prompt: "
 You are the APPLY PANE for {session_name}. You execute infrastructure mutations
 AFTER the 3 voting sous-chefs unanimously approve the plan.
@@ -496,10 +491,23 @@ Escalation format:
 
 ### 3. Spawn the commis (in parallel)
 
-Each commis spawn MUST include `cwd: "{project_path}-wt-commis-{commis_name}"` so the
-commis picks up its own `.claude/settings.local.json` (which denies push/apply — see
-`references/permissions-template.md`). Without `cwd`, the commis falls back to the
-Chef's root permissions (read-only) and every Bash command will fail.
+**IMPORTANT (G32 corrected — was wrong in previous versions):** Agent Teams does
+NOT accept `cwd:` or `isolation:` on Agent / TeamCreate spawns. All teammates
+inherit the Chef's permission mode and the Chef's `settings.local.json` (per the
+official Agent Teams doc: « Permissions set at spawn: all teammates start with the
+lead's permission mode »). Per-worktree `settings.local.json` files DO exist on
+disk but they are NOT read by teammates — only by standalone `claude` processes
+(the tmuxinator panes: chef, ccheck, inter). Filesystem-level permission isolation
+is therefore only effective for the top-level panes, not for the Brigade teammates.
+
+Teammates are still isolated because:
+- Each teammate has its own context window (their Claude Code conversation is distinct)
+- They can be told in their system prompt to `cd` into their worktree for every Bash
+  (enforce via the prompt, not filesystem)
+- Forbidden operations are denied at the Chef's root `settings.local.json`, which
+  every teammate inherits — so a commis CANNOT `tofu apply` because the Chef can't
+  either. The apply pane is a separate tmuxinator pane (not a teammate) with its own
+  permissions.
 
 **Per-commis branch rule (G36):** each commis gets its own branch — never share a
 branch across commis, because `git worktree add` fails silently on the 2nd+ attempt
@@ -518,10 +526,15 @@ Agent {{
   team_name: "{session_name}",
   subagent_type: "general-purpose",
   mode: "bypassPermissions",
-  cwd: "{project_path}-wt-commis-{commis_name}",
   prompt: "<contents of the commis prompt — see §Commis prompt template below>"
 }}
 ```
+
+The commis's prompt instructs it to `cd {project_path}-wt-commis-{commis_name}`
+at startup so that its Bash commands run inside its worktree. This is convention,
+not filesystem enforcement — a sound commis follows the prompt, a hallucinated one
+may not. The safety net is the Chef's root `settings.local.json` which denies the
+truly dangerous primitives (push, apply) for everyone.
 
 The Sous-Chef Merge consolidates the per-commis branches onto `{base_branch}` at
 merge time (one merge per commis, sequential, with rebase between). This serialises
@@ -537,7 +550,6 @@ SendMessage(TeamCreate, {
   name: "maitre-dhotel",
   model: "sonnet",
   permission_mode: "bypassPermissions",
-  cwd: "{project_path}-wt-maitre",
   system_prompt: """
 You are the Maître d'hôtel of brigade {session_name}.
 
@@ -768,6 +780,12 @@ When V1 + V2 are ALL green:
 ### {worker_name}
 
 You are {worker_name} in team {session_name}.
+
+FIRST ACTION (MANDATORY — do this before anything else): run `cd {worker_path}` so
+every subsequent Bash command executes inside your worktree. Agent Teams spawns
+inherit the Chef's CWD — you will end up at the repo root by default, where your
+file edits would stomp on the other commis (G32).
+
 You work in {worker_path}, branch {branch}.
 Your branch is EXCLUSIVE to you — no other commis shares it (G36).
 The integration branch is {base_branch}; the Sous-Chef Merge will rebase your

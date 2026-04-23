@@ -21,13 +21,20 @@ claude --dangerously-skip-permissions --permission-mode bypassPermissions --team
 
 ---
 
-## G2 — --system-prompt-file does not exist
+## G2 — Use `--append-system-prompt-file`, NOT `--append-system-prompt "$(cat ...)"`
 
-**Problem:** The `--system-prompt-file` flag does not exist in the Claude Code CLI. The Chef will not launch.
+**Problem:** Loading a prompt from a file via `--append-system-prompt "$(cat prompt.md)"` re-parses the markdown through the shell. A realistic Chef prompt contains 100+ backticks, many `$(...)` snippets, and mixed quotes — the shell mangles it, claude fails to launch (see G34 for details).
 
-**Fix:** Use `--append-system-prompt "$(cat path/to/prompt.md)"` to load a prompt file.
+**Fix:** The CLI natively exposes file-loading flags:
 
-**Alternative:** `--system-prompt "inline content"` but limited for large prompts.
+```bash
+claude --append-system-prompt-file path/to/prompt.md    # append to default
+claude --system-prompt-file path/to/prompt.md            # replace default
+```
+
+The flag reads the file INSIDE claude — the shell sees only the path, never the content. This is the canonical way to load a long prompt from disk.
+
+**Historical note:** earlier versions of this gotcha claimed `--system-prompt-file` did not exist. That was wrong, corroborated by the official CLI reference (https://code.claude.com/docs/en/cli). Use the native flag.
 
 ---
 
@@ -420,25 +427,63 @@ The last string is consumed as the first **user message** — Claude fires the s
 
 **Detection:** 10 min after `tmuxinator start`, `gh pr list --state open --limit 10` is still empty AND `tmux capture-pane -t <sprint>:chef -p | tail -5` shows no output from Claude. If so, rerun the pane command with the positional prompt appended.
 
-## G34 — `$(cat prompt.md)` breaks on shell metacharacters inside the markdown (CRITICAL)
+## G32 — Agent Teams teammates inherit the lead's permissions (cannot be isolated per-worktree)
 
-**Symptom:** `tmuxinator start <session>` appears to succeed, but the claude pane is dead or in a strange state — you see bash error messages, unmatched quotes, or the pane showing the raw text of the prompt mid-command line.
+**Problem:** A natural expectation from the « one worktree per role » pattern is that each teammate reads its own `.claude/settings.local.json` — so a commis would be filesystem-level denied from running `git push` or `tofu apply`. In reality, **Agent Teams teammates do NOT accept `cwd:` or `isolation:` on spawn**, and per the official doc: « all teammates start with the lead's permission mode ». The Chef's root `settings.local.json` is the ONLY one that applies to every teammate.
 
-**Root cause:** `claude --append-system-prompt "$(cat prompts/chef-<session>.md)"` expands `$(cat ...)` through the shell FIRST, then re-parses the content. A realistic Chef prompt contains hundreds of backticks (code blocks), `$(...)` snippets (command examples), and mixed single/double quotes. The shell re-interprets them as command substitution, parameter expansion, or quoting — by pure bad luck, an unbalanced quote in a code example will break the whole invocation. Real case: 96 backticks + 106 quotes in a single Chef prompt → bash parse error.
+**Consequence:** adding `cwd: "<worktree>"` to an Agent spawn is silently ignored. A commis prompted to work in `{project}-wt-commis-scaleway/` still inherits the Chef's root permissions, not the commis-scaleway permission file. If the skill's generator claims per-teammate isolation, the claim is false.
 
-**Fix:** Use a wrapper script that reads the file WITHOUT re-parsing:
+**What actually works for isolation:**
+- Standalone `claude` sessions launched as tmuxinator panes (chef, ccheck, contre-chef-inter, apply pane) DO read their own cwd's `settings.local.json`. They are separate processes, not teammates.
+- The `apply` pane in particular must be a standalone pane (not a teammate) so its permissions (`tofu:*`, `helm:*`, `kubectl:*`) are truly isolated from the commis world.
 
-```bash
-# scripts/brigade-launch-agent.sh
-PROMPT="$(< "${PROMPT_FILE}")"   # < reads the file as a literal string
-exec claude --append-system-prompt "${PROMPT}" "${INITIAL_MSG}"
+**What does NOT work:**
+- `cwd:` on `Agent { ... }` spawns — ignored, not a supported parameter in Agent Teams.
+- Per-worktree `settings.local.json` for commis / sous-chefs spawned via TeamCreate — ignored, they use the lead's file.
+- Expecting a commis to be blocked at the Bash level from `tofu apply` — it won't, unless the Chef's root permission file denies it too.
+
+**Recommended practice:**
+1. Put the strictest baseline in the Chef's root `settings.local.json`. Deny `git push`, `tofu apply`, `helm upgrade`, `kubectl apply`, `gh release` at the root — every teammate inherits the deny.
+2. Allow those commands only in the standalone panes that need them: `gate` (push, pr merge), `apply` (tofu/helm/kubectl), `maitre` (force-with-lease on feature branches).
+3. Tell each commis in its prompt to `cd {worktree_path}` as its first action so Bash runs inside its worktree even though permissions come from the Chef.
+
+**Detection:** look for `cwd:` in generated chef prompt. If present, it's cosmetic — the agent will still inherit the Chef's permissions. Grep: `grep -c 'cwd:' .claude/prompts/chef-*.md` should be 0.
+
+**Alternative if true per-role isolation is needed:** abandon Agent Teams, launch each role as its own standalone `claude` session in its own tmuxinator pane, coordinate via `shared-state.md` + `.claude/votes/` polling. This is mentioned in the skill's readme as the « file-coord mode » future option — not implemented yet.
+
+## G33 — Apply commands need their own standalone pane (NOT a teammate)
+
+**Problem:** `tofu apply`, `helm upgrade`, `kubectl apply`, `gh release create` are irreversible and must be gated by a quorum vote. If the apply executor is an Agent Teams teammate, it inherits the Chef's permissions — which the skill denies for everyone (per G32). So the teammate cannot run apply even after the vote approves it.
+
+**Fix:** the `apply` pane is a separate tmuxinator pane with its own `{project}-wt-apply/.claude/settings.local.json` that allows `tofu:*`, `helm:*`, `kubectl:*`, `ansible:*`. It's a standalone `claude` (or a pure-shell pane driven via `tmux send-keys`), NOT spawned via `TeamCreate`. This is the only place the apply primitives are allowed on the whole machine for the brigade.
+
+**The quorum protocol (see `references/apply-quorum.md`) works like this:**
+1. A commis wants to apply — it SendMessages the apply pane with the command + justification.
+2. The apply pane runs `tofu plan` / `helm diff` / `kubectl diff` and captures the output.
+3. The apply pane SendMessages the 3 voting sous-chefs with the plan for vote.
+4. On 3/3 APPROVE, the apply pane executes the command (its settings.local.json allows it).
+5. On any DENY, the apply pane forwards DENY + reason back to the commis.
+
+**Detection:** `test -f {project}-wt-apply/.claude/settings.local.json && grep -q 'tofu:\*\|helm:\*\|kubectl:\*' $_`. And verify no commis settings file allows those.
+
+## G34 — Shell-mangling of the prompt via `$(cat ...)` (SOLVED by --append-system-prompt-file)
+
+**Historical symptom:** `tmuxinator start <session>` appears to succeed, but the claude pane is dead or in a strange state — you see bash error messages, unmatched quotes, or the pane showing the raw text of the prompt mid-command line. A realistic Chef prompt with 96 backticks + 106 quotes in one `.md` file would trigger this.
+
+**Root cause:** `claude --append-system-prompt "$(cat prompts/chef.md)"` expands `$(cat ...)` through the shell first, then re-parses the content. The shell reinterprets backticks / `$(...)` / unbalanced quotes inside the markdown as its own metacharacters.
+
+**Fix (current):** Use `--append-system-prompt-file <path>` instead — claude reads the file internally, the shell only sees the path:
+
+```yaml
+- claude --append-system-prompt-file .claude/prompts/chef-session.md "Kick-off message."
 ```
 
-The wrapper is generated by the skill at Phase 2. The tmuxinator YAML calls the wrapper instead of `claude $(cat ...)`.
+No wrapper script, no `$(< file)` workaround, no `.initial.txt` — all of that was
+overkill once we discovered the native flag. See G2 for the full CLI reference.
 
-**Related:** the initial user message also goes into its own `.initial.txt` file (one per role) so its content is never shell-re-parsed either. The wrapper reads it via `$(< file)` too.
+**Previous fix (obsolete):** the skill used to generate `scripts/brigade-launch-agent.sh` that wrapped `claude` with `$(< file)`. That script is no longer emitted — if you have an old copy, delete it.
 
-**Detection:** `bash -n "$(grep 'claude --append-system-prompt' ~/.config/tmuxinator/<session>.yml)"` will error on any prompt that the shell cannot parse. Easier: if the skill emits `$(cat ...)` anywhere in the generated YAML, it is wrong — grep and replace.
+**Detection:** `! grep -q '\$(cat ' ~/.config/tmuxinator/<session>.yml` — if `$(cat ...)` appears anywhere, the generator is outdated.
 
 ## G35 — `git worktree add ... | head -1` under `pipefail` kills git by SIGPIPE
 
@@ -499,24 +544,10 @@ The `&` is critical — without it tmuxinator blocks waiting for the sleep. The 
 
 **Detection:** 30 s after launch, `tmux capture-pane -p -t <session>:chef | grep -c 'Bypass Permissions'` — if > 0, the trust prompt is still up and the Chef is not working.
 
-## G38 — Empty bash array + `set -u` on bash 3.2 explodes
+## G38 — Empty bash array + `set -u` on bash 3.2 (OBSOLETE)
 
-**Symptom:** The wrapper script exits with `EXTRA_FLAGS[@]: unbound variable` on macOS. Works fine on Linux (bash 4+).
+**Status:** OBSOLETE since the skill no longer generates `brigade-launch-agent.sh`. The bug was in that wrapper's array handling on macOS bash 3.2. With `--append-system-prompt-file` (see G34), no wrapper is generated, so the bug cannot happen.
 
-**Root cause:** macOS ships bash 3.2 by default (GPLv2 cutoff). On bash 3.2, expanding `"${arr[@]}"` when `arr` is an empty array + `set -u` is active raises "unbound variable". Bash 4.4+ treats an empty array expansion as valid.
-
-**Fix:** Use conditional expansion — expands only if the array is set, evaluates to nothing otherwise:
-
-```bash
-declare -a EXTRA_FLAGS=()
-# ... case statement may or may not append ...
-exec claude ${EXTRA_FLAGS[@]+"${EXTRA_FLAGS[@]}"} "${INITIAL_MSG}"
-```
-
-The `${name+value}` form expands to `value` only if `name` is set.
-
-**Alternative (if portability is not needed):** force modern bash via `#!/usr/bin/env -S bash` + a check `(( BASH_VERSINFO[0] >= 4 )) || exec /opt/homebrew/bin/bash "$0" "$@"`. But the conditional expansion is simpler and has zero runtime cost.
-
-**Detection:** `bash --version | head -1` on the target machine. If it shows `3.2.x`, any wrapper using `"${arr[@]}"` unconditionally is a bomb.
+**Kept here for archival reference:** if you write any bash script that uses arrays + `set -u`, always use `${arr[@]+"${arr[@]}"}` (conditional expansion) instead of `"${arr[@]}"`. The conditional form expands to nothing when the array is empty, instead of raising "unbound variable" on bash 3.2 (the macOS default).
 
 **Why this matters:** Without the fix, every brigade start requires a human to attach to tmux and type "go". That defeats the unattended-sprint value proposition and burns 30-60 min of wall-clock per sprint waiting to be noticed.
