@@ -91,6 +91,9 @@ Check for:
 - Function summaries not starting with third-person verb ("Returns", "Creates")
 - Type summaries not starting with a noun phrase ("A thread-safe...", "An iterator over...")
 - **Register miscalibration (literary drift)**: prose above the expected reader's level — in operational docs (runbooks, how-tos, dev guides), flag em-dash asides, narrative scene-setting, subordinate clauses before the command, and metaphors anywhere in operator-facing text, including mnemonic hooks and slogans (a memory hook must be plain action verbs, not an image; established domain jargon like "break-glass" or "blackbox" is fine). The practitioner reader wants command first, the why in one short line, imperative mood. Reverse check for general-audience docs: undefined jargon and missing motivation are the miscalibration there
+- **Synonym drift (verb discipline)**: the same operation named by different verbs across the document (restart/relaunch/reboot for one gesture, fetch/get/retrieve for one call). Reference-grade docs fix one verb per operation (Stripe's create/retrieve/update/list) — each extra synonym makes the reader wonder if it's a different action. Drift can hide a real permission ambiguity ("relance NRPE" readable as both the read-only probe and the root-only service restart)
+- **Skeleton drift**: repeated units (procedures, endpoints, incident entries) that do not share an identical block order — the reader must re-scan each unit instead of learning the map once
+- **Announced-count drift**: a count stated in prose ("two entries are recorded here") that no longer matches the enumeration that follows. Forward reading auto-corrects it; catch it by reading sections in reverse order and checking every stated number against what it counts
 
 ## C5: STRUCTURE & FINDABILITY (8%)
 
@@ -160,6 +163,8 @@ Check for:
 - Related items not cross-referenced (builder without linking to what it builds)
 - Broken or dangling references
 - Bare URLs not wrapped in markdown links
+- **Plain-text section references** ("see section 8.5") where a clickable anchor link is possible — and anchors validated against the identifiers the renderer actually generates (GitLab and pandoc disagree by default; `+gfm_auto_identifiers` aligns them)
+- **Unreachable procedure (reference-graph check)**: in operational docs, map who-references-whom — the spine (triage → decision tree → procedures → escalation) must be fully linked; a procedure with zero inbound references is invisible mid-incident
 
 ## C11: TESTING & CI (8%)
 
@@ -170,6 +175,7 @@ Check for:
 - Link checking in CI (lychee, markdown-link-check)
 - Prose linting in CI (Vale, markdownlint)
 - Spell checking in CI (cspell)
+- **Render gate**: for docs shipped as PDF or site, the render is the doc's runtime — the render job must be blocking (no `allow_failure`), and fail on broken internal anchors and on layout overflow (zero `Overfull \hbox` on the LaTeX log). A source lint proves nothing about the artifact the reader holds
 - **Living documentation**: is there any automated verification that docs match code?
 
 ## C12: MAINTENANCE PROCESS (5%)

@@ -100,6 +100,8 @@ Thresholds:
 | **The Assumption** | C4 | Skipping prerequisites ("obviously you've already...") |
 | **Condescension** | C4 | "Simply", "just", "easy", "obviously" |
 | **Belles-Lettres** | C4 | Literary register in operational docs: em-dash asides, narrative intros, subordinate clause before the command, metaphors in operator-facing text — including metaphor-based memory hooks. Reader wants command first, why in one line |
+| **Synonym Drift** | C4 | Same operation named by different verbs across the doc (restart/relaunch/reboot). One verb per operation, like Stripe's create/retrieve/update/list |
+| **Dead-End Failure** | C6 | A failure case (KO, error, exception) stated without its next action — no section pointer, no corrective command, no escalation level. Success and failure must both be stated, and every failure must point somewhere |
 | **Happy Path Only** | C6 | No error handling, no troubleshooting |
 | **Orphan Pages** | C5 | Docs not linked from anywhere |
 | **Version Amnesia** | C3 | No indication of which version the doc applies to |
