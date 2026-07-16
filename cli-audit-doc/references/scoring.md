@@ -99,7 +99,7 @@ Thresholds:
 | **Duplicated Truth** | C3 | Same fact (version, port, env var, install command) maintained by hand in 3+ files with no single-source-of-truth generator. Structural cause of Copy-Paste Graveyard. Cure: spliceosome pattern — one canonical home per fact, others transclude or link |
 | **The Assumption** | C4 | Skipping prerequisites ("obviously you've already...") |
 | **Condescension** | C4 | "Simply", "just", "easy", "obviously" |
-| **Belles-Lettres** | C4 | Literary register in operational docs: em-dash asides, narrative intros, subordinate clause before the command, metaphors inside procedures. Reader wants command first, why in one line |
+| **Belles-Lettres** | C4 | Literary register in operational docs: em-dash asides, narrative intros, subordinate clause before the command, metaphors in operator-facing text — including metaphor-based memory hooks. Reader wants command first, why in one line |
 | **Happy Path Only** | C6 | No error handling, no troubleshooting |
 | **Orphan Pages** | C5 | Docs not linked from anywhere |
 | **Version Amnesia** | C3 | No indication of which version the doc applies to |
