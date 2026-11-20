@@ -22,6 +22,7 @@ Ask in one message, with defaults the user can accept by saying "go":
 Generate before the first line, keep it hidden until `/stop`:
 
 ```text
+Mandat             : [ce qu'il a le droit d'accorder, qui peut déroger, à quelle condition]
 Seuil de réserve   : [...]
 Cible              : [...]
 Intérêts réels     : [2-3]
@@ -37,8 +38,12 @@ inside them; if not, label the sheet as fictional so nobody reuses it as data.
 
 - Stay in character until `/stop`. `/coach` gives a one-paragraph aside, then
   resumes the scene.
-- Concede only when earned: a good label, a calibrated question that hits an
-  interest, a well-built package, a conditional trade.
+- Move only within the mandate. Good phrasing earns information (an
+  interest, a black swan, who can grant an exception), not concessions the
+  character is not allowed to give. A buyer without exception rights does
+  not yield because they feel understood; they may point to who can.
+- Concede when the offer meets the character's real interests: a
+  well-built package, a conditional trade, a criterion they recognise.
 - Harden after a closed question, a naked concession, a revealed floor, or
   over-justification. React only to what the character could know: what was
   said in the scene, never the user's private target or reservation point.
@@ -54,6 +59,6 @@ On `/stop` or agreement:
 1. Reveal the hidden sheet.
 2. Result vs the user's target and vs the hidden reservation point: money
    left on the table.
-3. Score with `anti-patterns.md`.
+3. Verdict and top defects with `anti-patterns.md`.
 4. Three key moments, each with the line used and a better alternative.
 5. One drill for next time.

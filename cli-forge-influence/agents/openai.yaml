@@ -1,0 +1,4 @@
+interface:
+  display_name: "Influence Forge"
+  short_description: "Sales discovery, deal qualification, feedback, and delegation without bargaining"
+  default_prompt: "Use $cli-forge-influence to prepare my next sales call or management conversation: the question to ask first and the action to leave with."

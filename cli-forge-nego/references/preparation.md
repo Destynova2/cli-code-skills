@@ -2,38 +2,47 @@
 
 ## Contents
 
-- One-sheet
+- One-sheet (per register)
 - Core concepts: BATNA, reservation point, target, ZOPA
 - First offer and anchoring
 - Pricing the deal: units, envelopes, comparing offers
 - Concession plans: Ackerman and MESO
 - When splitting the gap is fine
-- Playbooks per case type
+- Case traps
 - Impasse and clean exit
 
-## One-sheet
+## One-sheet (per register)
 
-Fill this before any draft. Leave a line empty rather than guess; empty lines
-become the questions to ask the user.
+Fill before any draft. Leave a line empty rather than guess; empty lines
+become the questions to ask the user. Every register shares the base; the
+extras depend on the register chosen in SKILL.md.
 
 ```text
 Décision à obtenir     : [quoi, de qui, pour quand]
 Faits vérifiés         : [contrat, devis, messages, échéances, montants]
+Déjà dû / nouveau      : [ce que le contrat ou le devis couvre déjà]
 Hypothèses à tester    : [budget, qui décide, urgence réelle, critères]
-Résumé "c'est exactement ça" : [2 phrases décrivant LEUR situation]
 Ma BATNA réelle        : [option concrète et disponible si pas d'accord]
 BATNA estimée d'eux    : [...]
-Cible / seuil de réserve : [chiffre ambitieux justifiable] / [pire accord acceptable]
-ZOPA estimée           : [plage, à périmètre comparable]
+Cible / seuil          : [ambitieux justifiable] / [pire accord acceptable]
 Variables échangeables : [valeur pour moi / coût pour eux, classées]
-Accusation audit       : [2-3 reproches qu'ils pourraient formuler]
-Labels préparés        : [3]
-Questions calibrées    : [3, dont 2 pour les black swans, 1 "comment suis-je censé…"]
-Plan de concession     : [Ackerman ou 2-3 MESO]
-Contrepartie par concession : [si… alors…]
+Critères objectifs     : [2-3 repères que l'autre reconnaît]
+Privé (jamais envoyé)  : [seuil, BATNA, chiffres d'autres clients]
 Preuve de l'accord     : [document, signataire, date]
 Sortie si échec        : [prochaine étape, ton]
 ```
+
+Extras per register:
+
+| Register | Add | Leave out |
+|---|---|---|
+| Interest-led | Their likely interests behind the position; 2 options that serve both; one summary line to get « c'est exactement ça » | Ackerman, accusation audit unless a real reproach is expected, « comment suis-je censé… » toward a manager |
+| Distributive | Anchor and concession plan (Ackerman or MESO); 2 calibrated questions; accusation audit (2-3 items max) | Nothing mandatory beyond the base |
+| Formal | Dated facts, amounts, contractual clause, next step and its date | Every Voss tool except a factual summary |
+
+Toward a manager or anyone hierarchical, replace « comment suis-je censé… »
+by the trade-off made visible: « Si l'audit passe vendredi, la migration
+passe mardi. Laquelle je confirme ? »
 
 ## Core concepts
 
@@ -55,7 +64,10 @@ Sortie si échec        : [prochaine étape, ton]
 
 | Situation | Move |
 |---|---|
-| User has solid data, other side has less | Anchor first: ambitious, precise, 2-3 criteria |
+| BATNA unknown | No anchor yet: ask for it, or ask them a question first |
+| BATNA weak, deal needed | Moderate anchor near target, close fast, trade terms rather than hold price |
+| BATNA strong, solid data, other side has less | Anchor first: ambitious, 2-3 criteria |
+| They state a cap (« 600 max ») | Ask before countering: firm or not, per unit or total, who can grant an exception |
 | User lacks information | Make them talk first: budget, constraints, grid |
 | They anchored first and low | Do not counter at once. De-anchor ("on ne parle pas du même périmètre"), restate own criteria, then counter |
 | Form asks "prétentions salariales" | Tandem range, low end = the ambitious point offer you would have made |
@@ -105,7 +117,7 @@ compute both bounds.
 
 ## Concession plans
 
-**Ackerman (Voss-led register only).**
+**Ackerman (distributive register only).**
 
 - Buyer (supplier purchase): target T. Offers at 65 %, 85 %, 95 %, 100 % of T.
 - Seller (TJM, quote): the Black Swan Group study guide inverts it as roughly
@@ -145,78 +157,27 @@ when all of these hold:
 - the midpoint is above the reservation point and beats the BATNA;
 - the gap is small relative to what further rounds cost (time, goodwill,
   the next contract);
-- the relationship is repeated and the counterpart has moved as much as the
-  user;
+- the counterpart has moved about as much as the user (repeated or
+  one-shot alike: a profitable midpoint today can beat another round);
 - it closes the whole package, not one issue while others stay open.
 
 Even then, make it conditional and closing: « Si on part sur 745 avec un
 démarrage le 3, je signe aujourd'hui. » Say in the output that the split is a
 choice, and why.
 
-## Playbooks
+## Case traps
 
-### Salaire / augmentation (CDI)
+The axes in SKILL.md decide the register. These are the traps specific to
+common cases, nothing more.
 
-- Register: interest-led. No Ackerman.
-- Package, not salary alone: fixe, variable, prime d'arrivée, télétravail,
-  RTT, formation et certifications, date de révision, titre, position et
-  coefficient de convention collective.
-- Budgets are often frozen at annual review cycles: ask *when* the budget is
-  set and who decides, not only *how much*.
-- Social backlash on asking is documented (Bowles, Babcock & Lai, 2007),
-  notably for women. Relational framing reduces it (Bowles & Babcock, 2013):
-  cite a real reason others recognise, e.g. « je veux que ça marche pour
-  l'équipe aussi », or « mon manager m'a encouragé à en parler » *only if
-  that happened*. Never invent the endorsement.
-- Malhotra's rule: negotiate all issues together, not in slices.
-
-### TJM freelance, ESN, portage
-
-- Register: Voss-led toward procurement or a first deal with an ESN.
-  Renewals with the same ESN are a repeated game: interest-led, keep
-  calibrated questions, drop Ackerman.
-- An ESN protects a margin: the client rate is not the consultant rate. Ask
-  "Comment est construit le tarif côté client ?"
-- Tradeables: rate, days, duration, renewal, remote, payment terms, deposit,
-  on-call, revision or indexation clause, notice, travel costs,
-  non-solicitation and non-compete clauses, reuse of tooling.
-- Tie long commitment to terms: "12 mois si paiement à 30 jours et révision à
-  6 mois."
-
-### Scope creep
-
-- Every out-of-scope request is currency: time, budget, or something removed.
-- Calibrated question first: "Qu'est-ce qu'on sort du sprint pour l'intégrer ?"
-- Then options (MESO): add with a costed amendment, swap with item X, defer.
-- Write it down: amendment or documented trade-off, owner, date.
-
-### Facture impayée
-
-- Register: formal once the invoice is past due. Facts first: invoice number,
-  amount, due date, requested payment date.
-- Normative lever: cite their own terms and commitments (Diamond's
-  "standards").
-- French B2B late-payment rules (Code de commerce L441-10, D441-5) set
-  payment deadlines, late penalties due by right, and a fixed recovery
-  indemnity. State them only after checking the current text and the user's
-  contract; mark `NEEDS-REVIEW` otherwise.
-- Ladder: amicable reminder → formal notice (mise en demeure) → mediation →
-  court procedure. Past the amicable stage, refer to a professional.
-- A no-oriented question can soften stage one ("Est-ce que quelque chose
-  bloque le règlement de votre côté ?"). Self-pity questions weaken a demand
-  that can be stated directly.
-
-### Désaccord technique avec un manager
-
-- Register: interest-led. Banned: Ackerman, fake deadlines, negative leverage.
-- Compare hypotheses, measurements, cost, rollback, and decision criteria.
-- Propose a reversible test with an agreed stop criterion: "canary à 10 %,
-  arrêt si le taux d'erreur dépasse le seuil convenu. Qui valide ce seuil ?"
-- Label the concern before the argument: "On dirait que le risque principal
-  pour toi, c'est la fenêtre de mise en prod."
-- In meetings with senior management, prefer questions to frontal
-  contradiction; settle the disagreement one-on-one, document it after
-  (ADR, mail).
+| Case | Usual axes | Traps |
+|---|---|---|
+| Salary or raise (CDI) | hierarchical, multi-issue | Negotiate the package (fixe, variable, télétravail, formation, date de révision, titre, coefficient), not the salary alone. Ask *when* the budget is set and who decides. Backlash on asking is documented (Bowles, Babcock & Lai, 2007); relational accounts reduce it (Bowles & Babcock, 2013), using a real reason only: « mon manager m'a encouragé à en parler » *only if true*. |
+| Day rate via an intermediary (ESN, portage) | one-shot first deal, repeated at renewal | The client rate is not the consultant rate: « Comment est construit le tarif côté client ? ». Renewal = repeated game, interest-led. Tradeables: days, duration, remote, payment terms, on-call, revision clause, notice, travel, non-solicitation. Tie long commitments to terms: « 12 mois si paiement à 30 jours et révision à 6 mois. » |
+| Scope creep | repeated, owed vs new | First check the accepted quote: owed or new? Only new requests are currency (time, budget, or something removed). « Qu'est-ce qu'on sort du sprint pour l'intégrer ? » Then options: costed amendment, swap, defer. Write it down. |
+| Unpaid invoice | dispute, money then legal | First reminder amicable and factual: invoice number, amount, due date, ask for a payment date. « Est-ce que quelque chose bloque le règlement de votre côté ? » Formal only after that goes unanswered. Late-payment rules (Code de commerce L441-10, D441-5) are cited only after checking the current text on Légifrance and the contract. Past formal notice, refer to a professional. |
+| Technical disagreement with a manager | hierarchical, decision | Compare hypotheses, measures, cost, rollback, criteria. Propose a reversible test with an agreed stop criterion: « canary à 10 %, arrêt si le taux d'erreur dépasse le seuil convenu. Qui valide ce seuil ? » In front of senior management, questions over contradiction; settle one-on-one, document after. |
+| Supplier purchase | one-shot, single price | Distributive register allowed: Ackerman buyer side, compare total written price for the same delivered configuration, isolate trade-in, financing, delivery, warranty. |
 
 ## Impasse and clean exit
 

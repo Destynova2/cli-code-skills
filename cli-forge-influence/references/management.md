@@ -1,15 +1,15 @@
 # Managing and Negotiating Priorities
 
-Use for workload trade-offs, corrective feedback, delegation, coaching, or
-influence without authority. Register: interest-led, always. Labels and
-calibrated questions stay; Ackerman, deadlines-as-pressure and negative
-leverage go.
+Use for corrective feedback, delegation, coaching, peer influence, and
+conflicts between teams. Nothing here is bargained: no anchors, no
+concession plans, no Voss kit. Open questions and a fair summary are enough.
+Priority arbitration with your own management is a negotiation: use
+`cli-forge-nego` (`defend` mode).
 
 ## Pick the Conversation
 
 | Stake | Method | Outcome sought |
 |---|---|---|
-| One more deadline, same team | Show current commitments, capacity, and feasible trade-offs. | A priority decided by the person entitled to decide, and an updated commitment. |
 | A specific behaviour caused a problem | SBI: situation, observable behaviour, impact. Then ask for intent and their account (SBII). | An expected behaviour and a moment to check the change. |
 | A report needs help | *The Coaching Habit*: ask where they are stuck and what help would move them before prescribing. | An action they choose and concrete support from the manager. |
 | Two teams clash | Describe the disagreement the way an observer both sides accept would (*Difficult Conversations*). | A shared interest, an explicit divergence, and a decision criterion. |
@@ -17,14 +17,6 @@ leverage go.
 | You need to delegate | State the expected result, the decisions delegated, resources, check-in point, and the signal that justifies escalation. | A mandate understood, with real autonomy. |
 
 ## Lines to Adapt
-
-**Upward.**
-
-> « Pour livrer l'audit vendredi avec l'équipe actuelle, je dois décaler la
-> migration à mardi. Si les deux dates doivent tenir, il me faut quelqu'un
-> pour reprendre les tests jeudi. Laquelle des deux je confirme ? »
-
-Present any reinforcement or delay not yet validated as a hypothesis.
 
 **To a report.**
 

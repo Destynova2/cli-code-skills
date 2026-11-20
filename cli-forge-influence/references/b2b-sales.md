@@ -4,7 +4,8 @@ Use when the user sells (services, audit, platform, freelance offer) and the
 problem is upstream of price: unclear need, no identified buyer, a free POC
 request, or coaching a salesperson. Settle scope and decision process before
 negotiating the number; price talks with no decision-maker in the room only
-set a floor for the next round.
+set a floor for the next round. Once the deal is qualified and the talk turns
+to price and terms, hand off to `cli-forge-nego`.
 
 ## Discovery (SPIN Selling)
 

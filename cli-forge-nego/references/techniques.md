@@ -1,8 +1,14 @@
-# Voss Techniques
+# Voss Phrasing Toolbox
 
-Each technique: what it does, when to use it, oral and written French
-examples, failure mode. Pick two or three per negotiation. A message stacked
-with techniques sounds trained, and trained buyers and recruiters spot it.
+Optional tools on top of the method in SKILL.md, not the method itself.
+Each: what it does, when, oral and written French examples, failure mode.
+Pick at most two per negotiation, none if the plain question works. A message
+stacked with techniques sounds trained, and trained buyers, recruiters and
+managers spot it.
+
+By register: interest-led keeps summaries, labels used sparingly, and open
+questions; distributive may use the whole kit; formal uses none except a
+factual summary. No-oriented questions are oral-only in French.
 
 ## Contents
 

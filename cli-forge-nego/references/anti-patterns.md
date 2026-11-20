@@ -1,4 +1,4 @@
-# Anti-Patterns and Scoring
+# Anti-Patterns and Verdict
 
 Run on the user's draft (`audit`) and on your own output before delivery.
 Quote the offending line, name the pattern, give the fix.
@@ -9,10 +9,11 @@ Any blocker stops "ready to send", whatever the score:
 
 | ID | Blocker | Example |
 |---|---|---|
-| B1 | Fabricated leverage | fake competing offer, fake deadline, invented scarcity, bluffed walk-away the user will not execute |
+| B1 | Fabricated leverage | fake competing offer, fake deadline, invented scarcity, implied alternatives that do not exist, a walk-away the user has said they would not carry out |
 | B2 | Invented fact | market figure, budget, clause, legal threshold, or approval not supplied by the user or cited |
 | B3 | Threat or ultimatum | one the user has not explicitly decided on |
 | B4 | Personal targeting | pressure on a private vulnerability of the counterpart |
+| B5 | Private data leaked | the user's floor, BATNA, or another client's rate or name, shared as background, appears in outgoing text without permission |
 
 ## Detector
 
@@ -25,12 +26,12 @@ Any blocker stops "ready to send", whatever the score:
 | N5 | Unjustified number | a lone figure with no criterion, or decorative decimals nothing supports | Figure tied to 2-3 criteria; precise only when calculated |
 | N6 | Over-justification | more than 3 sentences of argument, « parce que… parce que… » | 2-3 factual criteria |
 | N7 | Softeners and apologies | « juste », « petit », « désolé de vous déranger », « si ce n'est pas possible, pas de souci » | Delete |
-| N8 | Closed or yes-seeking question | « Vous êtes d'accord ? », « Ça vous va ? » | Calibrated or no-oriented question |
+| N8 | Closed or yes-seeking question | « Vous êtes d'accord ? », « Ça vous va ? » | Open « comment / qu'est-ce qui » question. In writing, never a no-oriented question: it reads sarcastic in French |
 | N9 | Accusing "pourquoi" | « Pourquoi vous ne payez pas ? » | « Qu'est-ce qui bloque… ? » |
 | N10 | Naked concession | « OK pour 30 jours de plus » with nothing in return | « Si…, alors… » |
 | N11 | Reservation point revealed | « en dessous de X je ne peux pas » early; weak BATNA admitted | Remove |
 | N12 | Several asks | unrelated requests in one message | One decision asked, first. A package or MESO is one ask |
-| N13 | Buried ask | ask at the end under context | Move to the first two lines |
+| N13 | Buried ask | ask after more than one line of context | One framing line at most (a label or summary), then the ask |
 | N14 | Single-issue haggling | only rate discussed | List the package |
 | N15 | Accusing "vous" | « vous n'avez pas respecté… » | Label + dated facts |
 | N16 | Hollow "je comprends" | « Je comprends tout à fait votre position » | Specific label |
@@ -38,25 +39,22 @@ Any blocker stops "ready to send", whatever the score:
 | N18 | Vague agreement | « on est d'accord » without price, scope, owner, date | Ask for operational confirmation |
 | N19 | Mind-reading as fact | « il ment », « ils n'ont pas de budget » inferred from tone | Turn into a question to verify |
 | N20 | Technique overload | three mirrors and four labels in one mail | Keep the one or two that serve the ask |
-| N21 | Wrong register | Ackerman steps toward a manager; legal tone in a first reminder | Switch register (SKILL.md Core Rule 3) |
+| N21 | Wrong register | Ackerman toward a manager; legal tone in a first payment reminder; Voss kit stacked in an interest-led message | Re-read the axes in SKILL.md |
+| N22 | Trading what is owed | offering a fix of the user's own error, or a contractual deliverable, as a concession against something | Deliver or repair; trade only new requests |
+| N23 | Anchor without a BATNA | ambitious figure while the user's alternative is unknown or weak | Ask for the BATNA first, or moderate the anchor |
 
-## Scoring grid (/100)
+## Verdict
 
-| ID | Dimension | Points | Full marks when |
-|---|---|---:|---|
-| D1 | Preparation | 20 | Real BATNA, reservation point, justified target, hypotheses about them listed (`prep` and `debrief` only: not observable on a draft) |
-| D2 | Anchor and numbers | 15 | Ambitious, backed by criteria, precise only when calculated |
-| D3 | Discovery | 15 | Calibrated questions, labels, black-swan probes, summary |
-| D4 | Concession discipline | 15 | Conditional, decreasing, no self-negotiation |
-| D5 | Value creation | 10 | Multi-issue, MESO, non-monetary trades |
-| D6 | Message clarity | 10 | One ask, first, no softeners, right length |
-| D7 | Relationship and ethics | 10 | No lies, tone fits a repeated relationship, face-saving exit left open |
-| D8 | Channel and culture | 5 | Oral vs written fit, French register, escalation choice |
+No numeric score: weights would be decorative precision, and a polished
+draft can still answer the wrong question. Give one of three verdicts, with
+the reason in one line:
 
-For `reply` and `audit` on a short message, score only the dimensions the
-message can show (D1 never is), then rescale: `score = points earned /
-points available × 100`, rounded. List the skipped dimensions next to the
-score.
+| Verdict | When |
+|---|---|
+| **Envoyer** | No blocker, no open question that changes the ask, defects only cosmetic |
+| **Clarifier d'abord** | A fact the message depends on is missing: BATNA, unit, firm cap, what is owed, who decides. Name the one question to ask (the user, or the counterpart) |
+| **Décision de l'utilisateur requise** | A blocker, or a move only the user can choose (walk-away, escalation, accepting below target) |
 
-Thresholds: ≥ 80 send; 60-79 fix the top two issues; < 60 go back to `prep`.
-Any blocker overrides the score.
+Then list at most three defects, most damaging first, each with the
+offending line and the fix, followed by the rewrite. A blocker always
+overrides **Envoyer**.

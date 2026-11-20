@@ -4,12 +4,17 @@ Evidence levels: **[S]** strong (meta-analysis or replicated), **[M]** moderate
 (a few studies, often lab), **[A]** practitioner experience or anecdote.
 A book can be excellent practice material without each gesture being tested.
 
+## Backbone
+
+- Fisher, Ury & Patton, *Getting to Yes* (1981, 3rd ed. 2011). Interests over
+  positions, options, objective criteria, BATNA. The method of this skill. **[M]**
+- Thompson, *The Mind and the Heart of the Negotiator*. Evidence-based
+  textbook: fixed-pie bias, logrolling, compatible issues. **[S]**
+
 ## Practitioner frameworks
 
-- Voss & Raz, *Never Split the Difference* (2016). Labels, mirrors, calibrated
-  questions, Ackerman. **[A]**, some mechanisms backed below.
-- Fisher, Ury & Patton, *Getting to Yes* (1981, 3rd ed. 2011). Interests over
-  positions, objective criteria, BATNA. Backbone for repeated relationships. **[M]**
+- Voss & Raz, *Never Split the Difference* (2016). Phrasing toolbox: labels,
+  mirrors, calibrated questions, Ackerman. **[A]**, some mechanisms backed below.
 - Malhotra & Bazerman, *Negotiation Genius* (2007). Preparation, biases, the
   "irrational" counterpart as missing information. **[M]**
 - Malhotra, *Negotiating the Impossible* (2016). Reframe, negotiate the
@@ -20,8 +25,6 @@ A book can be excellent practice material without each gesture being tested.
   standards. **[A]**
 - Lax & Sebenius, *3-D Negotiation* (2006). Set up the table: who really
   decides, in what order. **[M]**
-- Thompson, *The Mind and the Heart of the Negotiator*. Evidence-based
-  textbook: fixed-pie bias, logrolling, compatible issues. **[S]**
 - Cialdini, *Influence* (rev. 2021). Read the other side's tactics. **[S]**
   for most effects.
 - Grant, *Give and Take* (2013). Cooperate without becoming the one who
@@ -32,21 +35,15 @@ A book can be excellent practice material without each gesture being tested.
 - Harvard Program on Negotiation (pon.harvard.edu): free articles on BATNA,
   first offers, email negotiation, MESO.
 
-## Selling, deciding, managing
+## Deciding and defending
 
 | Next difficulty | Read | Use |
 |---|---|---|
-| Prospect wants a demo before explaining the need | Rackham, *SPIN Selling* | Problem → consequence → value for the buyer. **[M]** |
-| Deal advances technically, nobody commits to buy | MEDDPICC | Economic buyer, criteria, paper process, champion. **[A]** |
-| Client underestimates a documentable consequence | Dixon & Adamson, *The Challenger Sale* | Verifiable insight, tested with the client. **[A/M]** |
 | Committee understands but does not know what to approve | Minto, *The Pyramid Principle* | Recommendation first, reasons ordered under it. **[A]** |
 | Proposal may get killed in session | Kotter & Whitehead, *Buy-In* | Prepare the doubt-sowing and delaying objections. **[A]** |
 | Scenarios are hard to compare | HM Treasury, business case guidance | Strategic, economic, financial, commercial, management cases. **[A]** |
 | A partner team bears the cost, another the benefit | Cohen & Bradford, *Influence Without Authority* | Find what makes their cooperation possible. **[A]** |
 | Conflict frozen around two stories | Stone, Patton & Heen, *Difficult Conversations* | A description of the disagreement both sides accept. **[A/M]** |
-| Delicate feedback | Center for Creative Leadership, SBI / SBII | Situation, behaviour, impact, then intent. **[A]** |
-| Manager solves every problem alone | Bungay Stanier, *The Coaching Habit* | Ask what the difficulty is and what help is wanted. **[A]** |
-| Running a sales pipeline review | Jordan & Vazzana, *Cracking the Sales Management Code* | Separate activities, objectives, results. **[A]** |
 
 French-language course: Aurélien Colson (ESSEC), *Les Fondamentaux de la
 Négociation* MOOC.

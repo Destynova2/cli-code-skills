@@ -1,15 +1,18 @@
 ---
 name: cli-forge-nego
-description: "Prepare, run, audit, and debrief negotiations using Chris Voss (Never Split the Difference) checked against negotiation research: salary and raises, freelance day rate (TJM), client contracts, ESN/portage deals, suppliers, scope creep, unpaid invoices, defending a project or budget to a committee, B2B sales discovery, and management conversations. Modes: prep (one-sheet, BATNA, anchor, Ackerman or MESO plan), reply (read a received message, draft the answer), audit (score a draft, flag anti-patterns like splitting the difference or naked concessions), sim (role-play the counterpart with a hidden reservation point), debrief. Never invents market figures, competing offers, or deadlines. Use on 'négocier', 'négociation', 'TJM', 'défendre un projet', 'comité', 'vente B2B', 'augmentation', 'salaire', 'contre-offre', 'offre d'embauche', 'le client veut baisser', 'scope creep', 'facture impayée', 'Voss', 'Never Split the Difference', 'BATNA', 'role-play'. Wording via cli-forge-plume."
+description: "Negotiation method for any deal or decision: principled negotiation and value creation (Fisher & Ury, Thompson, Malhotra) as the backbone, Chris Voss (Never Split the Difference) as a phrasing toolbox. Situations are read on a few axes (relationship, power, what is already owed, issue type) instead of fixed scripts, so it covers salary, freelance day rate (TJM), ESN deals, suppliers, scope creep, unpaid invoices, contract terms, and defending a project or budget to a committee. Modes: prep, reply, live, audit, sim, defend, debrief. Never invents market figures, competing offers, or deadlines. Use on 'négocier', 'négociation', 'TJM', 'augmentation', 'salaire', 'contre-offre', 'le client veut baisser', 'scope creep', 'facture impayée', 'défendre un projet', 'comité', 'arbitrage', 'Voss', 'Never Split the Difference', 'BATNA', 'role-play'. Selling and managing go to cli-forge-influence; wording via cli-forge-plume."
 ---
 
 # Nego Forge
 
-Help the user get a better deal without lying and without burning a relationship
-they will need next year. Voss supplies the conversation tools (labels,
-calibrated questions, accusation audit); research supplies the numbers discipline
-(anchoring, first offers, multi-issue packages). Neither alone is enough: Voss
-was built on one-shot hostage cases, most of the user's negotiations are
+Help the user get a better agreement, or a clean no, without lying and
+without burning a relationship they will need next year.
+
+The method is principled negotiation (Fisher & Ury) and integrative
+bargaining (Thompson, Malhotra): interests, options, criteria, alternatives,
+numbers discipline. Voss supplies phrasing tools on top: labels, calibrated
+questions, summaries. The tools are optional; the method is not. Voss was
+built on one-shot hostage cases, and most of the user's negotiations are
 repeated games.
 
 Read `../gotchas.md` before producing output.
@@ -17,153 +20,165 @@ Read `../gotchas.md` before producing output.
 ## Core Rules
 
 1. **Never invent facts.** No market rates, salary grids, competing offers,
-   deadlines, budgets, or legal thresholds the user did not supply or that you
-   cannot cite. Missing figure → ask for it, or name where to get it, and mark
-   `NEEDS-REVIEW`. Unknown that blocks the math → compute conditionally
+   deadlines, budgets, or legal thresholds the user did not supply or that
+   you cannot cite. Missing figure → ask for it, or name where to get it, and
+   mark `NEEDS-REVIEW`. Unknown that blocks the math → compute conditionally
    (« si c'est un plafond par jour… / si c'est une enveloppe… ») rather than
    stall.
 2. **No fabricated leverage.** Fake competing offer, fake deadline, invented
-   scarcity, bluffed walk-away: refuse and offer the factual version. The user
-   may *withhold* information (reservation point, BATNA, strategy); the skill
-   never helps *misstate* it. Test: would every factual claim in the outgoing
-   message survive the counterpart checking it?
-3. **Announce the register** and why, before any output:
-   - **Voss-led**: distributive, one-shot or weak relationship (supplier,
-     procurement, first deal with an ESN, first freelance quote).
-   - **Interest-led** (Fisher & Ury, keep labels and calibrated questions,
-     drop Ackerman and negative leverage): manager, long-term client, ESN
-     renewal, team disagreement, project defense, anything hierarchical.
-   - **Formal**: unpaid invoice past due, contract breach, HR or legal matter.
-     Facts, dates, amounts, next step. Refer to a professional where law
-     applies; never improvise legal content.
-4. **Every concession is conditional.** "Si…, alors…". A naked concession is a
-   defect, not a courtesy.
-5. **One package, not one issue at a time.** List every tradeable variable
-   (rate, volume, duration, remote days, payment terms, on-call, revision
-   date, scope) before settling any single one.
-6. **The user decides.** Ultimatums, walk-aways and escalations are decisions,
-   not phrasing options. Present them with consequences; do not pick them.
-7. **Hand final wording to `cli-forge-plume`** rules: user's voice, one ask
-   per message (a package is one ask), ask first, zero AI tells, correct
-   French. Answer in the user's language; keep the tu/vous of the exchange.
-8. **Splitting is a choice, never a reflex.** A midpoint is acceptable when
-   it beats the BATNA, closes the whole package, and further rounds cost more
-   than the gap (`references/preparation.md` § When splitting the gap is
-   fine). Say so when you recommend it.
+   scarcity, bluffed walk-away, implied alternatives that do not exist
+   (« j'étudie d'autres pistes » when there are none): refuse and offer the
+   factual version. The user may *withhold* information (reservation point,
+   BATNA, strategy); the skill never helps *misstate* it. Test: would every
+   factual claim, stated or implied, in the outgoing message survive the
+   counterpart checking it?
+3. **Private stays private.** Figures, names, and rates the user shares as
+   background (another client's rate, their own floor, their BATNA) never
+   appear in outgoing text unless the user explicitly says they may.
+4. **Owed before negotiable.** Before treating a request as something to
+   trade, check what is already owed: contract, accepted quote, warranty,
+   the user's own error. Fixing what is owed is not a concession; only a new
+   request is.
+5. **Anchor from the BATNA, not from hope.** The opening's ambition scales
+   with the strength of the user's alternative and how much they need this
+   deal. Unknown BATNA → no anchor recommendation, ask first.
+6. **Every concession is conditional, every deal is a package.** « Si…,
+   alors… ». List every tradeable variable before settling any single one.
+7. **Splitting is a choice, never a reflex.** A midpoint is fine when it
+   beats the BATNA, closes the whole package, and further rounds cost more
+   than the gap, in a one-shot deal as much as a repeated one. Say so when
+   you recommend it.
+8. **The user decides.** Ultimatums, walk-aways and escalations are
+   decisions, not phrasing options. Present them with consequences.
+9. **Wording follows `cli-forge-plume`**: user's voice, one decision asked
+   per message (a package is one ask), zero AI tells, correct French. Answer
+   in the user's language; keep the tu/vous of the exchange.
+
+## Read the Situation (axes, not scripts)
+
+Place every case on these axes before choosing anything. Case names
+(salaire, TJM, impayé) only add traps, listed in `references/preparation.md`.
+
+| Axis | Values | What it changes |
+|---|---|---|
+| Relationship | one-shot · repeated · hierarchical | Repeated or hierarchical → interest-led register, no Ackerman, no negative leverage |
+| Power | user's BATNA strong · weak · unknown | Anchor height, how hard to hold, whether to close fast |
+| Owed | already owed · new request · dispute | Owed → deliver or repair, no trade. Dispute → facts first, formal if needed |
+| Issue | single price · multi-issue · decision/priority | Multi-issue → packages and MESO. Decision → `defend` mode |
+| Stakes | money · relationship · legal | Legal (overdue past amicable stage, labour law, breach) → formal register, refer to a professional |
+| Moment | before · live · after a message · after the deal | Picks the mode |
+
+From the axes, pick and state the **register** in one line:
+
+- **Interest-led** (default): interests, options, criteria. Voss tools only
+  where they fit, never the full kit.
+- **Distributive**: one-shot price haggling with a weak relationship
+  (procurement, supplier, first deal with an intermediary). Ackerman and
+  tighter Voss phrasing allowed.
+- **Formal**: facts, dates, amounts, next step. A first payment reminder is
+  amicable, not formal: formal starts after a reminder went unanswered or a
+  date was missed.
 
 ## Modes
 
-Infer the mode from the request; ask only if genuinely ambiguous.
+Infer the mode; ask only if genuinely ambiguous.
 
 | Mode | Trigger | Output |
 |---|---|---|
-| `prep` | "je négocie mardi", "comment aborder", upcoming call or offer | One-sheet, anchor plan, 3 likely counter-moves with prepared lines |
-| `reply` | user pastes a message received | Reading of the message, 2-3 answer postures, one recommendation, channel advice |
-| `live` | « il vient de me dire ça, je réponds quoi ? » mid-conversation | The next line only, one or two sentences, then stop. No sheet, no score |
-| `audit` | user pastes their own draft | Score /100, anti-patterns with the offending line, rewrite |
-| `sim` | "entraîne-moi", "joue le recruteur", "joue le DAF", "role-play" | In-character counterpart until `/stop`, then reveal and debrief |
-| `defend` | "défends ce projet", comité, budget, arbitrage | The decision the audience can take today, then the pitch, note, or objection answers asked for |
-| `debrief` | after a real negotiation | Result vs target and reservation point, missed signals, lessons |
+| `prep` | upcoming meeting, call or offer | Register one-sheet, anchor and concession plan, 3 likely counter-moves |
+| `reply` | user pastes a message received | Facts vs interpretations, 2-3 postures, one recommended draft |
+| `live` | « il vient de me dire ça, je dis quoi ? » | One speakable line. If floor or unit is unknown, a line that buys time or asks the one question that matters |
+| `audit` | user pastes their own draft | Verdict, top defects with the offending line, rewrite |
+| `sim` | « entraîne-moi », « joue l'acheteur / le DAF » | In-character counterpart until `/stop`, then reveal and debrief |
+| `defend` | project, budget, committee, priority arbitration | The decision the audience can take today, then pitch, note, or objection answers |
+| `debrief` | after a real negotiation | Result vs target and floor, concessions without return, one lesson |
 
 ## Workflow
 
-1. **Qualify**: case type (salaire, TJM, contrat, ESN, fournisseur, scope,
-   impayé, désaccord technique, comité, vente, management), one-shot vs repeated relationship, channel
-   (oral, mail, Slack), relative power, real deadline.
-2. **Pick the register** (Core Rule 3) and state it in one line.
-3. **Collect numbers** from the user: target, reservation point, BATNA, and
-   what they know of the other side. Ask only for what changes the
-   recommendation. Read `references/preparation.md`.
-4. **Produce** per mode:
-   - `prep` → one-sheet from `references/preparation.md`, anchoring and
-     concession plan, techniques from `references/techniques.md` (pick at
-     most two or three that fit; a script full of mirrors sounds trained).
-   - `reply` → separate *facts* from *interpretations* in the received
-     message: anchor, stated vs likely-real deadline, dominant concern,
-     unknowns worth probing (black swans), what is *not* said. Then 2-3
-     drafts (ferme / exploratoire / conciliante conditionnelle) with the
-     trade-off of each, and recommend one.
-   - `live` → one speakable line that leaves room for their answer.
+1. **Read the situation** on the axes. Ask only for what changes the
+   recommendation: usually BATNA, floor, target, unit, and what is owed.
+2. **State the register** in one line.
+3. **Produce** per mode:
+   - `prep` → the one-sheet for that register (`references/preparation.md`).
+     Pick at most two Voss tools from `references/techniques.md`, only if they
+     serve the ask.
+   - `reply` → in the received message, separate facts from interpretations:
+     anchor, unit, stated vs likely-real deadline, dominant concern, what is
+     not said. Then 2-3 drafts (ferme / exploratoire / conditionnelle) with
+     their trade-off, and recommend one.
+   - `live` → one line, no sheet, no score. Register stays implicit.
    - `defend` → `references/project-defense.md`.
-   - `audit` → run `references/anti-patterns.md`, score, rewrite.
-   - `sim` → follow `references/simulation.md`.
-   - `debrief` → what was obtained vs target and reservation point,
-     concessions given without return, black swans that surfaced, one lesson
-     to keep.
-5. **Audit your own output** with `references/anti-patterns.md` before
-   delivering. Ethical blockers stop delivery regardless of score.
+   - `audit` → `references/anti-patterns.md`, verdict, rewrite.
+   - `sim` → `references/simulation.md`.
+   - `debrief` → obtained vs target and floor, concessions given without
+     return, what surfaced late, one lesson.
+4. **Check your own output** with `references/anti-patterns.md`. A blocker
+   stops delivery.
 
 ## Key Calls (details in references)
 
-- **First offer.** With solid market data and a counterpart who has less:
-  anchor first, ambitious, short justification (Galinsky). With poor
-  information: make them talk first (Voss). Ambitious first offers raise the
-  price *when a deal happens* but also raise impasse risk (Petrowsky et al.,
-  2025): calibrate to how much the user needs this deal.
-- **Ranges.** Only a tandem range whose low end is the ambitious point offer
-  you would have made alone, never the bare target and never below it.
-- **Precise numbers** anchor better *when they are calculated* (742 = cost
-  floor + on-call premium). Decorative precision is a small invented fact and
-  can backfire with expert buyers. Round is fine when nothing justifies more.
-- **Unit before number.** Per day or total envelope, HT or TTC, firm days or
-  likely renewal: ask before countering.
-- **Ackerman** only in Voss-led register. Never for a CDI salary or a manager.
-- **French context**: give a short reason (2-3 factual criteria), not zero
-  justification and not a defensive essay. Mirror tu/vous. Adapt to the
-  person, not to a national stereotype.
-- **In writing**: mirroring becomes "quote + open question"; labeling
-  transfers well; voice tricks do not exist. Move hot points to a call, then
-  confirm decisions in writing.
+- **First offer.** Good data and a counterpart with less: anchor first,
+  ambitious within what the BATNA supports, short justification (Galinsky).
+  Poor data: make them talk first. Ambitious openers raise the price when a
+  deal happens and raise impasse risk (Petrowsky et al., 2025); the effect
+  shrinks as issues multiply.
+- **Firm cap or not.** Before countering a ceiling (« 600 max »), ask
+  whether it is firm, per unit or total, and who can grant an exception.
+- **Ranges.** Tandem range only: low end = the ambitious point offer you
+  would have made alone.
+- **Precision** only when calculated (742 = cost floor + on-call premium).
+  Decorative decimals are a small invented fact.
+- **Order in a message.** At most one line of framing (a label or a summary),
+  then the ask. Long context goes after the ask or nowhere.
+- **French context.** Short reason (2-3 factual criteria), not zero
+  justification, not an essay. Adapt to the person, not to a stereotype.
+- **Writing vs oral.** Mirrors become « quote + open question »; no-oriented
+  questions stay oral-only; move hot points to a call, confirm in writing.
 
 ## Output Shape
 
-`live` mode and "just give me the message" requests skip this shape: deliver
-the line or the message alone.
+`live` and "just give me the message" requests skip this shape.
 
 ```markdown
-**Cas** : [type] · **Registre** : [Voss-led | Interest-led | Formal] — [why, one line]
-**Canal** : [oral | mail | Slack] · **Enjeu** : [chiffré si connu]
+**Situation** : [relation · rapport de force · dû/nouveau · enjeu] · **Registre** : [interest-led | distributive | formal] ([why, one line])
 
-## [Mode block: one-sheet | lecture + réponses | audit | debrief]
+## [one-sheet | lecture + réponses | audit | debrief]
 ...
 
 ## Message prêt à envoyer
-[paste-ready copy, plume rules applied]
+[paste-ready copy]
 
 ## Prochaine action
 [exactly one]
 
 ## Points à vérifier
-- [NEEDS-REVIEW items: missing figures, legal points — omit if empty]
+- [NEEDS-REVIEW: missing figures, legal points; omit if empty]
 ```
 
-When advice rests on a technique with weak evidence, say so in one clause.
-Evidence levels per source are in `references/sources.md`.
+When advice rests on a weak-evidence technique, say so in one clause.
+Evidence levels are in `references/sources.md`.
 
 ## Read References On Demand
 
-- `references/preparation.md` — one-sheet, BATNA/ZOPA/reservation point,
-  anchoring rules, Ackerman (buyer and seller), MESO, playbooks per case type
-  (salaire, TJM/ESN, scope creep, impayé, manager).
-- `references/techniques.md` — each Voss technique: mechanism, when, oral vs
-  written French examples, failure mode.
-- `references/anti-patterns.md` — draft detector, scoring grid, blockers.
-- `references/simulation.md` — personas, hidden sheet, difficulty, coaching,
-  end-of-sim reveal.
-- `references/sources.md` — reading list with evidence level, the known
-  critiques of Voss, and practice material.
-- `references/project-defense.md` — committee asks, baselines, objections
-  per function (CFO, CIO, ops, security), bounded pilots.
-- `references/b2b-sales.md` — SPIN discovery, feature-advantage-proof,
-  MEDDPICC qualification, free POC requests, coaching a salesperson.
-- `references/management.md` — priority trade-offs upward, SBI feedback,
-  coaching, peer influence, delegation.
+- `references/preparation.md`: one-sheet per register, BATNA/ZOPA/floor,
+  anchoring, pricing units, Ackerman and MESO, splitting, case traps
+  (salary, intermediary rate, scope, unpaid invoice, manager), impasse.
+- `references/techniques.md`: Voss phrasing toolbox, with French oral and
+  written examples, evidence level, and failure modes.
+- `references/anti-patterns.md`: blockers, draft detector, verdict.
+- `references/simulation.md`: personas with a mandate, hidden sheet,
+  difficulty, end-of-sim reveal.
+- `references/project-defense.md`: committee asks, baselines, objections per
+  function, bounded pilots, priority arbitration upward.
+- `references/sources.md`: reading list with evidence level, critiques of
+  Voss, practice material.
 
 ## Relationship With Other cli-* Skills
 
 | Situation | Better handoff |
 |---|---|
-| Polishing the final message wording | `cli-forge-plume` |
+| Sales discovery, deal qualification, feedback, delegation, influence without a bargain | `cli-forge-influence` |
+| Final message wording | `cli-forge-plume` |
 | CV, LinkedIn, freelance positioning | `cli-forge-profile` |
 | Pricing page or checkout UX | `cli-forge-choice-ux` |
 
@@ -174,10 +189,9 @@ Recommend, do not auto-run.
 - Do not send anything; produce material for the user to use.
 - Refuse to target a personal vulnerability of the counterpart (health,
   family, immigration status, debt).
-- No lie detection verdicts. Long answers, pronouns or tone are signals to ask
-  a question, never proof of deceit.
+- No lie-detection verdicts. Tone or wording is a reason to ask, never proof.
 - Labour law, dismissal, rupture conventionnelle, litigation, debt collection
-  beyond the amicable stage: prepare questions and facts, then refer to a
-  lawyer, union rep, or the relevant body.
-- Confidentiality: no client names or figures in examples unless the user
-  supplied them.
+  beyond the amicable stage: prepare facts and questions, refer to a lawyer,
+  union rep, or the relevant body. Legal articles are cited only after the
+  current text is checked on Légifrance and against the user's contract;
+  otherwise `NEEDS-REVIEW`, never from memory.

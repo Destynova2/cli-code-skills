@@ -46,6 +46,19 @@ missing, propose who can verify it and when the decision can resume. If the
 objection kills the option, change the proposal. A priority dispute is settled
 by making the choice between two uses of a scarce resource explicit.
 
+## Priority Arbitration Upward
+
+When your own management adds work to a full team, make the trade-off
+visible and let the person entitled to decide choose:
+
+> « Pour livrer l'audit vendredi avec l'équipe actuelle, je dois décaler la
+> migration à mardi. Si les deux dates doivent tenir, il me faut quelqu'un
+> pour reprendre les tests jeudi. Laquelle des deux je confirme ? »
+
+Present any reinforcement or delay not yet validated as a hypothesis. If the
+user cannot promise budget or a priority change, write a recommendation to
+carry to the decision-maker, not a promise.
+
 ## Oral Example
 
 Fictional case: an architect proposes a secrets-management pilot; leadership
