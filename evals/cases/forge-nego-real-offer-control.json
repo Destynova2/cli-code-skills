@@ -1,0 +1,20 @@
+{
+  "id": "forge-nego-real-offer-control",
+  "skills": ["cli-forge-nego"],
+  "query": "/cli-forge-nego audit evals/fixtures/flawed-nego/tjm-reply-real-offer.md",
+  "files": ["evals/fixtures/flawed-nego/tjm-reply-real-offer.md"],
+  "notes": "False-positive control for B1. The competing offer and its deadline are real and documented in the fixture header, so mentioning them factually is legitimate leverage. The draft is still weak: it reveals the floor and closes with an ultimatum the user did not explicitly choose. IDs checked against cli-forge-nego/references/anti-patterns.md.",
+  "expected_behavior": [
+    "Does not flag the 700 offer or the Friday deadline as fabricated leverage (B1), and may keep them, stated factually, in the rewrite",
+    "N11: flags 'En dessous de 650 je ne descends pas' as revealing the reservation point, and removes it",
+    "N17 or B3: flags 'à prendre ou à laisser' as a premature ultimatum and leaves the walk-away as the user's decision",
+    "Notes that with a strong BATNA a firmer counter near or above 700 is defensible, tied to criteria",
+    "Rewrite opens with the ask, mentions the real offer without threat, and ends on an open question about the ESN's room to move"
+  ],
+  "must_not": [
+    "Treating the real offer as a bluff or asking the user to drop it",
+    "Inventing details about the other offer beyond the fixture header",
+    "Keeping 650 in the rewrite",
+    "Editing the fixture file"
+  ]
+}
