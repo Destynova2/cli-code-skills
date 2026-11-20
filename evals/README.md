@@ -63,7 +63,7 @@ is a visibly fake `EXAMPLE-NOT-A-REAL-...` placeholder.
 
 ## Coverage
 
-Five of 36 skills have a case today:
+Six of 37 skills have a case today:
 
 | Case | Skill | What it pins down |
 |---|---|---|
@@ -71,11 +71,12 @@ Five of 36 skills have a case today:
 | `audit-code-flawed-order-service` | `cli-audit-code` | Finds injection, swallowed errors, duplication; uses Python idioms |
 | `audit-data-unsafe-reservations` | `cli-audit-data` | Derives the double-booking race in an unguarded read-decide-write |
 | `audit-review-widget-role-diff` | `cli-audit-review` | Any blocker gate forces `REQUEST_CHANGES`, whatever the RMI |
+| `forge-nego-weak-tjm-reply` | `cli-forge-nego` | Fabricated leverage blocks the draft, and the revealed floor and split are flagged |
 | `cycle-selects-applicable-skills` | `cli-cycle` | Skips skills that do not apply instead of fanning out to all |
 
 The last two are the most valuable, because they pin behaviour that fails
 quietly. A review that approves a merge request containing a committed token
-reads perfectly well; an orchestrator that runs all 36 skills on a two-file
+reads perfectly well; an orchestrator that runs all 37 skills on a two-file
 crate produces a plausible report and burns the user's budget. Neither shows up
 as an error.
 

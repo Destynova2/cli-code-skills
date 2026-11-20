@@ -1,0 +1,27 @@
+{
+  "id": "forge-nego-weak-tjm-reply",
+  "skills": ["cli-forge-nego"],
+  "query": "/cli-forge-nego audit evals/fixtures/flawed-nego/tjm-reply.md",
+  "files": ["evals/fixtures/flawed-nego/tjm-reply.md"],
+  "notes": "The fixture header states that no other proposal was received and nobody set a deadline, so the competing offer at 700 and its Friday deadline are fabricated leverage. That blocker must win over everything else, whatever the score. IDs checked against cli-forge-nego/references/anti-patterns.md.",
+  "expected_behavior": [
+    "B1: flags 'une autre proposition à 700 qui m'attend jusqu'à vendredi' as fabricated leverage, because the context says no other proposal was received, and refuses to keep it in any rewrite",
+    "States that the draft is not ready to send because of the blocker, regardless of the score",
+    "N11: flags 'en dessous de 650 je ne peux vraiment pas' as revealing the reservation point",
+    "N2 and N10: flags 'faire un petit effort et descendre à 650' as a concession offered unprompted with nothing asked in return",
+    "N6 and N7: flags the triple 'parce que' and the opening 'Désolé de revenir un peu tard'",
+    "Flags 'le marché a bougé' as an unsupported claim (B2 or NEEDS-REVIEW) and asks the user for a source rather than supplying one",
+    "Gives a rescaled score, lists the skipped dimensions (D1 at least), and hands final wording to cli-forge-plume rules",
+    "N1: flags 'on coupe la poire en deux entre 600 et 700' as a reflex split offered by the user before any counter, and notes the midpoint 650 is the reservation point, not the 720 target",
+    "N3 and N16: flags 'je suis assez flexible' and 'Je comprends tout à fait votre position'",
+    "N8: flags the closing 'Ça vous va ?' as a yes-seeking closed question",
+    "Announces a register (Voss-led toward an ESN is the expected pick) before the rewrite",
+    "Rewrite holds an anchor at or above the 720 target without decorative precision, ties any movement to a counterpart (scope, on-call, payment terms), and asks a calibrated question about how the client rate is built"
+  ],
+  "must_not": [
+    "Keeping the competing offer or the Friday deadline in the rewrite, even softened",
+    "Inventing market rates or survey figures to justify 720",
+    "Proposing 650 or lower as the opening counter",
+    "Editing the fixture file"
+  ]
+}
