@@ -76,13 +76,13 @@ It rejects a case whose skill or fixture does not exist, or that cites a
 dimension ID the skill never defines. See `evals/README.md`. Fixtures are
 broken on purpose and must not be repaired.
 
-## Current skills (36)
+## Current skills (37)
 
 **Audit (12):** cli-audit-code, cli-audit-data, cli-audit-doc, cli-audit-drift, cli-audit-hanoi, cli-audit-review, cli-audit-shell, cli-audit-sync, cli-audit-tangle, cli-audit-test, cli-audit-wizard, cli-audit-xray
 
 **Cycle (1):** cli-cycle
 
-**Forge (21):** cli-forge-arch, cli-forge-chef, cli-forge-choice-ux, cli-forge-data, cli-forge-demo, cli-forge-doc, cli-forge-github, cli-forge-hld, cli-forge-infra, cli-forge-lld, cli-forge-oci-rootless, cli-forge-perf, cli-forge-pipeline, cli-forge-plume, cli-forge-prez, cli-forge-profile, cli-forge-quorum, cli-forge-readme, cli-forge-resilience, cli-forge-schema, cli-forge-tree
+**Forge (22):** cli-forge-arch, cli-forge-chef, cli-forge-choice-ux, cli-forge-data, cli-forge-demo, cli-forge-doc, cli-forge-github, cli-forge-hld, cli-forge-infra, cli-forge-lld, cli-forge-nego, cli-forge-oci-rootless, cli-forge-perf, cli-forge-pipeline, cli-forge-plume, cli-forge-prez, cli-forge-profile, cli-forge-quorum, cli-forge-readme, cli-forge-resilience, cli-forge-schema, cli-forge-tree
 
 **Git (1):** cli-git-conventional
 

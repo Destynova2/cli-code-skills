@@ -5,7 +5,7 @@
 
 <p align="center">
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="MIT License"></a>
-  <img src="https://img.shields.io/badge/skills-36-green.svg" alt="36 Skills">
+  <img src="https://img.shields.io/badge/skills-37-green.svg" alt="37 Skills">
   <img src="https://img.shields.io/badge/claude--code-skills-8A2BE2" alt="Claude Code Skills">
   <img src="https://img.shields.io/badge/cursor-compatible-F7DF1E" alt="Cursor Compatible">
   <a href="https://github.com/Destynova2/cli-code-skills/stargazers"><img src="https://img.shields.io/github/stars/Destynova2/cli-code-skills?style=flat" alt="Stars"></a>
@@ -75,6 +75,7 @@ Type `/cli-` in Claude Code or Codex, hit tab, pick a skill:
 | `/cli-forge-hld [system]` | High-Level Design — C4 L1-L2 diagrams, capacity estimation, ATAM tradeoff analysis, ADRs, deployment architecture. Sources: arc42, Google Design Docs, ByteByteGo |
 | `/cli-forge-infra [service]` | Ops integration — reads service docs, finds simplest config path, builds dependency trees, proposes upgrades with ADRs |
 | `/cli-forge-lld [component]` | Low-Level Design — C4 L3-L4, class/sequence/state diagrams, API contracts (OpenAPI), DB schemas, STRIDE threat model, testability design. Sources: Clean Architecture, DDD, GoF |
+| `/cli-forge-nego [situation]` | Prepares, rehearses, and audits negotiations (salary, freelance rate, contracts, scope creep, unpaid invoices, project defense, B2B sales, management) with Voss techniques checked against negotiation research; never invents leverage |
 | `/cli-forge-oci-rootless [service]` | Designs migrations from legacy/systemd/bare-metal deployments to rootless OCI operations |
 | `/cli-forge-perf [scope]` | Builds performance diagnostics, native benchmark protocols, and optimization validation plans |
 | `/cli-forge-pipeline [yaml]` | CI/CD pipeline optimizer using biomimetic patterns (ants, slime mold, bees, mycelium). Works with GitLab CI, GitHub Actions, and any CI system |
@@ -205,6 +206,8 @@ cli-code-skills/
 │   └── references/        #   scoring, patterns, checklists
 ├── cli-forge-lld/         # /cli-forge-lld — Low-Level Design
 │   └── references/        #   sections, scoring, anti-patterns, LLD template
+├── cli-forge-nego/        # /cli-forge-nego — negotiation prep, replies, role-play
+│   └── references/        #   techniques, prep, anti-patterns, sales, management
 ├── cli-forge-oci-rootless/ # /cli-forge-oci-rootless — rootless OCI migration
 │   └── references/        #   scenarios, proof gates, handoffs
 ├── cli-forge-perf/        # /cli-forge-perf — performance optimization method

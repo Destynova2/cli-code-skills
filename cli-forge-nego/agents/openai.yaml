@@ -1,0 +1,4 @@
+interface:
+  display_name: "Nego Forge"
+  short_description: "Prepare, rehearse, and audit negotiations with Voss techniques and evidence-based guardrails"
+  default_prompt: "Use $cli-forge-nego to prepare my negotiation: one-sheet, anchor, concession plan, and the first message."
