@@ -2,8 +2,8 @@
 cli-forge-nego false-positive control in evals/cases/. Do not repair it.
 Context for the run: freelance DevOps, target 720 EUR/day, reservation point
 650 EUR/day. The user holds a written offer from another client at
-700 EUR/day, signed by that client's purchasing on 12 November, valid until
-Friday 22 November, and is willing to take it. The ESN wrote: "Le client a un
+700 EUR/day, signed by that client's purchasing on 20 November 2026, valid
+until Friday 4 December 2026, and is willing to take it. The ESN wrote: "Le client a un
 budget de 600 EUR/j max, on peut partir là-dessus ?" -->
 
 Bonjour Julien,
