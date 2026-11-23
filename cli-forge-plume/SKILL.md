@@ -22,7 +22,7 @@ Read `../gotchas.md` before producing output.
 2. **Zero AI markers.** No AI/model/assistant mentions, no meta-commentary
    ("voici un message que vous pouvez envoyer"), no leftover placeholders
    (`[Nom]`), and none of the typographic, lexical, or structural tells listed
-   in `references/ai-tells.md`.
+   in `../shared/ai-tells.md`.
 3. **The user's voice, not a template's.** Mirror their register (tu/vous,
    chat vs email, dryness vs warmth) from the pasted exchange. When in doubt,
    slightly more sober than the recipient, never more corporate.
@@ -57,7 +57,7 @@ Read `../gotchas.md` before producing output.
    - proof before philosophy: a concrete fact beats an adjective.
 5. For follow-ups, read `references/relance.md`: escalation ladder, new-info
    rule, and the humor bank with its calibration rules.
-6. Run the AI-tells pass with `references/ai-tells.md`. Rewrite, do not just
+6. Run the AI-tells pass with `../shared/ai-tells.md`. Rewrite, do not just
    delete: a stripped sentence must still sound like the user.
 7. Proofread in the target language, then deliver paste-ready copy.
 
@@ -107,7 +107,7 @@ ambiguous. Do not blend variants.
 
 ## Read References On Demand
 
-- `references/ai-tells.md` — before delivering any copy: typographic, lexical
+- `../shared/ai-tells.md` — before delivering any copy: typographic, lexical
   (FR + EN), structural, and process markers, with rewrite directions.
 - `references/relance.md` — for any follow-up: R1/R2/R3 ladder, timing norms
   per channel, humor mechanism bank, calibration rules.

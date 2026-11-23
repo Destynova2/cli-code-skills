@@ -119,6 +119,20 @@ Infer the mode; ask only if genuinely ambiguous.
      return, what surfaced late, one lesson.
 4. **Check your own output** with `references/anti-patterns.md`. A blocker
    stops delivery.
+5. **Run the outgoing copy gate** below on every message or line meant to
+   be sent or spoken.
+
+**Outgoing copy gate.** Before any paste-ready message or line, run this
+pass, then rewrite (do not just delete):
+
+1. Read `../shared/ai-tells.md` and remove every tell it lists (em-dash
+   reflex, AI vocabulary, assistant sandwich, hedging stacks, placeholders).
+2. One tu/vous register for the whole message, matching the thread.
+3. The ask in the first two lines; one ask.
+4. Proofread the target language: diacritics, agreements, no needless
+   anglicism.
+
+Fix what fails before delivery. A clean pass is silent: do not report it.
 
 ## Key Calls (details in references)
 

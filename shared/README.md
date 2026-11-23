@@ -23,5 +23,6 @@ Path convention:
 | `data-invariants.md` | Database sources of truth, L0-L3 criticality, invariants, conservation, interleavings, proof ladder, runtime uncertainty | audit-data, forge-data, audit-drift, audit-test, audit-review, forge-lld |
 | `data-invariant-catalog.md` | Detailed question catalog for discovering persistent business invariants | audit-data, forge-data |
 | `postgres-sqlx-patterns.md` | PostgreSQL and SQLx implementation patterns | audit-data, forge-data |
+| `ai-tells.md` | Typographic, lexical (FR + EN), structural and process markers of AI-written copy, with rewrite directions; the pass every outgoing message goes through | forge-plume, forge-nego, forge-influence |
 
 These ship to `~/.claude/skills/shared/` alongside `~/.claude/skills/gotchas.md`.
