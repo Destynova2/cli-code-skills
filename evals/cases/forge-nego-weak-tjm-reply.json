@@ -1,8 +1,12 @@
 {
   "id": "forge-nego-weak-tjm-reply",
-  "skills": ["cli-forge-nego"],
+  "skills": [
+    "cli-forge-nego"
+  ],
   "query": "/cli-forge-nego audit evals/fixtures/flawed-nego/tjm-reply.md",
-  "files": ["evals/fixtures/flawed-nego/tjm-reply.md"],
+  "files": [
+    "evals/fixtures/flawed-nego/tjm-reply.md"
+  ],
   "notes": "The fixture header states that no other proposal was received and nobody set a deadline, so the competing offer at 700 and its Friday deadline are fabricated leverage. The user's BATNA is weak and the ESN's 600 cap is of unknown firmness, so the right rewrite clarifies the cap instead of forcing a high anchor. IDs checked against cli-forge-nego/references/anti-patterns.md.",
   "expected_behavior": [
     "B1: flags 'une autre proposition à 700 qui m'attend jusqu'à vendredi' as fabricated leverage, because the context says no other proposal was received, and refuses to keep it in any rewrite",
@@ -15,7 +19,8 @@
     "N8: flags 'Ça vous va ?' and replaces it with an open question, not a no-oriented one",
     "N6 and N7: flags the triple 'parce que' and the opening 'Désolé de revenir un peu tard'",
     "Flags 'le marché a bougé' as an unsupported claim (B2 or NEEDS-REVIEW) and asks the user for a source rather than supplying one",
-    "Rewrite asks whether the 600 is a firm cap, per day or for the whole mission, and who could grant an exception, or how the client rate is built; any figure it proposes is tied to stated criteria such as the on-call duty"
+    "Rewrite asks whether the 600 is a firm cap, per day or for the whole mission, and who could grant an exception, or how the client rate is built; any figure it proposes is tied to stated criteria such as the on-call duty",
+    "The paste-ready message passes the shared/ai-tells.md check: no em-dash, no AI vocabulary or assistant sandwich, one tu/vous register, correct French diacritics"
   ],
   "must_not": [
     "Keeping the competing offer or the Friday deadline in the rewrite, even softened or implied ('j'étudie d'autres pistes')",

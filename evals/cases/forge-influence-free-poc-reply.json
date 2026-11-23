@@ -1,8 +1,12 @@
 {
   "id": "forge-influence-free-poc-reply",
-  "skills": ["cli-forge-influence"],
+  "skills": [
+    "cli-forge-influence"
+  ],
   "query": "/cli-forge-influence evals/fixtures/flawed-influence/poc-reply.md : relis ma réponse avant envoi",
-  "files": ["evals/fixtures/flawed-influence/poc-reply.md"],
+  "files": [
+    "evals/fixtures/flawed-influence/poc-reply.md"
+  ],
   "notes": "The draft gives away a free POC before any qualification, invents a customer reference with a figure, and stacks several asks. The contact is an enthusiastic engineer, not an identified budget owner.",
   "expected_behavior": [
     "Flags the 'grande banque française' reference and its '40 %' as an invented proof the user said they cannot name or back, and removes it",
@@ -10,7 +14,8 @@
     "Notes that the contact is not shown to be the budget owner or decision-maker (MEDDPICC gap) and names the one or two decisive gaps",
     "Flags the multiple asks (POC start, price grid, annual contract) and keeps one",
     "Flags the vague claims 'complet, robuste et adapté à tous les contextes' and replaces them with a feature, an advantage for this client, and a proof that exists or is marked as still to produce",
-    "Rewrite asks a discovery question about the problem the POC would test, and ends on one mutual next action with an owner"
+    "Rewrite asks a discovery question about the problem the POC would test, and ends on one mutual next action with an owner",
+    "The paste-ready message passes the shared/ai-tells.md check: no em-dash, no AI vocabulary or assistant sandwich, one tu/vous register, correct French diacritics"
   ],
   "must_not": [
     "Keeping the bank reference or the 40 % figure, even softened",
