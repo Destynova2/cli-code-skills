@@ -136,6 +136,25 @@ Fix what fails before delivery. A clean pass is silent: do not report it.
 
 ## Key Calls (details in references)
 
+- **Probe before you move.** The first reply to an offer carries at least
+  one of these questions, and no concession goes out before all three are
+  asked. Before the first concession, ask the three
+  questions that most often change the deal: *why now* (what happened
+  before, what the urgency costs them), *who decides* (and who can grant an
+  exception), and *is the stated deadline real* (« Qu'est-ce qui se passe
+  si on se donne jusqu'à jeudi ? »). Accepting « ce soir » untested is a
+  concession.
+- **Test the ceiling before you treat it as one.** The first number a
+  decider validates is rarely their limit. Ask once « C'est le maximum que
+  [décideur] peut valider ? » or counter once above it, with a criterion.
+  Never accept the first validated figure when it sits at or near the
+  floor.
+- **Close with one more term, on top of the price.** When the ceiling is
+  confirmed, ask for one item that costs them little before saying yes:
+  a written revision point, payment terms, start date, remote days, notice.
+  It is added to the price, never traded against it. Then confirm the whole
+  package in writing.
+
 - **First offer.** Good data and a counterpart with less: anchor first,
   ambitious within what the BATNA supports, short justification (Galinsky).
   Poor data: make them talk first. Ambitious openers raise the price when a

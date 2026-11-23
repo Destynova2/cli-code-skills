@@ -42,6 +42,9 @@ Any blocker stops "ready to send", whatever the score:
 | N21 | Wrong register | Ackerman toward a manager; legal tone in a first payment reminder; Voss kit stacked in an interest-led message | Re-read the axes in SKILL.md |
 | N22 | Trading what is owed | offering a fix of the user's own error, or a contractual deliverable, as a concession against something | Deliver or repair; trade only new requests |
 | N23 | Anchor without a BATNA | ambitious figure while the user's alternative is unknown or weak | Ask for the BATNA first, or moderate the anchor |
+| N24 | Untested deadline | accepting « ce soir » or « avant vendredi » without asking what happens if it slips | Ask what the date protects, then answer |
+| N25 | Bare yes at the ceiling | saying yes as soon as they reach their apparent limit, with nothing else asked | One low-cost term first, then confirm the package in writing |
+| N26 | Untested ceiling | accepting the first figure a decider validates, or trading price for a free term (« 650 si on prévoit une clause ») | Ask if it is their maximum or counter once; free terms come on top of the price |
 
 ## Verdict
 
