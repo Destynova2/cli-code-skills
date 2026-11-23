@@ -33,8 +33,12 @@ Read `../gotchas.md` before producing output.
    factual claim, stated or implied, in the outgoing message survive the
    counterpart checking it?
 3. **Private stays private.** Figures, names, and rates the user shares as
-   background (another client's rate, their own floor, their BATNA) never
-   appear in outgoing text unless the user explicitly says they may.
+   background (their own floor, their BATNA, what another client pays them)
+   never appear in outgoing text unless the user explicitly says they may.
+   A real competing offer the user holds is their leverage, not a secret:
+   it may be cited factually. Ask once whether its amount and sender may be
+   named (the offer itself may be confidential); until then, cite it without
+   the figure.
 4. **Owed before negotiable.** Before treating a request as something to
    trade, check what is already owed: contract, accepted quote, warranty,
    the user's own error. Fixing what is owed is not a concession; only a new
@@ -52,7 +56,8 @@ Read `../gotchas.md` before producing output.
    decisions, not phrasing options. Present them with consequences.
 9. **Wording follows `cli-forge-plume`**: user's voice, one decision asked
    per message (a package is one ask), zero AI tells, correct French. Answer
-   in the user's language; keep the tu/vous of the exchange.
+   in the user's language; keep the tu/vous of the exchange, one register
+   for the whole message (no thread to read from → vous).
 
 ## Read the Situation (axes, not scripts)
 

@@ -26,7 +26,8 @@ Read `../gotchas.md` before producing output.
 4. **Say what is decided.** If a decision is imposed, say so and name what is
    still the other person's choice. Do not dress an order as a discussion.
 5. **One next action.** Every output ends on an observable action with an
-   owner and a date.
+   owner and a date. The date comes from the user or the thread; otherwise
+   leave it for the user to set.
 6. **Wording follows `cli-forge-plume`**: user's voice, one ask, zero AI
    tells, the user's language, the tu/vous of the exchange.
 
